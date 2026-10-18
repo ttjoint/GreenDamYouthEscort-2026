@@ -1,0 +1,41 @@
+{
+  "source": "kwselectinfopp.dll",
+  "note": "Monitored-application list. Treated as firewall target table in the new implementation, not as an interception allowlist.",
+  "record_size": 84,
+  "count": 8,
+  "targets": [
+    {
+      "process": "QQ",
+      "display_name": "腾讯聊天工具"
+    },
+    {
+      "process": "msnmsgr",
+      "display_name": "微软聊天工具"
+    },
+    {
+      "process": "thunder",
+      "display_name": "迅雷下载工具"
+    },
+    {
+      "process": "wangwang",
+      "display_name": "阿里旺旺"
+    },
+    {
+      "process": "skype",
+      "display_name": "TOM聊天工具"
+    },
+    {
+      "process": "yahoomessenger",
+      "display_name": "雅虎通"
+    },
+    {
+      "process": "googletalk",
+      "display_name": "google聊天工具"
+    },
+    {
+      "process": "uc",
+      "display_name": "新浪 uc"
+    }
+  ],
+  "sha256": "1260a476996fe759ea4d141c4b28fa9ae2be54d3ff6a342fb1cf7ff6d6784243"
+}

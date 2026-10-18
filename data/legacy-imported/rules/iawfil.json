@@ -1,0 +1,2377 @@
+{
+  "source": "iawfil.dat.txt",
+  "count": 113,
+  "rules": [
+    {
+      "terms": [
+        {
+          "text": "22cracks",
+          "match": "prefix"
+        },
+        {
+          "text": "22hacks",
+          "match": "prefix"
+        },
+        {
+          "text": "22crackz",
+          "match": "prefix"
+        },
+        {
+          "text": "22hackz",
+          "match": "prefix"
+        },
+        {
+          "text": "22cracks",
+          "match": "suffix"
+        },
+        {
+          "text": "22hacks",
+          "match": "suffix"
+        },
+        {
+          "text": "22crackz",
+          "match": "suffix"
+        },
+        {
+          "text": "22hackz",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "cracks,hacks,crackz,hackz"
+      ],
+      "raw": "[+,=][,22][cracks,hacks,crackz,hackz]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22drugs",
+          "match": "prefix"
+        },
+        {
+          "text": "22hashoil",
+          "match": "prefix"
+        },
+        {
+          "text": "22bong",
+          "match": "prefix"
+        },
+        {
+          "text": "22toking",
+          "match": "prefix"
+        },
+        {
+          "text": "22GHB",
+          "match": "prefix"
+        },
+        {
+          "text": "22LSD",
+          "match": "prefix"
+        },
+        {
+          "text": "22Peyote",
+          "match": "prefix"
+        },
+        {
+          "text": "22extacy",
+          "match": "prefix"
+        },
+        {
+          "text": "22hashish",
+          "match": "prefix"
+        },
+        {
+          "text": "22shrooms",
+          "match": "prefix"
+        },
+        {
+          "text": "22drugs",
+          "match": "suffix"
+        },
+        {
+          "text": "22hashoil",
+          "match": "suffix"
+        },
+        {
+          "text": "22bong",
+          "match": "suffix"
+        },
+        {
+          "text": "22toking",
+          "match": "suffix"
+        },
+        {
+          "text": "22GHB",
+          "match": "suffix"
+        },
+        {
+          "text": "22LSD",
+          "match": "suffix"
+        },
+        {
+          "text": "22Peyote",
+          "match": "suffix"
+        },
+        {
+          "text": "22extacy",
+          "match": "suffix"
+        },
+        {
+          "text": "22hashish",
+          "match": "suffix"
+        },
+        {
+          "text": "22shrooms",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "drugs,hashoil,bong,toking,GHB,LSD,Peyote,extacy,hashish,shrooms"
+      ],
+      "raw": "[+,=][,22][drugs,hashoil,bong,toking,GHB,LSD,Peyote,extacy,hashish,shrooms]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22ecstasy",
+          "match": "prefix"
+        },
+        {
+          "text": "22ectacy",
+          "match": "prefix"
+        },
+        {
+          "text": "22estasy",
+          "match": "prefix"
+        },
+        {
+          "text": "22cocaine",
+          "match": "prefix"
+        },
+        {
+          "text": "22heroin",
+          "match": "prefix"
+        },
+        {
+          "text": "22drug",
+          "match": "prefix"
+        },
+        {
+          "text": "22marijuana",
+          "match": "prefix"
+        },
+        {
+          "text": "22crack",
+          "match": "prefix"
+        },
+        {
+          "text": "22ketamine",
+          "match": "prefix"
+        },
+        {
+          "text": "22ecstasy",
+          "match": "suffix"
+        },
+        {
+          "text": "22ectacy",
+          "match": "suffix"
+        },
+        {
+          "text": "22estasy",
+          "match": "suffix"
+        },
+        {
+          "text": "22cocaine",
+          "match": "suffix"
+        },
+        {
+          "text": "22heroin",
+          "match": "suffix"
+        },
+        {
+          "text": "22drug",
+          "match": "suffix"
+        },
+        {
+          "text": "22marijuana",
+          "match": "suffix"
+        },
+        {
+          "text": "22crack",
+          "match": "suffix"
+        },
+        {
+          "text": "22ketamine",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "ecstasy,ectacy,estasy,cocaine,heroin,drug,marijuana,crack,ketamine"
+      ],
+      "raw": "[+,=][,22][ecstasy,ectacy,estasy,cocaine,heroin,drug,marijuana,crack,ketamine]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22crank",
+          "match": "prefix"
+        },
+        {
+          "text": "22hashish",
+          "match": "prefix"
+        },
+        {
+          "text": "22maryjane",
+          "match": "prefix"
+        },
+        {
+          "text": "22maryjuana",
+          "match": "prefix"
+        },
+        {
+          "text": "22potbrownies",
+          "match": "prefix"
+        },
+        {
+          "text": "22ganja",
+          "match": "prefix"
+        },
+        {
+          "text": "22ganjacake",
+          "match": "prefix"
+        },
+        {
+          "text": "22crank",
+          "match": "suffix"
+        },
+        {
+          "text": "22hashish",
+          "match": "suffix"
+        },
+        {
+          "text": "22maryjane",
+          "match": "suffix"
+        },
+        {
+          "text": "22maryjuana",
+          "match": "suffix"
+        },
+        {
+          "text": "22potbrownies",
+          "match": "suffix"
+        },
+        {
+          "text": "22ganja",
+          "match": "suffix"
+        },
+        {
+          "text": "22ganjacake",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "crank,hashish,maryjane,maryjuana,potbrownies,ganja,ganjacake"
+      ],
+      "raw": "[+,=][,22][crank,hashish,maryjane,maryjuana,potbrownies,ganja,ganjacake]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22hacker",
+          "match": "prefix"
+        },
+        {
+          "text": "22hacking",
+          "match": "prefix"
+        },
+        {
+          "text": "22warez",
+          "match": "prefix"
+        },
+        {
+          "text": "22hacker",
+          "match": "suffix"
+        },
+        {
+          "text": "22hacking",
+          "match": "suffix"
+        },
+        {
+          "text": "22warez",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "hacker,hacking,warez"
+      ],
+      "raw": "[+,=][,22][hacker,hacking,warez]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22hotwire",
+          "match": "prefix"
+        },
+        {
+          "text": "22napalm",
+          "match": "prefix"
+        },
+        {
+          "text": "22ripoff",
+          "match": "prefix"
+        },
+        {
+          "text": "22hotwire",
+          "match": "suffix"
+        },
+        {
+          "text": "22napalm",
+          "match": "suffix"
+        },
+        {
+          "text": "22ripoff",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "hotwire,napalm,ripoff"
+      ],
+      "raw": "[+,=][,22][hotwire,napalm,ripoff]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22manson",
+          "match": "prefix"
+        },
+        {
+          "text": "22manson",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "manson"
+      ],
+      "raw": "[+,=][,22][manson]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22murder",
+          "match": "prefix"
+        },
+        {
+          "text": "22snuff",
+          "match": "prefix"
+        },
+        {
+          "text": "22maim",
+          "match": "prefix"
+        },
+        {
+          "text": "22mayhem",
+          "match": "prefix"
+        },
+        {
+          "text": "22anarchy",
+          "match": "prefix"
+        },
+        {
+          "text": "22anarchist",
+          "match": "prefix"
+        },
+        {
+          "text": "22murder",
+          "match": "suffix"
+        },
+        {
+          "text": "22snuff",
+          "match": "suffix"
+        },
+        {
+          "text": "22maim",
+          "match": "suffix"
+        },
+        {
+          "text": "22mayhem",
+          "match": "suffix"
+        },
+        {
+          "text": "22anarchy",
+          "match": "suffix"
+        },
+        {
+          "text": "22anarchist",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "murder,snuff,maim,mayhem,anarchy,anarchist"
+      ],
+      "raw": "[+,=][,22][murder,snuff,maim,mayhem,anarchy,anarchist]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22mushroom",
+          "match": "prefix"
+        },
+        {
+          "text": "22shroom",
+          "match": "prefix"
+        },
+        {
+          "text": "22mushroom",
+          "match": "suffix"
+        },
+        {
+          "text": "22shroom",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "mushroom,shroom"
+      ],
+      "raw": "[+,=][,22][mushroom,shroom]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22recreationdrugs",
+          "match": "prefix"
+        },
+        {
+          "text": "22ecstasy",
+          "match": "prefix"
+        },
+        {
+          "text": "22ectacy",
+          "match": "prefix"
+        },
+        {
+          "text": "22estasy",
+          "match": "prefix"
+        },
+        {
+          "text": "22bomb",
+          "match": "prefix"
+        },
+        {
+          "text": "22explosiv",
+          "match": "prefix"
+        },
+        {
+          "text": "22propane",
+          "match": "prefix"
+        },
+        {
+          "text": "22grenade",
+          "match": "prefix"
+        },
+        {
+          "text": "22granade",
+          "match": "prefix"
+        },
+        {
+          "text": "22howtomakenitroglycerin",
+          "match": "prefix"
+        },
+        {
+          "text": "22recreationdrugs",
+          "match": "suffix"
+        },
+        {
+          "text": "22ecstasy",
+          "match": "suffix"
+        },
+        {
+          "text": "22ectacy",
+          "match": "suffix"
+        },
+        {
+          "text": "22estasy",
+          "match": "suffix"
+        },
+        {
+          "text": "22bomb",
+          "match": "suffix"
+        },
+        {
+          "text": "22explosiv",
+          "match": "suffix"
+        },
+        {
+          "text": "22propane",
+          "match": "suffix"
+        },
+        {
+          "text": "22grenade",
+          "match": "suffix"
+        },
+        {
+          "text": "22granade",
+          "match": "suffix"
+        },
+        {
+          "text": "22howtomakenitroglycerin",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "recreationdrugs,ecstasy,ectacy,estasy,bomb,explosiv,propane,grenade,granade,howtomakenitroglycerin"
+      ],
+      "raw": "[+,=][,22][recreationdrugs,ecstasy,ectacy,estasy,bomb,explosiv,propane,grenade,granade,howtomakenitroglycerin]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22terror",
+          "match": "prefix"
+        },
+        {
+          "text": "22dead",
+          "match": "prefix"
+        },
+        {
+          "text": "22death",
+          "match": "prefix"
+        },
+        {
+          "text": "22terror",
+          "match": "suffix"
+        },
+        {
+          "text": "22dead",
+          "match": "suffix"
+        },
+        {
+          "text": "22death",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "terror,dead,death"
+      ],
+      "raw": "[+,=][,22][terror,dead,death]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22vicodin",
+          "match": "prefix"
+        },
+        {
+          "text": "22xanax",
+          "match": "prefix"
+        },
+        {
+          "text": "22oxycontin",
+          "match": "prefix"
+        },
+        {
+          "text": "22mdma",
+          "match": "prefix"
+        },
+        {
+          "text": "22darvocet",
+          "match": "prefix"
+        },
+        {
+          "text": "22norco",
+          "match": "prefix"
+        },
+        {
+          "text": "22stadol",
+          "match": "prefix"
+        },
+        {
+          "text": "22lortab",
+          "match": "prefix"
+        },
+        {
+          "text": "22percocet",
+          "match": "prefix"
+        },
+        {
+          "text": "22percodan",
+          "match": "prefix"
+        },
+        {
+          "text": "22lorcet",
+          "match": "prefix"
+        },
+        {
+          "text": "22mscontin",
+          "match": "prefix"
+        },
+        {
+          "text": "22vicodin",
+          "match": "suffix"
+        },
+        {
+          "text": "22xanax",
+          "match": "suffix"
+        },
+        {
+          "text": "22oxycontin",
+          "match": "suffix"
+        },
+        {
+          "text": "22mdma",
+          "match": "suffix"
+        },
+        {
+          "text": "22darvocet",
+          "match": "suffix"
+        },
+        {
+          "text": "22norco",
+          "match": "suffix"
+        },
+        {
+          "text": "22stadol",
+          "match": "suffix"
+        },
+        {
+          "text": "22lortab",
+          "match": "suffix"
+        },
+        {
+          "text": "22percocet",
+          "match": "suffix"
+        },
+        {
+          "text": "22percodan",
+          "match": "suffix"
+        },
+        {
+          "text": "22lorcet",
+          "match": "suffix"
+        },
+        {
+          "text": "22mscontin",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "vicodin,xanax,oxycontin,mdma,darvocet,norco,stadol,lortab,percocet,percodan,lorcet,mscontin"
+      ],
+      "raw": "[+,=][,22][vicodin,xanax,oxycontin,mdma,darvocet,norco,stadol,lortab,percocet,percodan,lorcet,mscontin]"
+    },
+    {
+      "raw": "[+,=][commit][,+][suicide]"
+    },
+    {
+      "terms": [
+        {
+          "text": "216.167.102.132",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "216.167.102.132"
+      ],
+      "raw": "[216.167.102.132]"
+    },
+    {
+      "terms": [
+        {
+          "text": "4thc.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "4thc.com"
+      ],
+      "raw": "[4thc.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "alt.2600",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "alt.2600"
+      ],
+      "raw": "[alt.2600]"
+    },
+    {
+      "terms": [
+        {
+          "text": "alt.binaries.warez",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "alt.binaries.warez"
+      ],
+      "raw": "[alt.binaries.warez]"
+    },
+    {
+      "terms": [
+        {
+          "text": "alt.censorship",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "alt.censorship"
+      ],
+      "raw": "[alt.censorship]"
+    },
+    {
+      "terms": [
+        {
+          "text": "alt.crackers",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "alt.crackers"
+      ],
+      "raw": "[alt.crackers]"
+    },
+    {
+      "terms": [
+        {
+          "text": "alt.drink",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "alt.drink"
+      ],
+      "raw": "[alt.drink]"
+    },
+    {
+      "terms": [
+        {
+          "text": "alt.drugs",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "alt.drugs"
+      ],
+      "raw": "[alt.drugs]"
+    },
+    {
+      "terms": [
+        {
+          "text": "alt.drunken",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "alt.drunken"
+      ],
+      "raw": "[alt.drunken]"
+    },
+    {
+      "terms": [
+        {
+          "text": "alt.flame",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "alt.flame"
+      ],
+      "raw": "[alt.flame]"
+    },
+    {
+      "terms": [
+        {
+          "text": "alt.skinheads",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "alt.skinheads"
+      ],
+      "raw": "[alt.skinheads]"
+    },
+    {
+      "terms": [
+        {
+          "text": "alt.smok",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "alt.smok"
+      ],
+      "raw": "[alt.smok]"
+    },
+    {
+      "terms": [
+        {
+          "text": "alt.tasteless",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "alt.tasteless"
+      ],
+      "raw": "[alt.tasteless]"
+    },
+    {
+      "terms": [
+        {
+          "text": "annoy.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "annoy.com"
+      ],
+      "raw": "[annoy.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "basketballdiaries",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "basketballdiaries"
+      ],
+      "raw": "[basketballdiaries]"
+    },
+    {
+      "terms": [
+        {
+          "text": "bluntbros.co",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "bluntbros.co"
+      ],
+      "raw": "[bluntbros.co]"
+    },
+    {
+      "terms": [
+        {
+          "text": "bombmaking",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "bombmaking"
+      ],
+      "raw": "[bombmaking]"
+    },
+    {
+      "terms": [
+        {
+          "text": "bong",
+          "match": "literal"
+        },
+        {
+          "text": "toking",
+          "match": "literal"
+        },
+        {
+          "text": "hydroponics",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "bong,toking,hydroponics"
+      ],
+      "raw": "[bong,toking,hydroponics]"
+    },
+    {
+      "terms": [
+        {
+          "text": "buildabomb",
+          "match": "literal"
+        },
+        {
+          "text": "buildaexplo",
+          "match": "literal"
+        },
+        {
+          "text": "buildanapalm",
+          "match": "literal"
+        },
+        {
+          "text": "buildahotwire",
+          "match": "literal"
+        },
+        {
+          "text": "buildapipebomb",
+          "match": "literal"
+        },
+        {
+          "text": "buildaPotassiumNitrate",
+          "match": "literal"
+        },
+        {
+          "text": "buildamdma",
+          "match": "literal"
+        },
+        {
+          "text": "buildanitroglycerin",
+          "match": "literal"
+        },
+        {
+          "text": "buildadynamite",
+          "match": "literal"
+        },
+        {
+          "text": "buildanbomb",
+          "match": "literal"
+        },
+        {
+          "text": "buildanexplo",
+          "match": "literal"
+        },
+        {
+          "text": "buildannapalm",
+          "match": "literal"
+        },
+        {
+          "text": "buildanhotwire",
+          "match": "literal"
+        },
+        {
+          "text": "buildanpipebomb",
+          "match": "literal"
+        },
+        {
+          "text": "buildanPotassiumNitrate",
+          "match": "literal"
+        },
+        {
+          "text": "buildanmdma",
+          "match": "literal"
+        },
+        {
+          "text": "buildannitroglycerin",
+          "match": "literal"
+        },
+        {
+          "text": "buildandynamite",
+          "match": "literal"
+        },
+        {
+          "text": "makeabomb",
+          "match": "literal"
+        },
+        {
+          "text": "makeaexplo",
+          "match": "literal"
+        },
+        {
+          "text": "makeanapalm",
+          "match": "literal"
+        },
+        {
+          "text": "makeahotwire",
+          "match": "literal"
+        },
+        {
+          "text": "makeapipebomb",
+          "match": "literal"
+        },
+        {
+          "text": "makeaPotassiumNitrate",
+          "match": "literal"
+        },
+        {
+          "text": "makeamdma",
+          "match": "literal"
+        },
+        {
+          "text": "makeanitroglycerin",
+          "match": "literal"
+        },
+        {
+          "text": "makeadynamite",
+          "match": "literal"
+        },
+        {
+          "text": "makeanbomb",
+          "match": "literal"
+        },
+        {
+          "text": "makeanexplo",
+          "match": "literal"
+        },
+        {
+          "text": "makeannapalm",
+          "match": "literal"
+        },
+        {
+          "text": "makeanhotwire",
+          "match": "literal"
+        },
+        {
+          "text": "makeanpipebomb",
+          "match": "literal"
+        },
+        {
+          "text": "makeanPotassiumNitrate",
+          "match": "literal"
+        },
+        {
+          "text": "makeanmdma",
+          "match": "literal"
+        },
+        {
+          "text": "makeannitroglycerin",
+          "match": "literal"
+        },
+        {
+          "text": "makeandynamite",
+          "match": "literal"
+        },
+        {
+          "text": "makingabomb",
+          "match": "literal"
+        },
+        {
+          "text": "makingaexplo",
+          "match": "literal"
+        },
+        {
+          "text": "makinganapalm",
+          "match": "literal"
+        },
+        {
+          "text": "makingahotwire",
+          "match": "literal"
+        },
+        {
+          "text": "makingapipebomb",
+          "match": "literal"
+        },
+        {
+          "text": "makingaPotassiumNitrate",
+          "match": "literal"
+        },
+        {
+          "text": "makingamdma",
+          "match": "literal"
+        },
+        {
+          "text": "makinganitroglycerin",
+          "match": "literal"
+        },
+        {
+          "text": "makingadynamite",
+          "match": "literal"
+        },
+        {
+          "text": "makinganbomb",
+          "match": "literal"
+        },
+        {
+          "text": "makinganexplo",
+          "match": "literal"
+        },
+        {
+          "text": "makingannapalm",
+          "match": "literal"
+        },
+        {
+          "text": "makinganhotwire",
+          "match": "literal"
+        },
+        {
+          "text": "makinganpipebomb",
+          "match": "literal"
+        },
+        {
+          "text": "makinganPotassiumNitrate",
+          "match": "literal"
+        },
+        {
+          "text": "makinganmdma",
+          "match": "literal"
+        },
+        {
+          "text": "makingannitroglycerin",
+          "match": "literal"
+        },
+        {
+          "text": "makingandynamite",
+          "match": "literal"
+        },
+        {
+          "text": "constructabomb",
+          "match": "literal"
+        },
+        {
+          "text": "constructaexplo",
+          "match": "literal"
+        },
+        {
+          "text": "constructanapalm",
+          "match": "literal"
+        },
+        {
+          "text": "constructahotwire",
+          "match": "literal"
+        },
+        {
+          "text": "constructapipebomb",
+          "match": "literal"
+        },
+        {
+          "text": "constructaPotassiumNitrate",
+          "match": "literal"
+        },
+        {
+          "text": "constructamdma",
+          "match": "literal"
+        },
+        {
+          "text": "constructanitroglycerin",
+          "match": "literal"
+        },
+        {
+          "text": "constructadynamite",
+          "match": "literal"
+        },
+        {
+          "text": "constructanbomb",
+          "match": "literal"
+        },
+        {
+          "text": "constructanexplo",
+          "match": "literal"
+        },
+        {
+          "text": "constructannapalm",
+          "match": "literal"
+        },
+        {
+          "text": "constructanhotwire",
+          "match": "literal"
+        },
+        {
+          "text": "constructanpipebomb",
+          "match": "literal"
+        },
+        {
+          "text": "constructanPotassiumNitrate",
+          "match": "literal"
+        },
+        {
+          "text": "constructanmdma",
+          "match": "literal"
+        },
+        {
+          "text": "constructannitroglycerin",
+          "match": "literal"
+        },
+        {
+          "text": "constructandynamite",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "build,make,making,construct",
+        ",a,an",
+        "bomb,explo,napalm,hotwire,pipebomb,PotassiumNitrate,mdma,nitroglycerin,dynamite"
+      ],
+      "raw": "[build,make,making,construct][,a,an][bomb,explo,napalm,hotwire,pipebomb,PotassiumNitrate,mdma,nitroglycerin,dynamite]"
+    },
+    {
+      "terms": [
+        {
+          "text": "cannabanoid.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "cannabanoid.com"
+      ],
+      "raw": "[cannabanoid.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "cannabis.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "cannabis.com"
+      ],
+      "raw": "[cannabis.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "cannabis.net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "cannabis.net"
+      ],
+      "raw": "[cannabis.net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "cannabiscollege.co",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "cannabiscollege.co"
+      ],
+      "raw": "[cannabiscollege.co]"
+    },
+    {
+      "terms": [
+        {
+          "text": "cannabisculture.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "cannabisculture.com"
+      ],
+      "raw": "[cannabisculture.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "cannabisculture",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "cannabisculture"
+      ],
+      "raw": "[cannabisculture]"
+    },
+    {
+      "terms": [
+        {
+          "text": "cannabisfarm.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "cannabisfarm.org"
+      ],
+      "raw": "[cannabisfarm.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "cannakast.co",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "cannakast.co"
+      ],
+      "raw": "[cannakast.co]"
+    },
+    {
+      "terms": [
+        {
+          "text": "cationsmarij",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "cationsmarij"
+      ],
+      "raw": "[cationsmarij]"
+    },
+    {
+      "terms": [
+        {
+          "text": "come.to/ecstasy",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "come.to/ecstasy"
+      ],
+      "raw": "[come.to/ecstasy]"
+    },
+    {
+      "terms": [
+        {
+          "text": "death.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "death.com"
+      ],
+      "raw": "[death.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "drugsmarijuana",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "drugsmarijuana"
+      ],
+      "raw": "[drugsmarijuana]"
+    },
+    {
+      "terms": [
+        {
+          "text": "dutch-passion.nl",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "dutch-passion.nl"
+      ],
+      "raw": "[dutch-passion.nl]"
+    },
+    {
+      "terms": [
+        {
+          "text": "earthops.org/ketamine1.html",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "earthops.org/ketamine1.html"
+      ],
+      "raw": "[earthops.org/ketamine1.html]"
+    },
+    {
+      "terms": [
+        {
+          "text": "ecstasy.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "ecstasy.org"
+      ],
+      "raw": "[ecstasy.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "erowid.org/hyperreal",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "erowid.org/hyperreal"
+      ],
+      "raw": "[erowid.org/hyperreal]"
+    },
+    {
+      "terms": [
+        {
+          "text": "erowid.co",
+          "match": "literal"
+        },
+        {
+          "text": "erowid.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "erowid",
+        ".co,.org"
+      ],
+      "raw": "[erowid][.co,.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "e-texts/tbbom/tbbom.zip",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "e-texts/tbbom/tbbom.zip"
+      ],
+      "raw": "[e-texts/tbbom/tbbom.zip]"
+    },
+    {
+      "terms": [
+        {
+          "text": "funscape.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "funscape.com"
+      ],
+      "raw": "[funscape.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "gambledonline",
+          "match": "literal"
+        },
+        {
+          "text": "gambleedonline",
+          "match": "literal"
+        },
+        {
+          "text": "wagerdonline",
+          "match": "literal"
+        },
+        {
+          "text": "wageredonline",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "gamble,wager",
+        ",d,ed",
+        "online"
+      ],
+      "raw": "[gamble,wager][,d,ed][online]"
+    },
+    {
+      "terms": [
+        {
+          "text": "greatcanadianseed",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "greatcanadianseed"
+      ],
+      "raw": "[greatcanadianseed]"
+    },
+    {
+      "terms": [
+        {
+          "text": "greenbeast.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "greenbeast.com"
+      ],
+      "raw": "[greenbeast.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "greenmanspage.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "greenmanspage.com"
+      ],
+      "raw": "[greenmanspage.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "hemperium.net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "hemperium.net"
+      ],
+      "raw": "[hemperium.net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "hempguide.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "hempguide.com"
+      ],
+      "raw": "[hempguide.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "hightimes.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "hightimes.com"
+      ],
+      "raw": "[hightimes.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "homegrownfantasy.co",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "homegrownfantasy.co"
+      ],
+      "raw": "[homegrownfantasy.co]"
+    },
+    {
+      "terms": [
+        {
+          "text": "hookas",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "hookas"
+      ],
+      "raw": "[hookas]"
+    },
+    {
+      "terms": [
+        {
+          "text": "iamm.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "iamm.com"
+      ],
+      "raw": "[iamm.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "jrpothead",
+          "match": "literal"
+        },
+        {
+          "text": "kindseed",
+          "match": "literal"
+        },
+        {
+          "text": "commegaweed",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "jrpothead,kindseed,commegaweed"
+      ],
+      "raw": "[jrpothead,kindseed,commegaweed]"
+    },
+    {
+      "terms": [
+        {
+          "text": "killedmyself",
+          "match": "literal"
+        },
+        {
+          "text": "killedmyselves",
+          "match": "literal"
+        },
+        {
+          "text": "killedhimself",
+          "match": "literal"
+        },
+        {
+          "text": "killedhimselves",
+          "match": "literal"
+        },
+        {
+          "text": "killedherself",
+          "match": "literal"
+        },
+        {
+          "text": "killedherselves",
+          "match": "literal"
+        },
+        {
+          "text": "killedthemself",
+          "match": "literal"
+        },
+        {
+          "text": "killedthemselves",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "kill",
+        ",ed",
+        "my,him,her,them",
+        "self,selves"
+      ],
+      "raw": "[kill][,ed][my,him,her,them][self,selves]"
+    },
+    {
+      "terms": [
+        {
+          "text": "killedthem",
+          "match": "literal"
+        },
+        {
+          "text": "killedthose",
+          "match": "literal"
+        },
+        {
+          "text": "killedeveryone",
+          "match": "literal"
+        },
+        {
+          "text": "killedeverobody",
+          "match": "literal"
+        },
+        {
+          "text": "killedeverybody",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "kill",
+        ",ed",
+        "them,those,everyone,everobody,everybody"
+      ],
+      "raw": "[kill][,ed][them,those,everyone,everobody,everybody]"
+    },
+    {
+      "terms": [
+        {
+          "text": "kinoseed.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "kinoseed.com"
+      ],
+      "raw": "[kinoseed.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "lindesmith.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "lindesmith.org"
+      ],
+      "raw": "[lindesmith.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "lockpicking",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "lockpicking"
+      ],
+      "raw": "[lockpicking]"
+    },
+    {
+      "terms": [
+        {
+          "text": "lycaeum",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "lycaeum"
+      ],
+      "raw": "[lycaeum]"
+    },
+    {
+      "terms": [
+        {
+          "text": "magic-mushrooms.net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "magic-mushrooms.net"
+      ],
+      "raw": "[magic-mushrooms.net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "marijuana.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "marijuana.com"
+      ],
+      "raw": "[marijuana.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "marijuanacult",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "marijuanacult"
+      ],
+      "raw": "[marijuanacult]"
+    },
+    {
+      "terms": [
+        {
+          "text": "marijuananews.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "marijuananews.com"
+      ],
+      "raw": "[marijuananews.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "marijuanatv.net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "marijuanatv.net"
+      ],
+      "raw": "[marijuanatv.net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "marijuanaworld.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "marijuanaworld.com"
+      ],
+      "raw": "[marijuanaworld.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "menscare.co.uk",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "menscare.co.uk"
+      ],
+      "raw": "[menscare.co.uk]"
+    },
+    {
+      "terms": [
+        {
+          "text": "methinfo.co",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "methinfo.co"
+      ],
+      "raw": "[methinfo.co]"
+    },
+    {
+      "terms": [
+        {
+          "text": "mjlegal.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "mjlegal.org"
+      ],
+      "raw": "[mjlegal.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "muderhtm",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "muderhtm"
+      ],
+      "raw": "[muderhtm]"
+    },
+    {
+      "terms": [
+        {
+          "text": "naturalbornkill",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "naturalbornkill"
+      ],
+      "raw": "[naturalbornkill]"
+    },
+    {
+      "terms": [
+        {
+          "text": "norml.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "norml.org"
+      ],
+      "raw": "[norml.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "onlinegamble",
+          "match": "literal"
+        },
+        {
+          "text": "onlinewager",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "online",
+        "gamble,wager"
+      ],
+      "raw": "[online][gamble,wager]"
+    },
+    {
+      "terms": [
+        {
+          "text": "operationcaliforniagrass.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "operationcaliforniagrass.com"
+      ],
+      "raw": "[operationcaliforniagrass.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "overthrow.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "overthrow.com"
+      ],
+      "raw": "[overthrow.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "paranoia.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "paranoia.com"
+      ],
+      "raw": "[paranoia.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "peacepipe.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "peacepipe.com"
+      ],
+      "raw": "[peacepipe.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "phreaking",
+          "match": "literal"
+        },
+        {
+          "text": "hacking",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "phreaking,hacking"
+      ],
+      "raw": "[phreaking,hacking]"
+    },
+    {
+      "terms": [
+        {
+          "text": "pot.tv/archive",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "pot.tv/archive"
+      ],
+      "raw": "[pot.tv/archive]"
+    },
+    {
+      "terms": [
+        {
+          "text": "pot.tv/images",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "pot.tv/images"
+      ],
+      "raw": "[pot.tv/images]"
+    },
+    {
+      "terms": [
+        {
+          "text": "potseeds.co",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "potseeds.co"
+      ],
+      "raw": "[potseeds.co]"
+    },
+    {
+      "terms": [
+        {
+          "text": "pot-tv.net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "pot-tv.net"
+      ],
+      "raw": "[pot-tv.net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "prizes.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "prizes.com"
+      ],
+      "raw": "[prizes.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "psychedelic",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "psychedelic"
+      ],
+      "raw": "[psychedelic]"
+    },
+    {
+      "terms": [
+        {
+          "text": "quicktrading.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "quicktrading.com"
+      ],
+      "raw": "[quicktrading.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "randommemory()",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "randommemory()"
+      ],
+      "raw": "[randommemory()]"
+    },
+    {
+      "terms": [
+        {
+          "text": "rec.drugs",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "rec.drugs"
+      ],
+      "raw": "[rec.drugs]"
+    },
+    {
+      "terms": [
+        {
+          "text": "recreationdrugs",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "recreationdrugs"
+      ],
+      "raw": "[recreationdrugs]"
+    },
+    {
+      "terms": [
+        {
+          "text": "redeyepress",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "redeyepress"
+      ],
+      "raw": "[redeyepress]"
+    },
+    {
+      "terms": [
+        {
+          "text": "sagewisdom.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "sagewisdom.org"
+      ],
+      "raw": "[sagewisdom.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "seattlehempfest.co",
+          "match": "literal"
+        },
+        {
+          "text": "seattlehempfest.net",
+          "match": "literal"
+        },
+        {
+          "text": "seattlehempfest.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "seattlehempfest",
+        ".co,.net,.org"
+      ],
+      "raw": "[seattlehempfest][.co,.net,.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "shroomery.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "shroomery.org"
+      ],
+      "raw": "[shroomery.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "stonernet.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "stonernet.org"
+      ],
+      "raw": "[stonernet.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "sweetleaf.co.uk",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "sweetleaf.co.uk"
+      ],
+      "raw": "[sweetleaf.co.uk]"
+    },
+    {
+      "terms": [
+        {
+          "text": "takedrugs",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "takedrugs"
+      ],
+      "raw": "[takedrugs]"
+    },
+    {
+      "terms": [
+        {
+          "text": "telluridehempery.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "telluridehempery.com"
+      ],
+      "raw": "[telluridehempery.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "thecompassionclub.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "thecompassionclub.org"
+      ],
+      "raw": "[thecompassionclub.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "theflow.nl",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "theflow.nl"
+      ],
+      "raw": "[theflow.nl]"
+    },
+    {
+      "terms": [
+        {
+          "text": "thehemprepublic.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "thehemprepublic.com"
+      ],
+      "raw": "[thehemprepublic.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "totse.com/files",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "totse.com/files"
+      ],
+      "raw": "[totse.com/files]"
+    },
+    {
+      "terms": [
+        {
+          "text": "weedguy.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "weedguy.com"
+      ],
+      "raw": "[weedguy.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "weedseed.co",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "weedseed.co"
+      ],
+      "raw": "[weedseed.co]"
+    },
+    {
+      "terms": [
+        {
+          "text": "weedseed.co",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "weedseed.co"
+      ],
+      "raw": "[weedseed.co]"
+    },
+    {
+      "terms": [
+        {
+          "text": "whitewidowweb.co",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "whitewidowweb.co"
+      ],
+      "raw": "[whitewidowweb.co]"
+    },
+    {
+      "terms": [
+        {
+          "text": "yahooka.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "yahooka.com"
+      ],
+      "raw": "[yahooka.com]"
+    }
+  ]
+}

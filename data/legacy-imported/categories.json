@@ -1,0 +1,29 @@
+{
+  "categories": [
+    {
+      "enabled": true,
+      "name": "成人/色情网站",
+      "file": "adwfil.dat"
+    },
+    {
+      "enabled": true,
+      "name": "成人/色情网站(严格)",
+      "file": "adwapp.dat"
+    },
+    {
+      "enabled": true,
+      "name": "暴力游戏",
+      "file": "vgamfil.dat"
+    },
+    {
+      "enabled": true,
+      "name": "同性恋",
+      "file": "lgwfil.dat"
+    },
+    {
+      "enabled": true,
+      "name": "非法活动/毒品",
+      "file": "iawfil.dat"
+    }
+  ]
+}

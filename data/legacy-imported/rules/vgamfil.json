@@ -1,0 +1,1897 @@
+{
+  "source": "vgamfil.dat.txt",
+  "count": 117,
+  "rules": [
+    {
+      "terms": [
+        {
+          "text": "22area51",
+          "match": "prefix"
+        },
+        {
+          "text": "22bomberman",
+          "match": "prefix"
+        },
+        {
+          "text": "22cyberia2",
+          "match": "prefix"
+        },
+        {
+          "text": "22havoc",
+          "match": "prefix"
+        },
+        {
+          "text": "22quake2",
+          "match": "prefix"
+        },
+        {
+          "text": "22quake3",
+          "match": "prefix"
+        },
+        {
+          "text": "22area51",
+          "match": "suffix"
+        },
+        {
+          "text": "22bomberman",
+          "match": "suffix"
+        },
+        {
+          "text": "22cyberia2",
+          "match": "suffix"
+        },
+        {
+          "text": "22havoc",
+          "match": "suffix"
+        },
+        {
+          "text": "22quake2",
+          "match": "suffix"
+        },
+        {
+          "text": "22quake3",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "area51,bomberman,cyberia2,havoc,quake2,quake3"
+      ],
+      "raw": "[+,=][,22][area51,bomberman,cyberia2,havoc,quake2,quake3]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22f22raptor",
+          "match": "prefix"
+        },
+        {
+          "text": "22mechwarrior",
+          "match": "prefix"
+        },
+        {
+          "text": "22f22raptor",
+          "match": "suffix"
+        },
+        {
+          "text": "22mechwarrior",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "f22raptor,mechwarrior"
+      ],
+      "raw": "[+,=][,22][f22raptor,mechwarrior]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22mdk",
+          "match": "prefix"
+        },
+        {
+          "text": "22outwars",
+          "match": "prefix"
+        },
+        {
+          "text": "22starfox64",
+          "match": "prefix"
+        },
+        {
+          "text": "22urbanrunner",
+          "match": "prefix"
+        },
+        {
+          "text": "22virtuasquad",
+          "match": "prefix"
+        },
+        {
+          "text": "22mdk",
+          "match": "suffix"
+        },
+        {
+          "text": "22outwars",
+          "match": "suffix"
+        },
+        {
+          "text": "22starfox64",
+          "match": "suffix"
+        },
+        {
+          "text": "22urbanrunner",
+          "match": "suffix"
+        },
+        {
+          "text": "22virtuasquad",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "mdk,outwars,starfox64,urbanrunner,virtuasquad"
+      ],
+      "raw": "[+,=][,22][mdk,outwars,starfox64,urbanrunner,virtuasquad]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22policequest:swat2",
+          "match": "prefix"
+        },
+        {
+          "text": "22sanitarium",
+          "match": "prefix"
+        },
+        {
+          "text": "22tiberiumsun",
+          "match": "prefix"
+        },
+        {
+          "text": "22worms2",
+          "match": "prefix"
+        },
+        {
+          "text": "22tombraider3",
+          "match": "prefix"
+        },
+        {
+          "text": "22policequest:swat2",
+          "match": "suffix"
+        },
+        {
+          "text": "22sanitarium",
+          "match": "suffix"
+        },
+        {
+          "text": "22tiberiumsun",
+          "match": "suffix"
+        },
+        {
+          "text": "22worms2",
+          "match": "suffix"
+        },
+        {
+          "text": "22tombraider3",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "policequest:swat2,sanitarium,tiberiumsun,worms2,tombraider3"
+      ],
+      "raw": "[+,=][,22][policequest:swat2,sanitarium,tiberiumsun,worms2,tombraider3]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22streetfighter",
+          "match": "prefix"
+        },
+        {
+          "text": "22mortalkombat",
+          "match": "prefix"
+        },
+        {
+          "text": "22worms2",
+          "match": "prefix"
+        },
+        {
+          "text": "22diablo2",
+          "match": "prefix"
+        },
+        {
+          "text": "22thief2",
+          "match": "prefix"
+        },
+        {
+          "text": "22streetfighter",
+          "match": "suffix"
+        },
+        {
+          "text": "22mortalkombat",
+          "match": "suffix"
+        },
+        {
+          "text": "22worms2",
+          "match": "suffix"
+        },
+        {
+          "text": "22diablo2",
+          "match": "suffix"
+        },
+        {
+          "text": "22thief2",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "streetfighter,mortalkombat,worms2,diablo2,thief2"
+      ],
+      "raw": "[+,=][,22][streetfighter,mortalkombat,worms2,diablo2,thief2]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22thexfilesgame",
+          "match": "prefix"
+        },
+        {
+          "text": "22tombraider",
+          "match": "prefix"
+        },
+        {
+          "text": "22tombraiderII",
+          "match": "prefix"
+        },
+        {
+          "text": "22gpolice",
+          "match": "prefix"
+        },
+        {
+          "text": "22MIB",
+          "match": "prefix"
+        },
+        {
+          "text": "22thexfilesgame",
+          "match": "suffix"
+        },
+        {
+          "text": "22tombraider",
+          "match": "suffix"
+        },
+        {
+          "text": "22tombraiderII",
+          "match": "suffix"
+        },
+        {
+          "text": "22gpolice",
+          "match": "suffix"
+        },
+        {
+          "text": "22MIB",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "thexfilesgame,tombraider,tombraiderII,gpolice,MIB"
+      ],
+      "raw": "[+,=][,22][thexfilesgame,tombraider,tombraiderII,gpolice,MIB]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22tombraiderII",
+          "match": "prefix"
+        },
+        {
+          "text": "22starcraft",
+          "match": "prefix"
+        },
+        {
+          "text": "22redneckrampage",
+          "match": "prefix"
+        },
+        {
+          "text": "22dukenukem",
+          "match": "prefix"
+        },
+        {
+          "text": "22dukenukem64",
+          "match": "prefix"
+        },
+        {
+          "text": "22tombraiderII",
+          "match": "suffix"
+        },
+        {
+          "text": "22starcraft",
+          "match": "suffix"
+        },
+        {
+          "text": "22redneckrampage",
+          "match": "suffix"
+        },
+        {
+          "text": "22dukenukem",
+          "match": "suffix"
+        },
+        {
+          "text": "22dukenukem64",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "tombraiderII,starcraft,redneckrampage,dukenukem,dukenukem64"
+      ],
+      "raw": "[+,=][,22][tombraiderII,starcraft,redneckrampage,dukenukem,dukenukem64]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22turok",
+          "match": "prefix"
+        },
+        {
+          "text": "22turok2",
+          "match": "prefix"
+        },
+        {
+          "text": "22ultima9",
+          "match": "prefix"
+        },
+        {
+          "text": "22totalannihilation",
+          "match": "prefix"
+        },
+        {
+          "text": "22urbanassault",
+          "match": "prefix"
+        },
+        {
+          "text": "22turok",
+          "match": "suffix"
+        },
+        {
+          "text": "22turok2",
+          "match": "suffix"
+        },
+        {
+          "text": "22ultima9",
+          "match": "suffix"
+        },
+        {
+          "text": "22totalannihilation",
+          "match": "suffix"
+        },
+        {
+          "text": "22urbanassault",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "turok,turok2,ultima9,totalannihilation,urbanassault"
+      ],
+      "raw": "[+,=][,22][turok,turok2,ultima9,totalannihilation,urbanassault]"
+    },
+    {
+      "terms": [
+        {
+          "text": "360d.com/vf2",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "360d.com/vf2"
+      ],
+      "raw": "[360d.com/vf2]"
+    },
+    {
+      "terms": [
+        {
+          "text": "3dworld.questgate.net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "3dworld.questgate.net"
+      ],
+      "raw": "[3dworld.questgate.net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "3pilot.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "3pilot.com"
+      ],
+      "raw": "[3pilot.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "accolade.infogrames.net/products/slavezero",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "accolade.infogrames.net/products/slavezero"
+      ],
+      "raw": "[accolade.infogrames.net/products/slavezero]"
+    },
+    {
+      "terms": [
+        {
+          "text": "activision.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "activision.com"
+      ],
+      "raw": "[activision.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "american.ea.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "american.ea.com"
+      ],
+      "raw": "[american.ea.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "andyman.simplenet.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "andyman.simplenet.com"
+      ],
+      "raw": "[andyman.simplenet.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "annihilationfactory.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "annihilationfactory.com"
+      ],
+      "raw": "[annihilationfactory.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "arenaquake.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "arenaquake.com"
+      ],
+      "raw": "[arenaquake.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "battle.net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "battle.net"
+      ],
+      "raw": "[battle.net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "blackdragon.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "blackdragon.com"
+      ],
+      "raw": "[blackdragon.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "capcom.com/games",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "capcom.com/games"
+      ],
+      "raw": "[capcom.com/games]"
+    },
+    {
+      "terms": [
+        {
+          "text": "cheatindex.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "cheatindex.com"
+      ],
+      "raw": "[cheatindex.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "combatsim.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "combatsim.com"
+      ],
+      "raw": "[combatsim.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "compactiongames.miningco.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "compactiongames.miningco.com"
+      ],
+      "raw": "[compactiongames.miningco.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "contra.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "contra.com"
+      ],
+      "raw": "[contra.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "counter-strike.net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "counter-strike.net"
+      ],
+      "raw": "[counter-strike.net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "decyber.solgames.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "decyber.solgames.com"
+      ],
+      "raw": "[decyber.solgames.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "diabloworld.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "diabloworld.com"
+      ],
+      "raw": "[diabloworld.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "doomshack.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "doomshack.com"
+      ],
+      "raw": "[doomshack.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "dsclab.ntua.gr/~phib",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "dsclab.ntua.gr/~phib"
+      ],
+      "raw": "[dsclab.ntua.gr/~phib]"
+    },
+    {
+      "terms": [
+        {
+          "text": "duke4.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "duke4.com"
+      ],
+      "raw": "[duke4.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "dukeforever.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "dukeforever.com"
+      ],
+      "raw": "[dukeforever.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "dungeonkeeper.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "dungeonkeeper.com"
+      ],
+      "raw": "[dungeonkeeper.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "eidosinteractive.com/commandos",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "eidosinteractive.com/commandos"
+      ],
+      "raw": "[eidosinteractive.com/commandos]"
+    },
+    {
+      "terms": [
+        {
+          "text": "eidosinteractive.com/warzone",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "eidosinteractive.com/warzone"
+      ],
+      "raw": "[eidosinteractive.com/warzone]"
+    },
+    {
+      "terms": [
+        {
+          "text": "f22raptor.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "f22raptor.com"
+      ],
+      "raw": "[f22raptor.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "ff8online.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "ff8online.com"
+      ],
+      "raw": "[ff8online.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "fgnetwork.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "fgnetwork.com"
+      ],
+      "raw": "[fgnetwork.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "fighters.simplenet.com/mk",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "fighters.simplenet.com/mk"
+      ],
+      "raw": "[fighters.simplenet.com/mk]"
+    },
+    {
+      "terms": [
+        {
+          "text": "flatland.com/tr",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "flatland.com/tr"
+      ],
+      "raw": "[flatland.com/tr]"
+    },
+    {
+      "terms": [
+        {
+          "text": "futurecop.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "futurecop.com"
+      ],
+      "raw": "[futurecop.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "gagames.com/quake2",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "gagames.com/quake2"
+      ],
+      "raw": "[gagames.com/quake2]"
+    },
+    {
+      "terms": [
+        {
+          "text": "gamegab.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "gamegab.com"
+      ],
+      "raw": "[gamegab.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "gamemenu.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "gamemenu.com"
+      ],
+      "raw": "[gamemenu.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "game-pipe.co.uk",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "game-pipe.co.uk"
+      ],
+      "raw": "[game-pipe.co.uk]"
+    },
+    {
+      "terms": [
+        {
+          "text": "geocities.com/Colosseum/7711",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "geocities.com/Colosseum/7711"
+      ],
+      "raw": "[geocities.com/Colosseum/7711]"
+    },
+    {
+      "terms": [
+        {
+          "text": "geocities.com/SiliconValley/Vista/5181",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "geocities.com/SiliconValley/Vista/5181"
+      ],
+      "raw": "[geocities.com/SiliconValley/Vista/5181]"
+    },
+    {
+      "terms": [
+        {
+          "text": "geocities.com/SiliconValley/Vista/5854",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "geocities.com/SiliconValley/Vista/5854"
+      ],
+      "raw": "[geocities.com/SiliconValley/Vista/5854]"
+    },
+    {
+      "terms": [
+        {
+          "text": "geocities.com/TelevisionCity/8199",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "geocities.com/TelevisionCity/8199"
+      ],
+      "raw": "[geocities.com/TelevisionCity/8199]"
+    },
+    {
+      "terms": [
+        {
+          "text": "geocities.com/TimesSquare/7357",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "geocities.com/TimesSquare/7357"
+      ],
+      "raw": "[geocities.com/TimesSquare/7357]"
+    },
+    {
+      "terms": [
+        {
+          "text": "geocities.com/TimesSquare/Alley/3718",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "geocities.com/TimesSquare/Alley/3718"
+      ],
+      "raw": "[geocities.com/TimesSquare/Alley/3718]"
+    },
+    {
+      "terms": [
+        {
+          "text": "geocities.com/TimesSquare/Arcade/1155",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "geocities.com/TimesSquare/Arcade/1155"
+      ],
+      "raw": "[geocities.com/TimesSquare/Arcade/1155]"
+    },
+    {
+      "terms": [
+        {
+          "text": "geocities.com/TimesSquare/Arcade/4102",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "geocities.com/TimesSquare/Arcade/4102"
+      ],
+      "raw": "[geocities.com/TimesSquare/Arcade/4102]"
+    },
+    {
+      "terms": [
+        {
+          "text": "geocities.com/TimesSquare/Arcade/9936",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "geocities.com/TimesSquare/Arcade/9936"
+      ],
+      "raw": "[geocities.com/TimesSquare/Arcade/9936]"
+    },
+    {
+      "terms": [
+        {
+          "text": "geocities.com/TimesSquare/Arena/6187",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "geocities.com/TimesSquare/Arena/6187"
+      ],
+      "raw": "[geocities.com/TimesSquare/Arena/6187]"
+    },
+    {
+      "terms": [
+        {
+          "text": "geocities.com/TimesSquare/Arena/7917",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "geocities.com/TimesSquare/Arena/7917"
+      ],
+      "raw": "[geocities.com/TimesSquare/Arena/7917]"
+    },
+    {
+      "terms": [
+        {
+          "text": "geocities.com/TimesSquare/Battlefield/9833",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "geocities.com/TimesSquare/Battlefield/9833"
+      ],
+      "raw": "[geocities.com/TimesSquare/Battlefield/9833]"
+    },
+    {
+      "terms": [
+        {
+          "text": "globec.com.au/~tkaine",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "globec.com.au/~tkaine"
+      ],
+      "raw": "[globec.com.au/~tkaine]"
+    },
+    {
+      "terms": [
+        {
+          "text": "godgames.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "godgames.com"
+      ],
+      "raw": "[godgames.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "half-life.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "half-life.com"
+      ],
+      "raw": "[half-life.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "headgames.net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "headgames.net"
+      ],
+      "raw": "[headgames.net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "home.netinc.ca/~magicman",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "home.netinc.ca/~magicman"
+      ],
+      "raw": "[home.netinc.ca/~magicman]"
+    },
+    {
+      "terms": [
+        {
+          "text": "home.sol.no/~flovstak",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "home.sol.no/~flovstak"
+      ],
+      "raw": "[home.sol.no/~flovstak]"
+    },
+    {
+      "terms": [
+        {
+          "text": "idsoftware.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "idsoftware.com"
+      ],
+      "raw": "[idsoftware.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "interplay.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "interplay.com"
+      ],
+      "raw": "[interplay.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "it.quakecity.net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "it.quakecity.net"
+      ],
+      "raw": "[it.quakecity.net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "jediknight.net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "jediknight.net"
+      ],
+      "raw": "[jediknight.net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "kode.net/~babenko",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "kode.net/~babenko"
+      ],
+      "raw": "[kode.net/~babenko]"
+    },
+    {
+      "terms": [
+        {
+          "text": "koeigames.com/Games/Dynasty",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "koeigames.com/Games/Dynasty"
+      ],
+      "raw": "[koeigames.com/Games/Dynasty]"
+    },
+    {
+      "terms": [
+        {
+          "text": "members.tripod.com/~mk4mk",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "members.tripod.com/~mk4mk"
+      ],
+      "raw": "[members.tripod.com/~mk4mk]"
+    },
+    {
+      "terms": [
+        {
+          "text": "members.xoom.com/ultsf",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "members.xoom.com/ultsf"
+      ],
+      "raw": "[members.xoom.com/ultsf]"
+    },
+    {
+      "terms": [
+        {
+          "text": "mkca.simplenet.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "mkca.simplenet.com"
+      ],
+      "raw": "[mkca.simplenet.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "mohgame.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "mohgame.com"
+      ],
+      "raw": "[mohgame.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "mortalkombat.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "mortalkombat.com"
+      ],
+      "raw": "[mortalkombat.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "myth.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "myth.com"
+      ],
+      "raw": "[myth.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "myth2.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "myth2.com"
+      ],
+      "raw": "[myth2.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "negativezero.com/ff8",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "negativezero.com/ff8"
+      ],
+      "raw": "[negativezero.com/ff8]"
+    },
+    {
+      "terms": [
+        {
+          "text": "netcomuk.co.uk/~mxavier/TEKKEN3",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "netcomuk.co.uk/~mxavier/TEKKEN3"
+      ],
+      "raw": "[netcomuk.co.uk/~mxavier/TEKKEN3]"
+    },
+    {
+      "terms": [
+        {
+          "text": "netspace.net.au/~thehalls",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "netspace.net.au/~thehalls"
+      ],
+      "raw": "[netspace.net.au/~thehalls]"
+    },
+    {
+      "terms": [
+        {
+          "text": "nukem.apk.net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "nukem.apk.net"
+      ],
+      "raw": "[nukem.apk.net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "nukleus.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "nukleus.com"
+      ],
+      "raw": "[nukleus.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "origin.ea.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "origin.ea.com"
+      ],
+      "raw": "[origin.ea.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "p=doom",
+          "match": "literal"
+        },
+        {
+          "text": "p=riven",
+          "match": "literal"
+        },
+        {
+          "text": "d=doom",
+          "match": "literal"
+        },
+        {
+          "text": "d=riven",
+          "match": "literal"
+        },
+        {
+          "text": "q=doom",
+          "match": "literal"
+        },
+        {
+          "text": "q=riven",
+          "match": "literal"
+        },
+        {
+          "text": "h=doom",
+          "match": "literal"
+        },
+        {
+          "text": "h=riven",
+          "match": "literal"
+        },
+        {
+          "text": "t=doom",
+          "match": "literal"
+        },
+        {
+          "text": "t=riven",
+          "match": "literal"
+        },
+        {
+          "text": "k=doom",
+          "match": "literal"
+        },
+        {
+          "text": "k=riven",
+          "match": "literal"
+        },
+        {
+          "text": "y=doom",
+          "match": "literal"
+        },
+        {
+          "text": "y=riven",
+          "match": "literal"
+        },
+        {
+          "text": "r=doom",
+          "match": "literal"
+        },
+        {
+          "text": "r=riven",
+          "match": "literal"
+        },
+        {
+          "text": "l=doom",
+          "match": "literal"
+        },
+        {
+          "text": "l=riven",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "p=,d=,q=,h=,t=,k=,y=,r=,l=",
+        "doom,riven"
+      ],
+      "raw": "[p=,d=,q=,h=,t=,k=,y=,r=,l=][doom,riven]"
+    },
+    {
+      "terms": [
+        {
+          "text": "planetquake.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "planetquake.com"
+      ],
+      "raw": "[planetquake.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "planetunreal.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "planetunreal.com"
+      ],
+      "raw": "[planetunreal.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "pwp.starnetinc.com/tekken",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "pwp.starnetinc.com/tekken"
+      ],
+      "raw": "[pwp.starnetinc.com/tekken]"
+    },
+    {
+      "terms": [
+        {
+          "text": "q3a.pcgame.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "q3a.pcgame.com"
+      ],
+      "raw": "[q3a.pcgame.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "quake.at",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "quake.at"
+      ],
+      "raw": "[quake.at]"
+    },
+    {
+      "terms": [
+        {
+          "text": "quake.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "quake.com"
+      ],
+      "raw": "[quake.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "quake2",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "quake2"
+      ],
+      "raw": "[quake2]"
+    },
+    {
+      "terms": [
+        {
+          "text": "quake3",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "quake3"
+      ],
+      "raw": "[quake3]"
+    },
+    {
+      "terms": [
+        {
+          "text": "quakeworld.net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "quakeworld.net"
+      ],
+      "raw": "[quakeworld.net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "rainbow6.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "rainbow6.com"
+      ],
+      "raw": "[rainbow6.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "redstorm.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "redstorm.com"
+      ],
+      "raw": "[redstorm.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "requiem.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "requiem.com"
+      ],
+      "raw": "[requiem.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "resaurus.com/quake",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "resaurus.com/quake"
+      ],
+      "raw": "[resaurus.com/quake]"
+    },
+    {
+      "terms": [
+        {
+          "text": "roadrash.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "roadrash.com"
+      ],
+      "raw": "[roadrash.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "roguespear.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "roguespear.com"
+      ],
+      "raw": "[roguespear.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "rwfwrestling.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "rwfwrestling.com"
+      ],
+      "raw": "[rwfwrestling.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "squaresoft.ea.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "squaresoft.ea.com"
+      ],
+      "raw": "[squaresoft.ea.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "stals.com/duke3d",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "stals.com/duke3d"
+      ],
+      "raw": "[stals.com/duke3d]"
+    },
+    {
+      "terms": [
+        {
+          "text": "stormtroopers.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "stormtroopers.com"
+      ],
+      "raw": "[stormtroopers.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "street-fighter.hypermart.net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "street-fighter.hypermart.net"
+      ],
+      "raw": "[street-fighter.hypermart.net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "strike-net.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "strike-net.com"
+      ],
+      "raw": "[strike-net.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "studentweb.tulane.edu/~tom/doom",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "studentweb.tulane.edu/~tom/doom"
+      ],
+      "raw": "[studentweb.tulane.edu/~tom/doom]"
+    },
+    {
+      "terms": [
+        {
+          "text": "teaminfinity.com/~tterenyi",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "teaminfinity.com/~tterenyi"
+      ],
+      "raw": "[teaminfinity.com/~tterenyi]"
+    },
+    {
+      "terms": [
+        {
+          "text": "tekkenzaibatsu.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "tekkenzaibatsu.com"
+      ],
+      "raw": "[tekkenzaibatsu.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "telefragged.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "telefragged.com"
+      ],
+      "raw": "[telefragged.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "tiberiumsum.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "tiberiumsum.com"
+      ],
+      "raw": "[tiberiumsum.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "time2quake.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "time2quake.com"
+      ],
+      "raw": "[time2quake.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "tndgame.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "tndgame.com"
+      ],
+      "raw": "[tndgame.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "tombraider.co",
+          "match": "literal"
+        },
+        {
+          "text": "tombraider.net",
+          "match": "literal"
+        },
+        {
+          "text": "tombraider.org",
+          "match": "literal"
+        },
+        {
+          "text": "tombraiders.co",
+          "match": "literal"
+        },
+        {
+          "text": "tombraiders.net",
+          "match": "literal"
+        },
+        {
+          "text": "tombraiders.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "tombraider,tombraiders",
+        ".co,.net,.org"
+      ],
+      "raw": "[tombraider,tombraiders][.co,.net,.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "totalannihilation.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "totalannihilation.com"
+      ],
+      "raw": "[totalannihilation.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "totalunreal.questgate.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "totalunreal.questgate.com"
+      ],
+      "raw": "[totalunreal.questgate.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "unreal.epicgames.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "unreal.epicgames.com"
+      ],
+      "raw": "[unreal.epicgames.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "unreal.freshmeat.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "unreal.freshmeat.org"
+      ],
+      "raw": "[unreal.freshmeat.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "unreal.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "unreal.org"
+      ],
+      "raw": "[unreal.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "unrealaction.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "unrealaction.com"
+      ],
+      "raw": "[unrealaction.com]"
+    }
+  ]
+}

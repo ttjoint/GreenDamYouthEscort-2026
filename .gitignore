@@ -1,0 +1,16 @@
+# The legacy install tree is used only as import input and is never
+# redistributed. It is not expected to live inside this repository.
+legacy-tree/
+LH-installed-tree/
+*.exe
+*.dll
+*.lib
+*.dat
+
+# The staging area holds decoded plaintext dumps produced during import.
+data/_staging/
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/

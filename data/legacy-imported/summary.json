@@ -1,0 +1,14 @@
+{
+  "categories": 5,
+  "trust_urls": 1177,
+  "im_targets": 8,
+  "rules": {
+    "adwfil": 2003,
+    "adwapp": 6856,
+    "iawfil": 113,
+    "lgwfil": 54,
+    "vgamfil": 117
+  },
+  "falun_terms": 142742,
+  "falun_status": "decoded"
+}

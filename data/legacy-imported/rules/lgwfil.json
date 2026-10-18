@@ -1,0 +1,1185 @@
+{
+  "source": "lgwfil.dat.txt",
+  "count": 54,
+  "rules": [
+    {
+      "terms": [
+        {
+          "text": "homosexy",
+          "match": "literal"
+        },
+        {
+          "text": "homosexual",
+          "match": "literal"
+        },
+        {
+          "text": "homosexuality",
+          "match": "literal"
+        },
+        {
+          "text": "bisexy",
+          "match": "literal"
+        },
+        {
+          "text": "bisexual",
+          "match": "literal"
+        },
+        {
+          "text": "bisexuality",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        ",homo,bi",
+        "sex",
+        "y,ual,uality"
+      ],
+      "raw": "[,homo,bi][sex][y,ual,uality]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22gay",
+          "match": "prefix"
+        },
+        {
+          "text": "22homosexual",
+          "match": "prefix"
+        },
+        {
+          "text": "22bisexual",
+          "match": "prefix"
+        },
+        {
+          "text": "22lesbian",
+          "match": "prefix"
+        },
+        {
+          "text": "22queer",
+          "match": "prefix"
+        },
+        {
+          "text": "22transgender",
+          "match": "prefix"
+        },
+        {
+          "text": "22gay",
+          "match": "suffix"
+        },
+        {
+          "text": "22homosexual",
+          "match": "suffix"
+        },
+        {
+          "text": "22bisexual",
+          "match": "suffix"
+        },
+        {
+          "text": "22lesbian",
+          "match": "suffix"
+        },
+        {
+          "text": "22queer",
+          "match": "suffix"
+        },
+        {
+          "text": "22transgender",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "gay,homosexual,bisexual,lesbian,queer,transgender"
+      ],
+      "raw": "[+,=][,22][gay,homosexual,bisexual,lesbian,queer,transgender]"
+    },
+    {
+      "terms": [
+        {
+          "text": "22queens",
+          "match": "prefix"
+        },
+        {
+          "text": "22actup",
+          "match": "prefix"
+        },
+        {
+          "text": "22dykes",
+          "match": "prefix"
+        },
+        {
+          "text": "22gaymale",
+          "match": "prefix"
+        },
+        {
+          "text": "22fags",
+          "match": "prefix"
+        },
+        {
+          "text": "22queens",
+          "match": "suffix"
+        },
+        {
+          "text": "22actup",
+          "match": "suffix"
+        },
+        {
+          "text": "22dykes",
+          "match": "suffix"
+        },
+        {
+          "text": "22gaymale",
+          "match": "suffix"
+        },
+        {
+          "text": "22fags",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        ",22",
+        "queens,actup,dykes,gaymale,fags"
+      ],
+      "raw": "[+,=][,22][queens,actup,dykes,gaymale,fags]"
+    },
+    {
+      "terms": [
+        {
+          "text": "agora.rdrop.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "agora.rdrop.com"
+      ],
+      "raw": "[agora.rdrop.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "alt.binaries.pictures.lesbian",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "alt.binaries.pictures.lesbian"
+      ],
+      "raw": "[alt.binaries.pictures.lesbian]"
+    },
+    {
+      "terms": [
+        {
+          "text": "alt.fan.karla-homolka",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "alt.fan.karla-homolka"
+      ],
+      "raw": "[alt.fan.karla-homolka]"
+    },
+    {
+      "terms": [
+        {
+          "text": "alt.homosexual",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "alt.homosexual"
+      ],
+      "raw": "[alt.homosexual]"
+    },
+    {
+      "terms": [
+        {
+          "text": "alt.politics.homosexual",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "alt.politics.homosexual"
+      ],
+      "raw": "[alt.politics.homosexual]"
+    },
+    {
+      "terms": [
+        {
+          "text": "alt.shoe.lesbians",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "alt.shoe.lesbians"
+      ],
+      "raw": "[alt.shoe.lesbians]"
+    },
+    {
+      "terms": [
+        {
+          "text": "blackgay",
+          "match": "literal"
+        },
+        {
+          "text": "blacklesbian",
+          "match": "literal"
+        },
+        {
+          "text": "blackhomo",
+          "match": "literal"
+        },
+        {
+          "text": "whitegay",
+          "match": "literal"
+        },
+        {
+          "text": "whitelesbian",
+          "match": "literal"
+        },
+        {
+          "text": "whitehomo",
+          "match": "literal"
+        },
+        {
+          "text": "latinogay",
+          "match": "literal"
+        },
+        {
+          "text": "latinolesbian",
+          "match": "literal"
+        },
+        {
+          "text": "latinohomo",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "black,white,latino",
+        "gay,lesbian,homo"
+      ],
+      "raw": "[black,white,latino][gay,lesbian,homo]"
+    },
+    {
+      "terms": [
+        {
+          "text": "boys.web.com.mx",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "boys.web.com.mx"
+      ],
+      "raw": "[boys.web.com.mx]"
+    },
+    {
+      "terms": [
+        {
+          "text": "faggot",
+          "match": "literal"
+        },
+        {
+          "text": "queer",
+          "match": "literal"
+        },
+        {
+          "text": "lesbian",
+          "match": "literal"
+        },
+        {
+          "text": "homophobe",
+          "match": "literal"
+        },
+        {
+          "text": "pervert",
+          "match": "literal"
+        },
+        {
+          "text": "fudge-pack",
+          "match": "literal"
+        },
+        {
+          "text": "rump-ranger",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "faggot,queer,lesbian,homophobe,pervert,fudge-pack,rump-ranger"
+      ],
+      "raw": "[faggot,queer,lesbian,homophobe,pervert,fudge-pack,rump-ranger]"
+    },
+    {
+      "terms": [
+        {
+          "text": "fatso.com",
+          "match": "literal"
+        },
+        {
+          "text": "sappho.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "fatso.com,sappho.com"
+      ],
+      "raw": "[fatso.com,sappho.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "gay.co",
+          "match": "literal"
+        },
+        {
+          "text": "gay.com",
+          "match": "literal"
+        },
+        {
+          "text": "gay.org",
+          "match": "literal"
+        },
+        {
+          "text": "gay.net",
+          "match": "literal"
+        },
+        {
+          "text": "lesbian.co",
+          "match": "literal"
+        },
+        {
+          "text": "lesbian.com",
+          "match": "literal"
+        },
+        {
+          "text": "lesbian.org",
+          "match": "literal"
+        },
+        {
+          "text": "lesbian.net",
+          "match": "literal"
+        },
+        {
+          "text": "queer.co",
+          "match": "literal"
+        },
+        {
+          "text": "queer.com",
+          "match": "literal"
+        },
+        {
+          "text": "queer.org",
+          "match": "literal"
+        },
+        {
+          "text": "queer.net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "gay,lesbian,queer",
+        ".co,.com,.org,.net"
+      ],
+      "raw": "[gay,lesbian,queer][.co,.com,.org,.net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "gaymale",
+          "match": "literal"
+        },
+        {
+          "text": "gaymen",
+          "match": "literal"
+        },
+        {
+          "text": "gayman",
+          "match": "literal"
+        },
+        {
+          "text": "gayboy",
+          "match": "literal"
+        },
+        {
+          "text": "gaygroup",
+          "match": "literal"
+        },
+        {
+          "text": "queermale",
+          "match": "literal"
+        },
+        {
+          "text": "queermen",
+          "match": "literal"
+        },
+        {
+          "text": "queerman",
+          "match": "literal"
+        },
+        {
+          "text": "queerboy",
+          "match": "literal"
+        },
+        {
+          "text": "queergroup",
+          "match": "literal"
+        },
+        {
+          "text": "bisexualmale",
+          "match": "literal"
+        },
+        {
+          "text": "bisexualmen",
+          "match": "literal"
+        },
+        {
+          "text": "bisexualman",
+          "match": "literal"
+        },
+        {
+          "text": "bisexualboy",
+          "match": "literal"
+        },
+        {
+          "text": "bisexualgroup",
+          "match": "literal"
+        },
+        {
+          "text": "fairymale",
+          "match": "literal"
+        },
+        {
+          "text": "fairymen",
+          "match": "literal"
+        },
+        {
+          "text": "fairyman",
+          "match": "literal"
+        },
+        {
+          "text": "fairyboy",
+          "match": "literal"
+        },
+        {
+          "text": "fairygroup",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "gay,queer,bisexual,fairy",
+        "male,men,man,boy,group"
+      ],
+      "raw": "[gay,queer,bisexual,fairy][male,men,man,boy,group]"
+    },
+    {
+      "terms": [
+        {
+          "text": "gayrights",
+          "match": "literal"
+        },
+        {
+          "text": "gaycommunity",
+          "match": "literal"
+        },
+        {
+          "text": "gayactivities",
+          "match": "literal"
+        },
+        {
+          "text": "gayindex",
+          "match": "literal"
+        },
+        {
+          "text": "queerrights",
+          "match": "literal"
+        },
+        {
+          "text": "queercommunity",
+          "match": "literal"
+        },
+        {
+          "text": "queeractivities",
+          "match": "literal"
+        },
+        {
+          "text": "queerindex",
+          "match": "literal"
+        },
+        {
+          "text": "bisexualrights",
+          "match": "literal"
+        },
+        {
+          "text": "bisexualcommunity",
+          "match": "literal"
+        },
+        {
+          "text": "bisexualactivities",
+          "match": "literal"
+        },
+        {
+          "text": "bisexualindex",
+          "match": "literal"
+        },
+        {
+          "text": "fairyrights",
+          "match": "literal"
+        },
+        {
+          "text": "fairycommunity",
+          "match": "literal"
+        },
+        {
+          "text": "fairyactivities",
+          "match": "literal"
+        },
+        {
+          "text": "fairyindex",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "gay,queer,bisexual,fairy",
+        "rights,community,activities,index"
+      ],
+      "raw": "[gay,queer,bisexual,fairy][rights,community,activities,index]"
+    },
+    {
+      "terms": [
+        {
+          "text": "gaysociety",
+          "match": "literal"
+        },
+        {
+          "text": "gayculture",
+          "match": "literal"
+        },
+        {
+          "text": "queersociety",
+          "match": "literal"
+        },
+        {
+          "text": "queerculture",
+          "match": "literal"
+        },
+        {
+          "text": "homosexualsociety",
+          "match": "literal"
+        },
+        {
+          "text": "homosexualculture",
+          "match": "literal"
+        },
+        {
+          "text": "lesbiansociety",
+          "match": "literal"
+        },
+        {
+          "text": "lesbianculture",
+          "match": "literal"
+        },
+        {
+          "text": "bisexualsociety",
+          "match": "literal"
+        },
+        {
+          "text": "bisexualculture",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "gay,queer,homosexual,lesbian,bisexual",
+        "society,culture"
+      ],
+      "raw": "[gay,queer,homosexual,lesbian,bisexual][society,culture]"
+    },
+    {
+      "terms": [
+        {
+          "text": "gay.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "gay.com"
+      ],
+      "raw": "[gay.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "gayblade",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "gayblade"
+      ],
+      "raw": "[gayblade]"
+    },
+    {
+      "terms": [
+        {
+          "text": "gaylinks",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "gaylinks"
+      ],
+      "raw": "[gaylinks]"
+    },
+    {
+      "terms": [
+        {
+          "text": "gay-net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "gay-net"
+      ],
+      "raw": "[gay-net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "gayseeker.",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "gayseeker."
+      ],
+      "raw": "[gayseeker.]"
+    },
+    {
+      "terms": [
+        {
+          "text": "gayseker.",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "gayseker."
+      ],
+      "raw": "[gayseker.]"
+    },
+    {
+      "terms": [
+        {
+          "text": "gaysite",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "gaysite"
+      ],
+      "raw": "[gaysite]"
+    },
+    {
+      "terms": [
+        {
+          "text": "geocities.com/WestHollywood",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "geocities.com/WestHollywood"
+      ],
+      "raw": "[geocities.com/WestHollywood]"
+    },
+    {
+      "terms": [
+        {
+          "text": "glaad.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "glaad.org"
+      ],
+      "raw": "[glaad.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "glyphic.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "glyphic.com"
+      ],
+      "raw": "[glyphic.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "hardcontact.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "hardcontact.com"
+      ],
+      "raw": "[hardcontact.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "igy.org.il",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "igy.org.il"
+      ],
+      "raw": "[igy.org.il]"
+    },
+    {
+      "terms": [
+        {
+          "text": "malegallery",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "malegallery"
+      ],
+      "raw": "[malegallery]"
+    },
+    {
+      "terms": [
+        {
+          "text": "manhole.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "manhole.com"
+      ],
+      "raw": "[manhole.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "manzone.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "manzone.com"
+      ],
+      "raw": "[manzone.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "mirabilis.com/5433957",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "mirabilis.com/5433957"
+      ],
+      "raw": "[mirabilis.com/5433957]"
+    },
+    {
+      "terms": [
+        {
+          "text": "netstallions.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "netstallions.com"
+      ],
+      "raw": "[netstallions.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "now.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "now.org"
+      ],
+      "raw": "[now.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "outproud.com",
+          "match": "literal"
+        },
+        {
+          "text": "gmhp.com",
+          "match": "literal"
+        },
+        {
+          "text": "hrc.org",
+          "match": "literal"
+        },
+        {
+          "text": "adlbooks.com",
+          "match": "literal"
+        },
+        {
+          "text": "comingoutstories.com",
+          "match": "literal"
+        },
+        {
+          "text": "wpkn.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "outproud.com,gmhp.com,hrc.org,adlbooks.com,comingoutstories.com,wpkn.org"
+      ],
+      "raw": "[outproud.com,gmhp.com,hrc.org,adlbooks.com,comingoutstories.com,wpkn.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "picturescontainingnude",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "picturescontainingnude"
+      ],
+      "raw": "[picturescontainingnude]"
+    },
+    {
+      "terms": [
+        {
+          "text": "pinkboad.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "pinkboad.com"
+      ],
+      "raw": "[pinkboad.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "pittsburgheagle.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "pittsburgheagle.com"
+      ],
+      "raw": "[pittsburgheagle.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "planetout.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "planetout.com"
+      ],
+      "raw": "[planetout.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "soc.support.youth.gay-lesbian-bi",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "soc.support.youth.gay-lesbian-bi"
+      ],
+      "raw": "[soc.support.youth.gay-lesbian-bi]"
+    },
+    {
+      "terms": [
+        {
+          "text": "soc.women",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "soc.women"
+      ],
+      "raw": "[soc.women]"
+    },
+    {
+      "terms": [
+        {
+          "text": "sunboys.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "sunboys.org"
+      ],
+      "raw": "[sunboys.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "sysinternals.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "sysinternals.com"
+      ],
+      "raw": "[sysinternals.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "thinking-it-through.co.uk",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "thinking-it-through.co.uk"
+      ],
+      "raw": "[thinking-it-through.co.uk]"
+    },
+    {
+      "terms": [
+        {
+          "text": "www.gay",
+          "match": "literal"
+        },
+        {
+          "text": "www.lesbian",
+          "match": "literal"
+        },
+        {
+          "text": "www.queer",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "www.",
+        "gay,lesbian,queer"
+      ],
+      "raw": "[www.][gay,lesbian,queer]"
+    },
+    {
+      "terms": [
+        {
+          "text": "www.out.com",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "www.out.com"
+      ],
+      "raw": "[www.out.com]"
+    },
+    {
+      "terms": [
+        {
+          "text": "www.pride.co",
+          "match": "literal"
+        },
+        {
+          "text": "www.pride.com",
+          "match": "literal"
+        },
+        {
+          "text": "www.pride.org",
+          "match": "literal"
+        },
+        {
+          "text": "www.pride.net",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "www.pride",
+        ".co,.com,.org,.net"
+      ],
+      "raw": "[www.pride][.co,.com,.org,.net]"
+    },
+    {
+      "terms": [
+        {
+          "text": "www.youth.org",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "www.youth.org"
+      ],
+      "raw": "[www.youth.org]"
+    },
+    {
+      "terms": [
+        {
+          "text": "contenthomosexual",
+          "match": "literal"
+        },
+        {
+          "text": "contenttransgender",
+          "match": "literal"
+        },
+        {
+          "text": "contentlesbian",
+          "match": "literal"
+        },
+        {
+          "text": "contentgay",
+          "match": "literal"
+        },
+        {
+          "text": "contentbisexual",
+          "match": "literal"
+        },
+        {
+          "text": "keywordshomosexual",
+          "match": "literal"
+        },
+        {
+          "text": "keywordstransgender",
+          "match": "literal"
+        },
+        {
+          "text": "keywordslesbian",
+          "match": "literal"
+        },
+        {
+          "text": "keywordsgay",
+          "match": "literal"
+        },
+        {
+          "text": "keywordsbisexual",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "content,keywords",
+        "homosexual,transgender,lesbian,gay,bisexual"
+      ],
+      "raw": "[content,keywords][homosexual,transgender,lesbian,gay,bisexual]"
+    },
+    {
+      "terms": [
+        {
+          "text": "gayweb",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "gayweb"
+      ],
+      "raw": "[gayweb]"
+    },
+    {
+      "terms": [
+        {
+          "text": "LucasRidgeston",
+          "match": "literal"
+        },
+        {
+          "text": "DrewAvery",
+          "match": "literal"
+        },
+        {
+          "text": "MattGunther",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "LucasRidgeston,DrewAvery,MattGunther"
+      ],
+      "raw": "[LucasRidgeston,DrewAvery,MattGunther]"
+    },
+    {
+      "terms": [
+        {
+          "text": "nudelesb",
+          "match": "literal"
+        },
+        {
+          "text": "nakedlesb",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "nude,naked",
+        "lesb"
+      ],
+      "raw": "[nude,naked][lesb]"
+    },
+    {
+      "terms": [
+        {
+          "text": "unitedgay",
+          "match": "literal"
+        }
+      ],
+      "mode": "literal",
+      "groups": [
+        "unitedgay"
+      ],
+      "raw": "[unitedgay]"
+    }
+  ]
+}
