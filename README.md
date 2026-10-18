@@ -59,6 +59,12 @@ semantic lexicon container was recovered from its consumer.
 | monitored applications | 8 |
 | semantic lexicon terms | 142,742 (8,469 with a severity class) |
 
+The lexicon's character pool turned out to be a **single continuous corpus
+stream** (36,943 characters, pinyin-ordered) rather than an index. The 4,692
+sense records are `(offset, length, level)` triples over that stream, and their
+offsets are 100% monotonically increasing. The same string can carry several
+levels because its level comes from context, not from the word itself.
+
 The lexicon container was decoded from its consumer, not by pattern-matching:
 see `docs/falunword-format.md`. One caveat matters for design: the file carries
 terms and a 0..7 severity class, but **not** the original per-word
@@ -87,7 +93,15 @@ GREEN_DAM_LEGACY_TREE=/path/to/legacy-tree python -m unittest discover -s tests
 
 ## Status
 
-Data migration is complete and the architecture is settled in
-`docs/architecture.md`. The control layers (network, semantic matching, image
-classification, screen text, UI) are being built on top of this data under
-`src/`.
+Data migration is complete, the architecture is settled in
+`docs/architecture.md`, and the semantic matcher is running under `src/`:
+10,182 matchable terms, 35 tests green, measured against a purpose-built
+corpus (`docs/semantic-corpus.md`).
+
+Two expectations were refuted by the data during that work and are documented
+rather than papered over: `hong_hei` is not a self-consistent severity grading
+(core terms such as 九评 are all level 0), and the original per-word
+normal/blocked flag was never shipped. Both are pinned by tests so the docs
+cannot drift from the code.
+
+Next: M8 policy engine, then M2 network interception.
