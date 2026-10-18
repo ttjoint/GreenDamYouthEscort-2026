@@ -37,6 +37,7 @@ and deliberately drops all of the above.
 
 ```
 docs/              design and migration notes
+  architecture.md      module map and technical decisions
 tools/             legacy import tooling (run once, then irrelevant)
 data/              normalised filter data consumed by the new implementation
   legacy-imported/   JSON produced from the legacy data blobs
@@ -56,7 +57,13 @@ semantic lexicon container was recovered from its consumer.
 | trusted domains | 1,177 |
 | filter rules (expanded terms) | 11,175 |
 | monitored applications | 8 |
-| semantic lexicon terms | 142,742 |
+| semantic lexicon terms | 142,742 (8,469 with a severity class) |
+
+The lexicon container was decoded from its consumer, not by pattern-matching:
+see `docs/falunword-format.md`. One caveat matters for design: the file carries
+terms and a 0..7 severity class, but **not** the original per-word
+normal/blocked flag — that data was never shipped. The new implementation
+rebuilds that mapping deliberately (see `docs/architecture.md`).
 
 The legacy install tree is **not** in this repository. To regenerate the data
 you supply your own copy:
@@ -80,6 +87,7 @@ GREEN_DAM_LEGACY_TREE=/path/to/legacy-tree python -m unittest discover -s tests
 
 ## Status
 
-Data migration is complete. The control layers (network, semantic matching,
-image classification, screen text, UI) are being built on top of this data
-under `src/`, with design notes in `docs/`.
+Data migration is complete and the architecture is settled in
+`docs/architecture.md`. The control layers (network, semantic matching, image
+classification, screen text, UI) are being built on top of this data under
+`src/`.

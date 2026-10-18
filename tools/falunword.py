@@ -24,8 +24,8 @@ Chain nodes are 4 little-endian uint32:
     [0] code      Unicode code point
     [1] next      index of the following character IN THE SAME WORD, 0 = end
     [2] children  number of child words branching from here, 0 = leaf
-    [3] sentinel  0xFFFFFFFE index node, 0xFFFFFFFF padding leaf,
-                  any other value = a sense count for this node
+    [3] sense_id  0xFFFFFFFE index node, 0xFFFFFFFF padding leaf,
+                  otherwise a category id carried by the terminal node
 
 The ``next`` field is a character path, not a sibling list. Following it from
 a chain start spells a whole term:
@@ -106,21 +106,29 @@ def iter_chains(lay: Layout) -> list[dict]:
         if targeted[start] or seen[start]:
             continue
         chars: list[str] = []
-        senses = 0
+        sense_ids: list[int] = []
         k = start
         while 0 <= k < n and not seen[k]:
             seen[k] = 1
-            code, nxt, _children, sentinel = chain[k]
+            code, nxt, _children, sense_id = chain[k]
             if 0 < code < 0x110000:
                 chars.append(chr(code))
-            if sentinel not in (SENT_INDEX, SENT_PAD):
-                senses += 1
+            if sense_id not in (SENT_INDEX, SENT_PAD):
+                sense_ids.append(sense_id)
             if nxt == 0:
                 break
             k = nxt
         word = "".join(chars)
         if word:
-            terms.append({"word": word, "start": start, "senses": senses})
+            terms.append(
+                {
+                    "word": word,
+                    "start": start,
+                    # The last character of a term carries the category id; this
+                    # is the only per-term classification stored in the file.
+                    "sense_id": sense_ids[-1] if sense_ids else None,
+                }
+            )
     return terms
 
 
@@ -128,15 +136,31 @@ def decode_sense_table(lay: Layout) -> list[dict]:
     """
     Second, independent view of the lexicon.
 
-    Sense records are ``[char_offset][unused][unused][char_count]``; the first
-    field indexes the UTF-16 pool. Cross-checking the two views is what
-    validated the chain interpretation.
+    Sense records are ``[char_offset][fan_dong][hong_hei][char_count]``. The
+    first field indexes the UTF-16 pool.
+
+    ``hong_hei`` carries a 0..7 severity class and is genuine data: grouped by
+    value the terms are thematically coherent. ``fan_dong`` does NOT - in the
+    shipped file every entry holds 0xCDCD00xx, the MSVC debug uninitialised
+    fill. Its real source (``FMean.tmp``) was never shipped, so the field was
+    never populated. Do not read meaning into it.
+
+    Cross-checking offsets against the chain view is what validated the chain
+    interpretation.
     """
     out = []
-    for i, (start, _a, _b, length) in enumerate(lay.senses):
+    for i, (start, fan_dong, hong_hei, length) in enumerate(lay.senses):
         if length == 0 or length > 64:
             continue
-        out.append({"index": i, "text": lay.pool_text(start, length), "length": length})
+        out.append(
+            {
+                "index": i,
+                "text": lay.pool_text(start, length),
+                "length": length,
+                "hong_hei": hong_hei,
+                "fan_dong_valid": (fan_dong >> 16) != 0xCDCD,
+            }
+        )
     return out
 
 

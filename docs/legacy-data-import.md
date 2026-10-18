@@ -3,7 +3,7 @@
 The 2009-era product shipped its policy state, filter lists and semantic
 lexicon in opaque binary blobs. Those blobs are the only genuinely valuable
 part of the original package: the mechanisms are obsolete (see
-`docs/win11-migration.md`), but the *data* is not.
+`docs/architecture.md`), but the *data* is not.
 
 This directory holds that data in plain JSON, produced once from the legacy
 install tree and then owned entirely by this project. Nothing here is read
@@ -40,7 +40,7 @@ which original produced which JSON.
 | `rules/lgwfil.json` | `lgwfil.dat` | 54 rules → 170 terms | complete |
 | `rules/vgamfil.json` | `vgamfil.dat` | 117 rules → 207 terms | complete |
 | `im-targets.json` | `kwselectinfopp.dll` | 8 applications | complete |
-| `falun-terms.json` | `FalunWord.lib` | 142,742 terms | complete |
+| `falun-terms.json` | `FalunWord.lib` | 142,742 terms (8,469 classified) | complete |
 | `summary.json` | — | — | index of the above |
 
 ## The word-list obfuscation
@@ -78,8 +78,11 @@ the shipped data every line parses.
 ## The semantic lexicon (`FalunWord.lib`)
 
 This was the hardest part, and it was cracked from the **consumer side**, not
-by pattern-matching the file. Disassembling `CFWordLib::LoadLib` in
-`SentenceObj.dll` gives the exact read sequence:
+by pattern-matching the file. `docs/falunword-format.md` has the full
+derivation; the summary is below.
+
+Disassembling `CFWordLib::LoadLib` and `SaveLib` in `SentenceObj.dll` gives the
+exact read/write sequence:
 
 ```
 fread(&n1, 4, 1, fp)            n1 = 272,920   chain nodes
@@ -102,7 +105,7 @@ Chain nodes are four `uint32`:
 [0] code      Unicode code point
 [1] next      index of the following character IN THE SAME TERM, 0 = end
 [2] children  number of branching continuations, 0 = leaf
-[3] sentinel  0xFFFFFFFE index node / 0xFFFFFFFF padding / else sense count
+[3] sense_id  index into the sense table, or 0xFFFFFFFE / 0xFFFFFFFF
 ```
 
 The crucial detail: **`next` is a character path, not a sibling list.** Walk
@@ -115,7 +118,25 @@ node 0 → 8 → 9 → 10 → 11 → 12      '6' '1' '0' '"' '歹' '徒'
 Misreading `next` as a sibling pointer produces plausible-looking but wrong
 output, which is exactly the trap this file sets. Two independent views —
 the chain trie and the offset/length sense table — agree on terms such as
-`610歹` and `610"歹徒`, and that cross-check is what settled it.
+`610歹` and `610"歹徒`, and that cross-check is what settled it. Every
+recovered `sense_id` falls inside `[0, sense_record_count)`.
+
+### What the file does *not* contain
+
+Sense records are `[char_offset][fan_dong][hong_hei][char_count]`.
+
+- `hong_hei` is **real data**: a 0..7 severity class whose buckets are
+thematically coherent (`4.25` next to `5.13`; `明慧网消` next to `大纪元新`).
+- `fan_dong` is **not data**. Every entry holds `0xCDCD00xx`, the MSVC debug
+  uninitialised-fill pattern. The field that populates it comes from
+  `FMean.tmp`, which is **not in the shipped package**, so it was never
+  written.
+
+That means the file carries terms, a sense table and a severity class — but
+**not** the per-word normal/blocked judgement the original runtime consults.
+The new implementation must rebuild that mapping from term semantics instead
+of inheriting it. Any claim that the old judgement table was recovered would
+be wrong.
 
 ## Policy slots are not fully understood
 

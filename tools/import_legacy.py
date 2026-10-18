@@ -151,14 +151,20 @@ def import_falun(legacy: Path) -> dict:
     senses = falunword.decode_sense_table(lay)
 
     words = [t["word"] for t in terms]
+    with_sense = [t for t in terms if t["sense_id"] is not None]
 
     return {
         "source": "FalunWord.lib",
         "status": "decoded",
-        "note": "Term list recovered from the character-chain trie. The "
-        "`next` field is a character path, not a sibling list, so following "
-        "it from a chain start spells a whole term. An independent sense "
-        "table (offset+length into a UTF-16 pool) cross-checks the result.",
+        "note": "Term list recovered from the character-chain trie. The `next` "
+        "field is a character path, not a sibling list, so following it from a "
+        "chain start spells a whole term. An independent sense table "
+        "(offset+length into a UTF-16 pool) cross-checks the result.",
+        "limitation": "This file does NOT carry the per-word normal/blocked "
+        "judgement the runtime uses at [item+0x28]. That field's source, "
+        "FMean.tmp, was never shipped; see docs/falunword-format.md. The "
+        "hong_hei class below is real data and can seed a rebuilt mapping, "
+        "but the old mapping itself cannot be recovered from this file.",
         "layout": {
             "file_size": len(blob),
             "chain_nodes": lay.n1,
@@ -168,8 +174,14 @@ def import_falun(legacy: Path) -> dict:
             "layout_verified": ok,
         },
         "term_count": len(words),
+        "classified_terms": len(with_sense),
         "terms": words,
-        "sense_sample": senses[:200],
+        # Only terms whose terminal node carries a sense id have a category;
+        # mapping id -> hong_hei via the sense table gives a usable severity.
+        "term_senses": [
+            {"word": t["word"], "sense_id": t["sense_id"]} for t in with_sense
+        ],
+        "senses": senses,
         "sha256": sha256(path),
     }
 
@@ -223,6 +235,7 @@ def main() -> None:
         "im_targets": len(json.loads((out / "im-targets.json").read_text("utf-8"))["targets"]),
         "rules": {k: v["count"] for k, v in rules.items()},
         "falun_terms": falun["term_count"],
+        "falun_classified": falun["classified_terms"],
         "falun_status": falun["status"],
     }
     legacy_rules.dump(summary, out / "summary.json")
