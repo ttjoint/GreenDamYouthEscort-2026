@@ -1,0 +1,398 @@
+The Perception Processing in Chinese Understanding
+Quan ZHANG(张全)     Dinghua GUAN(关定华)
+(State Key Laboratory of Acoustics, Institute of Acoustics, Chinese
+Academy of Sciences
+P.O. Box 2712, Beijing 100080,
+China)
+ABSTRACT
+The technology of spoken
+language processing utilizes the technology of the speech understanding processing more
+and more in order to enhance the processing ability. This paper introduces a perception
+processing method about Chinese. It is based on a novel theory of natural language
+understanding processing--Hierarchical Network of Concepts theory. The perception
+processing completes chunks perceiving and Sentence-Category recognizing. The way of
+realization is hypothesis-test. An experimental system has been developed by this method.
+Although this system is just an experimental system, we consider that there is not any
+difficult obstacle to use this theory to process natural language in computers.
+1.INTRODUCTION
+The speech technology (speech recognizing and speech synthesis) has reached a high
+level. It needs the technology of understanding processing to enhance the ability of
+processing. The semantic plays an important role for understanding processing. Professor
+Zengyang HUANG founded a novel theory for natural language understanding processing based
+on semantic[1,2]. This theory is named
+Hierarchical-Network of Concepts (HNC) by its feature.
+The chunk is a very important concept of HNC. In the view of HNC, the chunk perception
+and Sentence-Category (SC) analysis are the two basic processing modules of understanding
+processing. The result of SC analysis is the input of other processing modules based on
+HNC, such as, rationality analysis of sentence, context generation, hidden information
+revealing, topic and gist analysis. The realization of chunks perception determines
+whether the HNC theory becomes the HNC understanding processing technology.
+The chunk perception is difficult. If the input is an ambiguous set (as the result of
+speech recognition), the chunk perception is more difficult. There are many probable
+routes of composing chunk. The longer the input, the more the routes. The chunk perception
+needs SC knowledge to guide it. But only the Sentence-Category is determined, the SC
+knowledge can be used. The chunk perception is the foundation of the determining
+Sentence-Category. This is a circularity of using knowledge. This situation is like that,
+a hen laid an egg, and a chicken is hatched from an egg, which step is the first step, it
+forms a "hen-egg" circularity.
+The main idea of this paper is to introduce a way to break the circularity.
+2. THE FOUNDATIONS OF CHUNKS PERCEPTION
+The HNC theory offers the theoretical foundation for the perceptive processing of
+chunks[1,2]. In order to perceive chunks, the HNC
+knowledge bases are necessary. They are the foundations of chunks perception.
+2.1 The theoretical foundation of chunks perception
+HNC classifies the chunks into two types: the main chunks and the supplement chunks.
+The main chunks are the main parts of a sentence. The supplementary chunks provide the
+background knowledge of a sentence.
+There are four kinds of main chunks according HNC[2], i.e., Agent(A),
+Object(B), Content(C) and Feature(E). Supplementary chunks are classified as follows[2]:
+Condition(Cn), Means(Ms), Instrument(In), Ways(Wy), Reference(Re), Premise(Pr) and
+Result(Rt).
+The theory of HNC classifies the basic sentence-categories into seven types by the
+primitive concepts[2]. The names of the seven types are Action, Process,
+Transfer, Reaction, Relation, State and Judgement. Each Sentence-Category has its own
+knowledge. This knowledge includes the knowledge of the chunks: format knowledge, priority
+concepts knowledge and constitution knowledge. The knowledge determines what kinds of
+chunks should appear in what sequence, and what kinds of concepts have priorities to a
+definite chunk in a Sentence-Category. Chunks are functions of a Sentence-Category.
+2.2 The HNC Knowledge Bases
+The HNC theory classifies the knowledge involved in natural language into three layers,
+the conceptual layer, linguistic layer and common sense layer. The conceptual layer
+knowledge embodies the correlation of abstract concepts, and gives the association clue
+among concepts. It does not consider the character of a specific language. The linguistic
+layer need embody the character for one specific language. The common sense layer gives
+expression to the special knowledge.
+The HNC knowledge bases are organized according the three layers. We designed a
+geographic common sense knowledge base[4], and use it to answer some
+geographic questions[5]. Now, in conceptual layer, we have designed
+conceptual correlation knowledge base and SC format base. These knowledge bases offer
+three kinds of chunks' knowledge in the conceptual layer. We have designed a series
+knowledge base about mandarin Chinese, such as vocabulary knowledge base[3],
+Chinese character knowledge base, syllable perception knowledge base. ( Each Chinese
+syllable has its own independence meaning. Many chunks' flags in Chinese use single
+syllable words. ) These knowledge bases provide the three kinds of chunks' knowledge about
+mandarin Chinese.
+The knowledge of conceptual layer and linguistic layer plays the more important roles
+in understanding processing.
+3. CHUNK PERCEPTION PROCESSING
+How to use a computer to perceive chunks is a key processing step when HNC is applied
+to understanding processing. We find a way to complete the perception and to determine the
+SC. The basic operation is "hypothesis-test".
+We design an experimental system according the way of chunks perception processing
+chunks[5]. The diagram of how perceive chunks and to determine the SC is
+shown as Fig.3.1.
+┄
+┈┈┈┈┈┈┈┈┈
+┈
+┈
+┈
+┌
+────────
+┐
+┆
+┌
+─────────
+┐
+┆
+│
+syllable perception
+├
+→
+┤
+│
+segment processing
+│
+┆
+│
+processing
+│
+┆
+└
+─────────
+┘
+┆
+┌
+─────────
+┐
+└
+────────
+┘
+┆
+↓
+├
+←
+┤
+concepts correlation
+│
+┆
+┌
+─────────
+┐
+┆
+│
+knowledge base
+│
+┆
+│
+E hypothesis
+│
+←
+┐
+┆
+└
+─────────
+┘
+┌
+────────
+┐
+┆
+└
+─────────
+┘
+│
+┆
+│
+inner chunk
+├
+→
+┤
+↓
+│
+┆
+│
+processing
+│
+┆
+┌
+─────────
+┐
+│
+┆
+┌
+─────────
+┐
+└
+────────
+┘
+┆
+│
+the range of each
+│
+│
+├
+←
+┤
+SC format
+│
+┆
+│
+chunk hypothesis
+│
+│
+┆
+│
+knowledge base
+│
+┆
+└
+─────────
+┘
+│
+┆
+└
+─────────
+┘
+┆
+↓
+│
+┆
+┆
+┌
+─────────
+┐
+│
+┆
+┆
+│
+other chunks test
+│
+│
+┆
+┆
+└
+─────────
+┘
+│
+┆
+┌
+─────────
+┐
+┆
+↓
+│
+├
+←
+┤
+mandarin Chinese
+│
+┌
+────────
+┐
+┆
+┌
+─────────
+┐
+│
+┆
+│
+knowledge bases
+│
+│
+human meddler
+├
+→
+┤
+│
+S.C. decision
+├
+─
+┘
+┆
+└
+─────────
+┘
+└
+────────
+┘
+┆
+└
+─────────
+┘
+┆
+┈
+┈┈┈┈┈┈┈┈┈
+┈
+┈
+┈
+Fig.3.1 The diagram of Perceptive Processing
+3.1 E Chunks Hypothesis
+The input of the experimental system is Chinese phonetic alphabet without tone. When a
+sentence input the system, the system first matches the vocabulary knowledge base to form
+a segment ( continuous words' string ). In a segment, the syllable perception processing
+finds the position of single syllable words by the syllable knowledge base. The segment
+processing finishes. The E-hypothesis starts.
+The E chunk always embodies the SC information of the sentence. If the E chunk can be
+determined, the other chunks can be determined. The key of perceptive processing is the E
+chunk perception.
+In order to embody tense and mood, there are usually some language logic concepts[1]
+around the E of the sentence. We can assume the E of the sentence according the concept
+attribute of words and the logic concepts. After E-hypothesis, we can use the SC knowledge
+offered by the assumed E to test other chunks.
+3.2 Other chunks test
+The SC knowledge includes standard format knowledge. The format information points out
+the chunks' positions. The position information is the clue of other chunks test. If the
+sentence deviates from the standard format, the logic concept always appears before the
+chunk. According the standard format and logic concepts, we can hypothesize the range of
+each chunk.
+In the each hypothesis range, the system detects if there are the priority concepts to
+a chunk by the priority concept knowledge of chunks. Then, it tests the constitution of
+the chunk by the chunks' constitution knowledge of chunks.
+If the system finds all the chunks of a Sentence-Category in the suitable position,
+with the priority concepts and according the constitution of chunks, the sentence-category
+decision will approve this Sentence-Category. The system starts the inner chunk
+processing. If there is not any conflict in a chunk, the sentence-category is confirmed.
+The system completes the chunks perception and SC recognition. Else, the system will start
+another E-hypothesis.
+If there is not a Sentence-Category passing the test well, the system will ask human to
+meddle.
+3.3 Examples of Processing
+Here is an example to demonstrate the processing. The input Chinese phonetic alphabets
+are shown as follows:
+wo men xiang shang ji hui bao guo zhe ge qing kuang.
+(We have reported this news to the leader.)
+我们   向上*     汇报*
+情况*
+上级*
+The result of matching the vocabulary base is shown. The "*" indicates that
+there are other candidate words: (the other words in the braces)
+情况{ 轻狂 }     向上 { 相商 }
+汇报{ 回报 }     上级 { 商计 }
+The three syllables "xiang shang ji" form a segment. The system assumes the
+single syllable word in the "xiang" position.
+We can assume the E is "hui bao" ( in Chinese character is 汇报, in English
+is Report). Then, we know that the meaning in HNC symbols is v923, the SC is Transfer (T),
+the SC format is TA + T + TB +  TC , the priority concept of TA is p (HNC symbol for
+people), TB is p and TC is gw or g23 ( gw and g23 for information).
+The meaning and the position of "我们 ( in HNC symbol is p)" is suitable
+for TA. The TB should follow the E, however, "向 ( l02 )" is the flag of TB,
+then "上级 (p)" is suitable for TB. Behind E, "情况" is suitable
+for TC. Here, all the other chunks pass the test, the E is "汇报".
+Then, we can translate the Chinese phonetic alphabet into Chinese character as follows:
+我们(TA)向上级(TB)汇报过(T)这个情况(TC)。
+Here are some other examples:
+jiang jie shi
+tong zhi l
+zhong guo.
+蒋介石(A)
+统治了(X)
+中国(B)
+gan jin
+ba zhe ge
+xiao xi
+tongzhi
+ta men.
+赶紧
+把这个
+消息(TC)
+通知(T)
+他们(TB)
+fang xiang
+chao zhe
+nan mian.
+方向(SB)
+朝着(S)
+南面(SC)
+zhang
+tong zhi
+chao l
+1 ge cai.
+张
+同志(A)
+炒了(X)
+1个菜(B)
+4 CONCLUSION
+We use some corpora to test this experimental system, when the SC of the input belongs
+to the basic SC, and the chunks are not too complex, the result is in keeping with the
+expected well.
+We are doing some work about the complex chunks with the experimental system, such as
+clause molting chunks, chunks with "" or "" which are active elements
+of composing chunks and the chunks containing multiply modifier without "" which
+is the modifier flag. The result will be written in other papers. However, we do not
+consider that there are some difficult obstacles in theory to solve these problems.
+5 ACKNOWLEDGEMENTS
+We would like to thank those people who join this work or provide valuable suggestions:
+Mr. Zhiwen LIU, who does a lot of work of knowledge acquisition; Ms. Yanling DU, who
+accomplishes the input interface and programs some functions for E hypothesis; Ms. Yu MAO,
+who offers the various knowledge bases' interfaces in this work; Mr. Yaohong JIN, who
+programs many fundamental functions in this work and undertakes the main part of inner
+chunk processing and MR. Ling SHEN, who gives many useful suggestions.
+REFERENCES
+[1]Zengyang HUANG et al. The Fundamental Structure and
+Feature of the Natural Language Semantic Network. Collection of HNC, China. 1996
+[2]Zengyang HUANG et al. The Deep Structure  of the Natural
+Language and Sentence-Category Analysis. Collection of HNC, China. 1996
+[3]Quan ZHANG et al. A Scheme of Modern Chinese Words' Knowledge Base.
+JOURNAL OF NATIONAL UNIVERSITY OF DEFENSE, 1995,17:(Sup.162).China.
+[4]Quan ZHANG et al. The Application of Object-Oriented Technique on
+Geographical Knowledge Base. Collection '95 National Workshop on New Technology on
+Computer .China.1995
+[5]Quan ZHANG et al. Sentence-Semantic-Class (SC) Analysis in Chinese
+Interface System on Geographical Knowledge. Proceeding of  National Symposium of
+Phonetics,Picture and Communication..China.1995
+[6]Quan ZHANG. Perceptive processing of chunks based on HNC. Ph.D.
+Dissertation of Institute of Acoustics, Chinese Academy of Science,China.1996
+编者按：本文选自《Proceedings of 1997 China-Japan Symposium on Advanced
+Information Technology》。它在HNC理论走向工程化的道路上进行了拓荒性的探索，迈出了最先的一步。
+返回书目
+上一篇
+全书完

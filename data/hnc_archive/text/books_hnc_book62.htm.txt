@@ -1,0 +1,196 @@
+主要参考文献
+返回书目
+Bookman L A.
+1994.
+Trajectories  through Knowledge Space.
+Boston:Kluwer Academic Pub
+陈群秀,张普.
+1995.
+信息处理用现代汉语语义分类体系:属性分类.
+北京:电子工业出版
+见:陈力为,袁琦主编.
+中文信息处理应用平台工程,206~214
+Chomsky N.
+1965.
+Aspects of the Theory of Syntax.
+Cambridge,MA:MIT Press
+Chomsky N.
+1975.
+The Logical Stucture of Linguistic Theory.
+New York:Plenum Press
+Chomsky N.
+1981.
+Lectures on Government and Binding.
+Dordrecht:Foris
+Chomsky N.
+1976.
+Knowledge of Language:
+Its Nature,Origins and Use.
+New York:Praeger
+Church K W.
+1990.
+Word association morms,
+mutual information and lexicography.
+Computational Linguistics,16(1)
+冯志伟.
+1983.
+汉语语句的多叉多标记树形图分析法.
+人工智能学报,(2)
+Fillmore C J.
+1968.
+The case for case.
+NewYork:Holt,Rinehart and Winston
+In:Bach E and Harms R eds.
+Universal in Linguistic Theory.
+高名凯.
+1957.
+汉语语法论.
+北京:科学出版社
+Halliday M.
+1985.
+An Introduction to Functional Grammar.
+Edward Armold Publ.Ltd
+黑格尔.
+1980.
+小逻辑.
+北京:商务印书馆
+贺麟译,
+黄侃.
+1983.
+文字声韵训诂笔记.
+上海:上海古籍出版社
+黄焯.
+1981.
+诗义重章互足说.
+武汉:长江文艺出版社.
+见:诗说,卷2.33~36
+康德.
+1957.
+纯粹理性批判.
+北京:三联书店
+蓝公武译,
+Lenat D B.
+1995.
+CYC：A large-scare investment in knowledge infrastructure.
+Communications of the ACM，38(11)
+李耳.
+老子.
+林杏光.
+1990.
+汉语多用词典.
+北京:中国标准出版社
+鲁川.
+1995.
+现代汉语的语义网络.
+北京:电子工业出版社
+见:陈力为,袁琦主编.
+中文信息处理应用平台工程,233~252
+陆俭明.
+1989.
+十年来现代汉语语法研究的理论与方法管见.
+国外语言学,(2)
+罗素.
+1992.
+西方的智慧.
+北京:世界知识出版社
+马家驹等译
+马希文等.
+1990.
+自然语言处理与自动文摘.
+北京:电子工业出版社
+见:高庆狮主编.
+智能技术与系统基础,99~117
+毛泽东.
+1969.
+中国革命战争的战略问题.
+北京:人民出版社
+毛泽东选集全卷本,154~225
+Minsky M.
+1963.
+Steps toward Artificial Intelligence.
+New York:McGraw-Hill
+In:Feigenbaum E A et al eds.
+Computers and Thought.
+Minsky M.
+1975.
+A framework for representing knowledge.
+New York:McGraw-Hill
+In:Winston P H ed.
+The psychology of Computer Vision.
+Schank R C.
+1973.
+Identification of conceptualizations undelying natural language.
+San Francisco,CA：W.H.Freeman and Company
+In:Schank R C,Colby K eds.
+Computer Models of Thought and Language.
+Schank R C.
+1975.
+Conceptual Information Procssing.
+Amsterdam：North Holland
+Schank R C.
+1975.
+The structure of episodes in memory.
+New York：Academic Press
+In：Bobrow D,Collins A eds.
+Representation and Understanding.
+Schank R C et  al.
+1997.
+Scripts，Plans,Goals and Understanding.
+Hillsdale,NJ：Lawrence-Eribaum Assoc.
+Schank R C.
+1982.
+Dynamic Memory.
+New York：Cambridge University Press
+Simon H A ed.
+1972.
+Representation and Meaning：Experiments with Information Processing
+System.
+Englewood Cliffs,NJ：
+Prentice-Hall
+孙武.
+孙子兵法
+索绪尔.
+1990.
+普通语言学教程.
+北京:商务印书馆
+Veronis J
+et al .
+1990.
+Word sense disambigulation with very large neural networks extracted from
+machine readable dictionaries.
+In:Proc.COLING'90,289~295
+王国维.
+1995.
+人间词话.
+北京:群言出版社
+维纳.
+1963.
+控制论.
+北京:科学出版社
+郝季仁译.
+White G M.
+1990.
+Natural Language Understanding
+and Speech Recognition.
+Commumications of the ACM,33(8)：72~82
+Winograd T.
+1983.
+Language as a Cognitive Process.
+Reading,MA：Addison-Wesley Publ.Co.
+俞士汶等.
+1995.
+关于现代汉语词语的语法功能分类.
+北京:电子工业出版社
+见:陈力为,袁琦主编.
+中文信息处理应用平台工程,157~164
+张志公.
+1990.
+汉语语法再研究.
+外语教学与研究,(3)
+张普.
+1991.
+信息处理用现代汉语语义分析的理论与方法.
+中文信息学报(3)
+庄周.
+庄子
+返回书目
