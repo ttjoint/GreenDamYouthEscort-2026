@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """原始 HNC 引擎（SentenceObj.dll）的可调用性与缺失文件：实测锚点。
 
 对应 `docs/hnc-engine-probe.md`。
@@ -22,12 +23,21 @@ thunk，且**必定失败**（缺 FMean.lib）。实跑见
 `tools/call_hnc_engine.py`，其结论已被本测试静态覆盖。
 """
 
-from __future__ import annotations
 
 import re
+import sys
 import struct
 import unittest
 from pathlib import Path
+
+
+def _h(hexstr):
+    """16 进制串转 bytes。
+
+    不用 bytes.fromhex：那是 3.0+ 才有的，32 位 Python 2.7 里没有。
+    这个模块得能在两个解释器下都导入，所以自己包一层。
+    """
+    return bytes(bytearray.fromhex(hexstr))
 
 ROOT = Path(__file__).resolve().parents[1]
 #: 安装树在仓库外（父目录），不存在时跳过。
@@ -200,6 +210,109 @@ class SourceLeakTest(unittest.TestCase):
                       "句类调度与 fK/JK 同模块（论题 34）")
         self.assertIn(r".\src\user\ActiveRule.cpp", cpps,
                       "规则运行时激活（论文 11.2 运用规则的规则）")
+
+
+@unittest.skipUnless(DLL.exists(), "安装树不在预期位置")
+class MakeAlcReturnCodesTest(unittest.TestCase):
+    """`?MakeALC@CFWordLib@@QAEHPAG0_NPAH@Z`（0x28d0）的返回码。
+
+    这一组断言是把反汇编结论钉死，防止以后又把 `ret=7` 误读成"引擎拒绝处理"。
+
+    返回点（文件偏移 = RVA - 0x1000 + 0x1000 = RVA，因为 .text VA==RawPtr）：
+        @0x2c64  return 1    整句处理完成
+        @0x2c21  return 7    单个 token 处理完
+        @0x2c05  return 2
+        @0x2c37  return 4
+        @0x2d45 / 0x2d4d  return -1
+
+    诚实边界：实测 MakeALC 只走一个 token 就返回 7，从没返回过 1。
+    整句循环骨架不在这里，在 CSentenceObj 里。
+    """
+
+    # (mov eax,code 的文件偏移, code)
+    RETURNS = ((0x2C5B, 1), (0x2C18, 7), (0x2BFC, 2), (0x2C2E, 4))
+
+    def test_return_sites_encode_expected_codes(self):
+        data = DLL.read_bytes()
+        for off, code in self.RETURNS:
+            self.assertEqual(data[off], 0xB8, f"@0x{off:x} 不是 mov eax,imm32")
+            got = int.from_bytes(data[off + 1:off + 5], "little")
+            self.assertEqual(got, code, f"@0x{off:x} 返回 {got}，期望 {code}")
+            # 后面紧跟 pop ebp; add esp,0x14; ret 0x10
+            self.assertEqual(data[off + 5:off + 12],
+                             _h("5d83c414c21000"),
+                             f"@0x{off:x} 不是 __thiscall 的 ret 0x10 结尾")
+
+    def test_token_code_is_seven_not_error(self):
+        """7 是"处理了一个 token"，旁边那句 inc [ebp+0x10047c] 是证据。"""
+        data = DLL.read_bytes()
+        # @0x2c08: mov eax,[ebp+0x10047c] / inc eax / mov [ebp+0x10047c],eax / mov eax,7
+        # 0x2bec: mov eax,[ebp+0x10047c] / pop edi;pop esi / inc eax
+        #         / mov [ebp+0x10047c],eax / pop ebx / mov eax,7
+        window = data[0x2BEC:0x2C18]
+        self.assertEqual(window[:6], _h("8b857c041000"),
+                         "应为 mov eax,[ebp+0x10047c]")
+        self.assertEqual(window[6:10], _h("5f5e4089"),
+                         "应为 pop edi; pop esi; inc eax; mov ...")
+        self.assertEqual(window[10:17], _h("857c0410005bb8"),
+                         "应为 [ebp+0x10047c] 做目的操作数 + pop ebx + mov eax")
+        self.assertEqual(data[0x2C18], 0xB8)
+        self.assertEqual(int.from_bytes(data[0x2C19:0x2C1D], "little"), 7)
+
+
+@unittest.skipUnless(DLL.exists(), "安装树不在预期位置")
+class GetAlcNeedsGlobalTest(unittest.TestCase):
+    """`?GetALC@@YAHPAG0_N@Z`（0x4e70）开头就检查全局 wordlib 指针。"""
+
+    def test_null_global_short_circuits_to_seven(self):
+        data = DLL.read_bytes()
+        # 0x4e70: 51                push ecx
+        self.assertEqual(data[0x4E70], 0x51)
+        # 0x4e71: a1 e8 31 0b 10   mov eax,[0x100B31E8]
+        self.assertEqual(data[0x4E71:0x4E76], _h("a1e8310b10"))
+        # 0x4e76: 85 c0            test eax,eax
+        self.assertEqual(data[0x4E76:0x4E78], _h("85c0"))
+        # 0x4e78: 0f 84 88 00 00 00  je 0x4f06
+        self.assertEqual(data[0x4E78:0x4E7E], _h("0f8488000000"))
+        # 0x4f06: b8 07 00 00 00   mov eax,7   (pop ecx 在 0x4f0a)
+        self.assertEqual(data[0x4F06], 0xB8)
+        self.assertEqual(int.from_bytes(data[0x4F07:0x4F0B], "little"), 7)
+
+
+class EngineRuntimeTest(unittest.TestCase):
+    """真跑一遍引擎——但只在 32 位 Python 下。
+
+    **这个类在本仓库默认的 64 位解释器下永远 skip**，因为
+    test_hnc_engine.py 这个文件整体用了 3.x 语法（函数注解），
+    2.7 连导入都做不到。
+
+    运行时验证请直接跑脚本：
+
+        D:\Python27\python.exe tools\call_hnc_engine.py
+
+    那里会打印建组结果、计数接口、MakeALC 返回码，并断言
+    「路径带尾反斜杠才成功」这件事。
+    """
+
+    def test_runtime_is_covered_by_tool_script(self):
+        """把"运行时验证在哪"这件事本身钉住。
+
+        没有这一步，后来的人会以为 test_hnc_engine.py 覆盖了运行时行为，
+        实际上它只做静态 PE 读取。
+        """
+        tool = ROOT / "tools" / "call_hnc_engine.py"
+        self.assertTrue(tool.exists(), "运行时验证脚本不见了")
+        body = tool.read_text(encoding="utf-8")
+        # 这三件事是脚本必须证明的
+        self.assertIn("trailing_backslash", body,
+                      "脚本必须演示「路径要带尾反斜杠」")
+        self.assertIn('path += "\\\\"', body,
+                      "加尾反斜杠那行不见了")
+        self.assertIn("trailing_backslash", body)
+        self.assertIn("global_obj", body,
+                      "脚本必须演示主对象/子对象差 0x124")
+        self.assertIn("self.base + 0x28D0", body,
+                      "必须用实际基址，不能硬编码 0x100028D0")
 
 
 if __name__ == "__main__":
