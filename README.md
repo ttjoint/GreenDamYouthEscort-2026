@@ -95,8 +95,21 @@ GREEN_DAM_LEGACY_TREE=/path/to/legacy-tree python -m unittest discover -s tests
 
 Data migration is complete, the architecture is settled in
 `docs/architecture.md`, and the semantic matcher is running under `src/`:
-10,182 matchable terms, 35 tests green, measured against a purpose-built
-corpus (`docs/semantic-corpus.md`).
+10,182 matchable terms, measured against a purpose-built corpus
+(`docs/semantic-corpus.md`).
+
+The HNC sentence-classification layer is reversed and verified
+(`docs/hnc-engine.md`). The classifier at `0x10030650` is reproduced in
+`src/green_dam/hnc.py` and checked against the original binary by running it
+under Unicorn: **974 inputs, zero mismatches**. That harness caught four real
+mistakes that static reading had missed, including a jump table read in
+reverse and a nested condition dismissed as redundant.
+
+The ceiling is documented rather than hidden. `SENTEN.LIB`, `TYPE.LIB`,
+`XU.LIB` and `rule.lib` were never shipped, so sentence-class *codes* are
+recoverable but their *names* are not. The engine in the package ran
+half-loaded, and the HNC layer in `src/` is a reference baseline, not a runtime
+dependency.
 
 Two expectations were refuted by the data during that work and are documented
 rather than papered over: `hong_hei` is not a self-consistent severity grading
@@ -104,4 +117,5 @@ rather than papered over: `hong_hei` is not a self-consistent severity grading
 normal/blocked flag was never shipped. Both are pinned by tests so the docs
 cannot drift from the code.
 
-Next: M8 policy engine, then M2 network interception.
+Next: M8 policy engine, then M2 network interception. Reversing is finished;
+building starts now.
