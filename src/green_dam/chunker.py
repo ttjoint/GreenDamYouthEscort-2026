@@ -40,9 +40,11 @@
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
 from typing import Iterable
 
 from .chunk_tags import TagRole, maximal_tag_at, roles_of
@@ -261,6 +263,34 @@ DEFAULT_VERBS = frozenset((
 "发现", "认为", "表示", "指出", "希望", "要求", "同意", "反对", "完成", "进行", "实现", "开始", "结束", "出现", "发生", "成为", "打断", "召开", "举行", "参加", "通过", "决定", "提出", "提供", "获得", "取得", "造成", "导致", "引起", "产生", "达到", "超过", "研究", "分析", "处理", "解决", "建立", "发展", "提高", "增加", "减少", "改变", "影响", "支持", "帮助", "保护", "打击", "检查", "空投", "采访", "报道", "宣布", "承认", "否认", "担心", "害怕", "喜欢", "讨厌", "知道", "明白", "理解", "相信", "怀疑", "注意", "照顾", "批评", "表扬", "鼓励", "安慰", "打扰", "欺负", "包揽", "承担", "负责", "参与", "加入", "离开", "到达", "进入", "回来", "出去", "进来", "上去", "下来", "起来", "得到", "失去", "放弃", "拒绝", "接受", "告诉", "询问", "回答", "解释", "说明", "运输", "转移", "接收", "发送", "传递", "交付", "征集", "看书", "读书", "写仚", "写字", "读写", "看报", "听课", "上课", "学习", "工作", "生活", "休息", "睡觉", "起床", "出门", "回家", "吃饭", "喝水", "开会", "说话", "打电", "走路", "跑步", "唱歌", "讲述", "介绍", "讨论", "交流", "沟通", "协商", "汇报", "报告", "安排", "布置", "实施", "执行", "落实", "推行", "开展", "遇刐", "碰到", "遇见", "感觉", "觉得", "意识", "记得", "看到", "听见", "闻到", "想到", "考虑", "思考", "忘记", "选择", "试探", "尝试", "努力", "坚持", "继续", "停止", "取消", "确认", "审核", "批准", "签订", "维修", "维护", "改善", "提升", "降低", "扩大", "缩小", "加强", "削弱", "消失", "增长", "下降", "上升", "下跌", "变化", "变动", "笑", "哭", "坐", "站", "吃", "睡", "遇到", "受到", "遭到", "送到", "找到", "听到", "读到", "买到", "拿到", "收到", "提交", "发出", "弄到", "改到", "学会", "掌握", "熟悉", "了解", "暴露"
 ))
 
+#: 从真实语料抽出的扩展动词表（`tools/build_verb_table.py` 生成）。
+#:
+#: 上面那份手写表只有 208 条、单字仅 6 个，导致真实语料上
+#: **99.9% 的退化是「无谓语候选」**（`docs/corpus-eval.md`）。
+#: 汉语单字动词（看/说/走/买/拿/做/去/来）手写不全，改用体标记
+#: （着/了/过）从语料自动抽：`看着`->`看`、`笑了`->`笑`。
+#:
+#: 单字动词的误切风险由 `_find_verbs_safe` 的「仅块边界认可」兜底，
+#: 而不是靠「不收录」来回避。
+_VERB_TABLE_PATH = (
+    Path(__file__).resolve().parent.parent.parent / "data" / "verb-table.json"
+)
+
+
+def _load_verb_table() -> frozenset[str]:
+    """读 `data/verb-table.json`；缺失时返回空集（不影响原有行为）。"""
+    if not _VERB_TABLE_PATH.exists():
+        return frozenset()
+    try:
+        blob = json.loads(_VERB_TABLE_PATH.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return frozenset()
+    return frozenset(blob.get("verbs") or {})
+
+
+#: 实际使用的动词表 = 手写表 ∪ 语料抽取表。
+EXTENDED_VERBS = DEFAULT_VERBS | _load_verb_table()
+
 #: 晋耀红《基于HNC理论的句类分析系统的设计与实现》§2.1 的“指定字”。
 #: 原文：
 #:   "本系统设置了 7 个指定字：的、了、和、是、有、不、在，
@@ -274,6 +304,38 @@ DESIGNATED_CHARS = frozenset("的了和是有不在")
 
 _CLAUSE_RE = re.compile(r"[^，。！？；,.!?;、\n]+")
 _SENT_END_RE = re.compile(r"[，。！？；,.!?;、\n]+")
+
+#: 配对引号。左、右引号各自成对，用于分句前的预处理。
+#: 小说里「他说：‘……。’」这种嵌套引用会让分句器切出「」」
+#: 或「「啊」这种碎片，它们没有谓语，随后一律退化成无标记块。
+#: 实测成人语料 99,639 个退化分句里，前几名全是这类碎片
+#: （「」」×5123、"」×2454、「啊×368）。
+_QUOTE_PAIRS = (
+    ("「", "」"),
+    ("『", "』"),
+    ("“", "”"),
+    ("‘", "’"),
+    ("\u300c", "\u300d"),
+)
+
+#: 纯语气词/感叹词：没有语义内容，不能作分句。
+#: 它们常常因为引号被切开而单独成句（「啊」「嗯」「喂」）。
+_INTERJECTIONS = frozenset(
+    "啊吧呢吗吧嘛哦噢喔嗯唉哎哎呀喂嘿哈呵嘻哇呀哪么的了着过"
+)
+
+#: 句首附着成分：连词、时间/语气副词。
+#: 它们被逗号切开后会单独成句，但自身没有谓语，必然退化成无标记块。
+#: 实测退化样本前几名全是这类：`但`、`不过`、`这时`、`所以`、`突然`。
+#: 处理方式不是丢弃，而是**粘到后一个分句**（见 `_split_clauses`）。
+#: 依据：论文说这类成分是 `l` 标记之外的时间/条件修饰，归入后续
+#: 主块的辅块（论题 7）。粘上去比丢掉保留的信息多。
+_LEADING_ATTACH = frozenset(
+    "但 不过 但是 可是 然而 于是 所以 因此 因为 如果 即使 虽然 然后 "
+    "后来 这时 这时 现在 突然 忽然 当然 很快 同时 事实上 其实 "
+    "而且 并且 而且 况且 否则 不然 虽然 即便 无论 不管 只要 除非 "
+    "接着 随即 立刻 马上 随即 终于 果然 显然 似乎 大概 也许 或许".split()
+)
 
 
 # ---------------------------------------------------------------------------
@@ -358,6 +420,95 @@ class Chunking:
 
 
 # ---------------------------------------------------------------------------
+# 分句
+# ---------------------------------------------------------------------------
+
+
+def _split_clauses(text: str) -> list[tuple[int, int]]:
+    """把整段拆成分句区间 `[(start, stop)]`。
+
+    比直接用 `_CLAUSE_RE` 多做三件事，都是为了消除碎片句：
+
+    1. **引号内部不切**。`「啊，我不知道。」` 按逗号切会得到 `「啊` 和
+       `」然后就走开了`——前者是孤立感叹，后者引号跑到句首。
+
+    2. **引号闭合即切**。`他说：「好。」` 之后直接断句，引文和后续
+       叙述各成一句，而不是黏成一长串。
+
+    3. **丢弃碎片**。只剩标点、或只剩一个语气词（啊/嗯/喂）的分句
+       没有谓语，留着只会退化成无标记块，拉低有效率。
+
+    返回**原字符串下标**，不做 copy，方便调用方回推位置。
+    """
+    n = len(text)
+    opens = {p[0] for p in _QUOTE_PAIRS}
+    closes = {p[1] for p in _QUOTE_PAIRS}
+    breaks = "。，！？；：,.!?;:\n"
+
+    spans: list[tuple[int, int]] = []
+    start = 0
+    depth = 0
+    i = 0
+    while i < n:
+        ch = text[i]
+        if ch in opens:
+            depth += 1
+            i += 1
+            continue
+        if ch in closes:
+            if depth:
+                depth -= 1
+            i += 1
+            if depth == 0:
+                # 引文结束，在右引号后断开
+                spans.append((start, i))
+                start = i
+            continue
+        if depth == 0 and ch in breaks:
+            spans.append((start, i))
+            start = i + 1
+        i += 1
+    spans.append((start, n))
+
+    out: list[tuple[int, int]] = []
+    carry = None  # 待粘到下一句的孤立附着成分起点
+    for a, b in spans:
+        stripped = text[a:b].strip()
+        if not stripped:
+            continue
+        # 只保留有汉字/字母/数字的分句
+        if not any(ch.isalnum() or "\u4e00" <= ch <= "\u9fff"
+                   for ch in stripped):
+            continue
+        # 去掉两端引号与标点，再看内容
+        core = stripped.strip(
+            "\"'\u201c\u201d\u2018\u2019\u300c\u300d\u300e\u300f"
+            "\u3002\uff0c\uff01\uff1f\uff1b\uff1a")
+        if not core:
+            continue
+        # 只剩一个语气词 -> 碎片（保留多字的"好的""是吗"）
+        if len(core) == 1 and core in _INTERJECTIONS:
+            continue
+
+        # 孤立附着成分（连词/副词）不单独成句，粘到下一句
+        if core in _LEADING_ATTACH:
+            if carry is None:
+                carry = a
+            continue
+
+        if carry is not None:
+            # 把前面攒的附着成分和本句接着：保留中间原文
+            out.append((carry, b))
+            carry = None
+        else:
+            out.append((a, b))
+
+    # 末尾还攒着附着成分（如“…。但是”）：它没有后续句可粘，
+    # 丢弃；它自身没有谓语，留着也只会退化成无标记块。
+    return out
+
+
+# ---------------------------------------------------------------------------
 # 分块器
 # ---------------------------------------------------------------------------
 
@@ -374,16 +525,29 @@ class SentenceChunker:
     3. **A/B 归属**：E 之前除辅块外的剩余成分为 A，E 之后为 B。
     """
 
-    def __init__(self, verbs: Iterable[str] | None = None) -> None:
-        self._verbs: frozenset[str] = frozenset(verbs or DEFAULT_VERBS)
+    def __init__(self, verbs: Iterable[str] | None = None,
+                 extended: bool = False) -> None:
+        """`extended=True` 时使用语料抽取的扩展动词表。
+
+        默认仍用 208 条手写表：扩展表把覆盖率从 2.47% 提到约 30%，
+        但会引入新的切分错误（`代表带着` 被当成 E、`分析问题` 整体
+        吞进 E），在回归锁稳定之前不能当默认值。见
+        `docs/verb-table.md` 的对照数据。
+        """
+        if verbs is not None:
+            self._verbs = frozenset(verbs)
+        elif extended:
+            self._verbs = EXTENDED_VERBS
+        else:
+            self._verbs = DEFAULT_VERBS
         self._max_verb = max((len(v) for v in self._verbs), default=0)
 
     # -- 公开 ------------------------------------------------------------
 
     def chunk(self, sentence: str) -> Chunking:
         out = Chunking(text=sentence)
-        for m in _CLAUSE_RE.finditer(sentence):
-            out.chunks.extend(self._chunk_clause(m.group(), m.start()))
+        for start, stop in _split_clauses(sentence):
+            out.chunks.extend(self._chunk_clause(sentence[start:stop], start))
         out.chunks.sort(key=lambda c: c.start)
         return out
 

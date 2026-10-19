@@ -91,9 +91,11 @@ def main() -> None:
     ap.add_argument("--novels", default=r"D:\Docs\_w\小说")
     ap.add_argument("--adult", default=r"D:\Docs\_w\涩涩\限级、成人")
     ap.add_argument("--limit", type=int, default=10)
+    ap.add_argument("--extended", action="store_true",
+                    help="使用语料抽取的扩展动词表（428 条）")
     args = ap.parse_args()
 
-    c = SentenceChunker()
+    c = SentenceChunker(extended=args.extended)
     dn = diagnose(c, Path(args.novels), args.limit)
     da = diagnose(c, Path(args.adult), args.limit)
     dn.report("普通小说")
