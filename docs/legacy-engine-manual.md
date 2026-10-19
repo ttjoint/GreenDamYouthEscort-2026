@@ -15,7 +15,7 @@
 |---|---|---|---|
 | `FalunWord.lib` | `LH-installed-tree/Windows/HNCLIB/` | 5,564,271 | 唯一的词库，两层结构 |
 | `SentenceObj.dll` | `LH-installed-tree/Windows/` | 544,768 | 32 位 PE，72 个导出 |
-| `Handler.dll` | `LH-installed-tree/Windows/` | 684,032 | 过滤模块，只导入 2 个函数 |
+| `Handler.dll` | `LH-installed-tree/Windows/` | 684,032 | 过滤模块，只导入 2 个函数（但两者都在用，见 `docs/engine-call-graph.md` §1.5） |
 | `data/hnc-falun-filter.json` | 本仓库 | 612,973 | **已导出的打分表 4,693 条** |
 | `data/legacy-imported/falun-terms.json` | 本仓库 | 大 | 旧解析，`terms` 142,742 条 |
 
@@ -277,7 +277,7 @@ entries = json.load(open("data/hnc-falun-filter.json"))["entries"]
 | 识别同义改写 | 没有语义层 |
 | 识别词形变化 | `'法轮功'` 在表里，`法轮功` 不在 |
 | 识别新内容 | 没有词条就不认 |
-| 判断褒贬倾向 | 句类分析是死代码（`docs/engine-call-graph.md`）|
+| 判断褒贬倾向 | 句类分析零调用点（`docs/engine-call-graph.md`）|
 | 判断「谁在说」 | 同上 |
 | 可靠地区分敏感/正常 | trie 层误报 10/10；打分表层漏检 3/10 |
 
@@ -312,7 +312,7 @@ entries = json.load(open("data/hnc-falun-filter.json"))["entries"]
 docs/
   hnc-filter-lib.md            打分表结构、反汇编依据
   hnc-filter-query-chain.md    SearchWord 查询链路、往返校验
-  engine-call-graph.md         为什么句类分析是死代码
+  engine-call-graph.md         句类分析为什么没被调用
   legacy-filter-efficacy.md    实测效果（本文的 §7 数字来源）
   replication-status.md        项目整体成熟度
 

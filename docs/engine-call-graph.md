@@ -6,12 +6,28 @@
 
 - `SentenceObj.dll` 里**有**完整的 HNC 句类分析实现（`CSentenceObj`、
   `GetSentenceALC`、`MakeObjList`、`MakeFandongWordList`）。
-- **没有任何调用点**。`GetSentenceALC` 的地址在整个 DLL 里一次都不出现。
+- **句类分析函数没有任何调用点**。`GetSentenceALC`、`Ini`、
+  `MakeFandongWordList`、`CheckVV`、`GetALC` 在整个 DLL 里
+  既无 `call rel32`、也无绝对地址、也不在任何 vtable 中。
 - `Handler.dll`（绿坝真正的过滤模块）只导入 2 个函数：
   `CreateHncTextGroup` / `ReleaseHncTextGroup`。
-- 它加载的唯一数据文件是 `\hnclib\FalunWord.lib`。
-- 它的分析入口 `CorpGroup` 最终调到 `CFWordLib::MakeALC`，
-  这是**词库级**的字符串扫描，不是句类分析。
+- **它确实调用了这两个，并且真的走 HNC 通路**——见 §1.5。
+  传入的是 `GetWindowsDirectoryA` 拼出的 `\hnclib\` 目录，
+  不是某个具体 `.lib` 文件名。
+- 它通过 `IHncTextGroup` 接口调用 `CorpGroup`，最终落到
+  `CFWordLib::MakeALC`，这是**词库级**的字符串扫描，不是句类分析。
+
+## 0. 先分清两件事
+
+"用了 HNC 引擎" 和 "用了 HNC 的句类分析" 是两回事。准确的说法是：
+
+| 说法 | 成立？ |
+|---|---|
+| 产品用了 `SentenceObj.dll` 这个引擎 | ✅ 成立 |
+| 产品调用了 `CorpGroup` 做分析 | ✅ 成立 |
+| 产品调用了句类分析（`GetSentenceALC` 等） | ❌ 不成立 |
+
+下面两节分别给出证据。
 
 换句话说：**买来了一整套句法分析引擎，产品只用了它的词表查询部分。**
 
@@ -51,6 +67,49 @@ c2 10 00               ret 0x10
 
 `add ecx,-0x124` 就是 `this - 0x124`：子对象指针退回主对象。
 `0x28D0` 正是 `CFWordLib::MakeALC`——**词库方法，不是句类方法**。
+
+## 1.5 `Handler.dll` 确实调用 HNC，位置与参数都有
+
+这是之前漏掉的一段。在 `Handler.dll` 里搜 IAT 立即数
+`0x3101216c`（`CreateHncTextGroup`）和 `0x31012168`
+（`ReleaseHncTextGroup`），各命中 1 次：
+
+```
+# 创建（0x31007280 函数内）
+0x310072aa call [0x310120b0]      ; GetWindowsDirectoryA
+0x310072b1 mov  edi, 0x310154e0   ; "\hnclib\"
+...                                ; 拼成 <WinDir>\hnclib0x310072e4 call [0x3101216c]      ; CreateHncTextGroup(path)
+0x310072ed mov  [ebx], eax         ; 保存接口指针
+0x310072f7 mov  edx, [eax]         ; vtable
+0x310072fd push 0x3e8              ; 1000
+0x310072fb push 1
+0x310072f9 push 3
+0x31007304 call [edx+0x10]         ; slot[4] = 0x2dc0，设置 3 个参数
+```
+
+`slot[4]`（`0x2dc0`）把三个值分别存进 `+0x100344`、`+0x100348`、
+`+0x10034c`——所以 `(3, 1, 1000)` 是三个独立的配置项，不是打包参数。
+
+```
+# 分析（0x31007340 函数内）
+0x31007357 mov  ecx, [esi]
+0x31007349 mov  edx, [ecx]
+0x31007361 call [edx+0x14]         ; slot[5] = 0x2e30 = CorpGroup
+```
+
+`slot[5]`（`0x2e30`）按第三个参数选择转码方式（0→`0x4db0` GBK，
+2→`0x1000`，1→不转码），然后落到 `0x28d0` = `MakeALC`。
+
+**所以 `Handler.dll` 与 HNC 的接口是 4 个 vtable 槽**：
+
+| 槽 | 偏移 | 地址 | 作用 |
+|---|---|---|---|
+| 4 | `+0x10` | `0x2dc0` | 设 3 个配置项 |
+| 5 | `+0x14` | `0x2e30` | `CorpGroup`：转码 + `MakeALC` |
+| 1 | `+0x04` | `0x78e0` | 空函数（`ret`） |
+| 3 | `+0x0c` | `0x6f70` | 空函数（`ret 4`） |
+
+`slot[0]`（`0x2db0`）也是空函数（`ret 0xc`）。
 
 ## 2. `MakeALC` 里没有一处调用句类分析
 
@@ -113,7 +172,11 @@ c2 10 00               ret 0x10
 SentenceObj.dll
 ```
 
-**就这两个。** 72 个导出里其余 70 个完全没用。
+**就这两个。** 72 个导出里其余 70 个没有调用点。
+
+但"只导入 2 个函数"不等于"没用到 HNC"：这两个函数返回的
+`IHncTextGroup*` 是一个接口指针，其余功能全靠 vtable 调。
+`Handler.dll` 实际用了 4 个槽，见 §1.5。
 
 `Handler.dll` 里出现的数据文件路径只有一个（0x151F9）：
 
@@ -122,8 +185,8 @@ SentenceObj.dll
 ```
 
 没有任何 `Word.lib` / `SentLib.lib` / `JiBenJL.lib` / `rule.lib` 的字样。
-与 `Ini` 的 12 个检查点对照：`Handler.dll` 从来不调 `Ini`，所以缺那 11 个
-文件对产品的过滤功能**没有影响**。
+与 `Ini` 的检查点对照：`Handler.dll` 从来不调 `Ini`，所以缺那 14 个
+裸 `.lib` 对产品的过滤功能**没有影响**。
 
 `HncEng.exe` 同样只导入这两个函数。
 
@@ -131,8 +194,9 @@ SentenceObj.dll
 
 | 层次 | 有没有 | 产品用不用 |
 |---|---|---|
-| HNC 句类分析**代码** | ✅ 有，完整在 `SentenceObj.dll` 里 | ❌ 从不调用 |
+| HNC 句类分析**代码** | ✅ 有，完整在 `SentenceObj.dll` 里 | ❌ 零调用点（`call`/绝对地址/vtable 三查皆无） |
 | HNC 句类分析**数据** | ❌ 14 个裸 `.lib` 全不在树上 | 无关 |
+| `IHncTextGroup` 接口 | ✅ 有，12 个槽 | ✅ **经 4 个槽调用** |
 | 词库查询（`MakeALC`/`SearchWord`） | ✅ 有 | ✅ **主力** |
 | 打分表（`GetWordFanDong`/`GetWordHongHei`） | ✅ 有，4693 条 | ✅ **主力** |
 
@@ -158,11 +222,16 @@ SentenceObj.dll
 
 ## 7. 仍然未知
 
-- `Handler.dll` 拿到 XML 之后怎么判定「拦截 / 放行」。它自己不含
-  `FanDong`/`HongHei` 字符串，说明判定在 `HASrv.dll` 或别处，
-  或者通过 `IHncTextGroup` 的其他 vtable 项拿结果。**没查。**
+- `CorpGroup` 的返回值（0/1/负数）分别代表什么。`Handler.dll`
+  在 `0x31007368` 处把 `eax` 存进 `[esi+0x10]`，之后怎么用**没查**。
+- 三个配置项 `(3, 1, 1000)` 各自的含义。已知它们被存到
+  `+0x100344` / `+0x100348` / `+0x10034c`，但谁读这些字段、
+  读到之后改变什么行为，**没查**。
+- `Handler.dll` 里另外三个数据文件字符串
+  （`uTUrl.Dat`、`TrustUrl.Dat`、`uFWORD.dat`）的用途。**没查**。
 - 反动度 / 红黑度数值到拦截动作的映射。**没查。**
-- `MakeFandongWordList`（0x5CC0）设计给谁用。它在 DLL 内也没有调用点。
+- `MakeFandongWordList`（0x5CC0）设计给谁用。它在 DLL 内也没有调用点，
+  也不在 vtable 里——这一条维持原判断。
 
 ## 复现
 

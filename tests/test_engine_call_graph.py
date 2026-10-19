@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
-"""调用图测试：产品到底有没有用 HNC 的句类分析。
+"""调用图测试：产品用的是 HNC 的哪一部分。
 
-## 为什么值得锁住
+## 要分清的两件事
 
-我们花了很长时间纠结「12 个 `.lib` 缺失，所以复刻不了 HNC」。
-实际上那是个假问题——即使把 12 个文件凑齐，绿坝也不会用句类分析做过滤，
-因为 `Handler.dll` 根本没接那条线。
+"用了 HNC 引擎" 和 "用了 HNC 的句类分析" 不是一回事：
 
-这组测试把「没接」这件事的证据固化下来，避免以后又绕回去。
+- 产品**确实**通过 `IHncTextGroup` 调 `CorpGroup`（`Handler.dll` 里有 4 个
+  vtable 槽的调用点），所以"没接 HNC"是错的；
+- 但句类分析函数（`GetSentenceALC`/`Ini`/`MakeFandongWordList`/`CheckVV`/
+  `GetALC`）**零调用点**：无 `call rel32`、无绝对地址、不在任何 vtable 里。
 
-依据见 `docs/engine-call-graph.md`。
+这组测试两边都锁住，避免以后再笼统地说"死代码"或"没用 HNC"。
+
+依据见 `docs/engine-call-graph.md` §0 与 §1.5。
 """
 
 from __future__ import annotations
@@ -51,7 +54,7 @@ def _abs_refs(data: bytes, rva: int) -> list[int]:
 
 
 @unittest.skipUnless((TREE / "SentenceObj.dll").exists(), "安装树不在")
-class SentenceAnalysisIsDeadCodeTest(unittest.TestCase):
+class SentenceAnalysisHasNoCallSiteTest(unittest.TestCase):
     """句类分析的入口函数，全 DLL 范围内没有调用点。"""
 
     DEAD = {
@@ -179,6 +182,78 @@ class HandlerUsesOnlyTwoExportsTest(unittest.TestCase):
         d = _dll("HncEng.exe")
         self.assertIn(b"?CreateHncTextGroup@@YAPAVIHncTextGroup@@PAD@Z", d)
         self.assertIn(b"?ReleaseHncTextGroup@@YAXPAVIHncTextGroup@@@Z", d)
+
+
+class HandlerDoesCallHncTest(unittest.TestCase):
+    """`Handler.dll` 真的调用了 HNC，结论不再是"没接这条线"。
+
+    之前的结论只看了导入表，漏了 IAT 立即数。补上。
+    """
+
+    CREATE_IAT = 0x3101216C
+    RELEASE_IAT = 0x31012168
+    WIN_DIR = 0x310120B0  # GetWindowsDirectoryA
+
+    def test_create_and_release_are_each_called_once(self):
+        d = _dll("Handler.dll")
+        for iat, name in (
+            (self.CREATE_IAT, "CreateHncTextGroup"),
+            (self.RELEASE_IAT, "ReleaseHncTextGroup"),
+        ):
+            with self.subTest(fn=name):
+                self.assertEqual(d.count(iat.to_bytes(4, "little")), 1)
+
+    def test_create_call_is_fed_by_getwindowsdirectory(self):
+        d = _dll("Handler.dll")
+        # 找 call [0x310120b0] = ff 15 <imm32>。不能只找 imm32，
+        # 也不能用 find()：导入 thunk 区里也有一份。
+        win_call = bytes([0xFF, 0x15]) + self.WIN_DIR.to_bytes(4, "little")
+        create = self.CREATE_IAT.to_bytes(4, "little")
+        i_create = d.find(create)
+        self.assertGreater(i_create, 0)
+        i_win = d.rfind(win_call, 0, i_create)
+        self.assertGreater(i_win, 0, "Create 之前应有一次 GetWindowsDirectoryA")
+        self.assertLess(i_create - i_win, 0x80, "两者应在同一函数内")
+        # 中间应出现 mov edi, \hnclib\ 目录串的立即数
+        hnclib = (0x310154E0).to_bytes(4, "little")
+        self.assertIn(hnclib, d[i_win:i_create])
+
+    def test_interface_is_used_through_vtable_slots(self):
+        """槽 4 设参数、槽 5 触发分析。"""
+        d = _dll("Handler.dll")
+        create = self.CREATE_IAT.to_bytes(4, "little")
+        i = d.find(create)
+        window = d[i : i + 0x100]
+        self.assertIn(bytes.fromhex("ff5210"), window, "slot[4] call")
+        self.assertIn(bytes.fromhex("ff5214"), window, "slot[5] call")
+        # 三个配置项之一：1000 = 0x3e8 作为 push imm32
+        self.assertIn(bytes.fromhex("68e8030000"), window)
+
+    def test_vtable_slots_point_at_the_expected_functions(self):
+        """slot[4]=0x2dc0 存参数，slot[5]=0x2e30 是 CorpGroup。"""
+        d = _dll("SentenceObj.dll")
+        base = 0x10000000
+        vt_rva = 0x451DC  # CFWordLib::IHncTextGroup vtable
+        slots = [
+            struct.unpack("<I", d[vt_rva + i * 4 : vt_rva + i * 4 + 4])[0]
+            for i in range(12)
+        ]
+        self.assertEqual(slots[4] - base, 0x2DC0)
+        self.assertEqual(slots[5] - base, 0x2E30)
+        # 槽 0 / 1 / 3 是空函数：ret 0xc / ret / ret 4
+        self.assertEqual(d[slots[0] - base : slots[0] - base + 3], bytes([0xC2, 0x0C, 0x00]))
+        self.assertEqual(d[slots[1] - base : slots[1] - base + 1], bytes([0xC3]))
+        self.assertEqual(d[slots[3] - base : slots[3] - base + 3], bytes([0xC2, 0x04, 0x00]))
+
+    def test_corpgroupp_has_three_transcode_modes(self):
+        """0x2e30 按第三个参数选转码：0/1/2，最终落到 MakeALC。"""
+        d = _dll("SentenceObj.dll")
+        body = d[0x2E30 : 0x2E30 + 0x90]
+        self.assertIn(bytes([0x83, 0xFA, 0x01]), body)  # cmp edx, 1
+        self.assertIn(bytes([0x83, 0xFA, 0x02]), body)  # cmp edx, 2
+        # call 0x28d0（相对位移按指令尾部计算）
+        rel = 0x28D0 - (0x2EA6 + 5)
+        self.assertIn(b"\xe8" + rel.to_bytes(4, "little", signed=True), body)
 
 
 if __name__ == "__main__":
