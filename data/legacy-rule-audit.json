@@ -1,0 +1,67 @@
+[
+  {
+    "source": "adwapp.dat.txt",
+    "rules": 6856,
+    "expanded_terms": 6856,
+    "unique_terms": 6765,
+    "modes": {
+      "literal": 6856
+    },
+    "raw_rules": 0,
+    "raw_examples": []
+  },
+  {
+    "source": "adwfil.dat.txt",
+    "rules": 2003,
+    "expanded_terms": 3618,
+    "unique_terms": 3543,
+    "modes": {
+      "literal": 3601,
+      "prefix": 9,
+      "suffix": 8
+    },
+    "raw_rules": 0,
+    "raw_examples": []
+  },
+  {
+    "source": "iawfil.dat.txt",
+    "rules": 113,
+    "expanded_terms": 334,
+    "unique_terms": 325,
+    "modes": {
+      "literal": 194,
+      "prefix": 70,
+      "suffix": 70
+    },
+    "raw_rules": 1,
+    "raw_examples": [
+      "[+,=][commit][,+][suicide]"
+    ]
+  },
+  {
+    "source": "lgwfil.dat.txt",
+    "rules": 54,
+    "expanded_terms": 170,
+    "unique_terms": 169,
+    "modes": {
+      "literal": 148,
+      "prefix": 11,
+      "suffix": 11
+    },
+    "raw_rules": 0,
+    "raw_examples": []
+  },
+  {
+    "source": "vgamfil.dat.txt",
+    "rules": 117,
+    "expanded_terms": 207,
+    "unique_terms": 203,
+    "modes": {
+      "literal": 131,
+      "prefix": 38,
+      "suffix": 38
+    },
+    "raw_rules": 0,
+    "raw_examples": []
+  }
+]
