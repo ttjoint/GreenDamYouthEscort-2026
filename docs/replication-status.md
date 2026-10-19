@@ -148,6 +148,7 @@ CSentenceObj::Ini
 | L3 信任/黑名单网址 | `TrustUrl.dat` + `wfile.dat` | `Surfgd.dll` 逐条比对 | ✅ 已导入（1,157 主机） |
 | L4 进程/端口黑名单 | `filtport.dat` + LSP（`dbfilter.dll` → `Surfgd.dll`） | Winsock 劫持，按进程/端口判定 | ✅ 已审计（2 条明文） |
 | L5 API hook | `Handler.dll` 表 → `HASrv.dll` | 15 条 inline hook，4 条拦 GDI 文字渲染、11 条自保护 | ✅ 已解析（`docs/api-hook-layer.md`） |
+| L6 图像识别 | `XNet2.exe` → `CImage.dll` → `FImage.dll` → OpenCV | 全屏 `BitBlt` 截图 + 肤色阈值 + Haar 正脸检测 | ✅ 已解析，⚠️ 未复刻（`docs/image-recognition.md`） |
 
 > **注意**：`1.urf`–`9.urf` **不是**过滤层的任何一部分，
 > 而是 AppFace 换肤库的皮肤资源包（内嵌未加密 GIF）。

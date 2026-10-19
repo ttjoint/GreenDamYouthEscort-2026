@@ -129,19 +129,66 @@ python tools/audit_modules.py --legacy ../LH-installed-tree \
 - **内容相关**：`FilterWords`、`UpdateWords`、`SnapShotScreen`、
   `WriteP2FileStr`、`VSDefStartSvc`
 
-## 3. 两条重要的否定结论
+## 3. `MPSvcDll.dll` 的导出是一组 COM 转发
 
-### 3.1 `FilterWords` 没有任何调用者
+这一节值得单列，因为**只看静态导入表会得出完全相反的结论**。
 
-`MPSvcDll.dll` 导出 `FilterWords` 和 `UpdateWords`，看起来像是
-主控侧的过滤入口。但**全树 33 个模块，没有任何一个导入它们，
-也没有任何一个模块的字符串里出现 `FilterWords`**（只有
-`MPSvcDll.dll` 自己的导出名表里有）。
+`MPSvcDll.dll` 导出 `FilterWords`、`UpdateWords`、`SnapShotScreen`
+等 19 个函数。全树没有任何模块**静态导入**它们，字符串 `FilterWords`
+也只出现在 `MPSvcDll.dll` 自己的导出名表里。到此为止很容易判成
+"死导出"——**这个判断是错的**。
 
-它是**死导出**。这条和 `SentenceObj.dll` 那 14 个裸 `.lib`
-是同一个性质的证据：产品留着一个能力，但没接上。
+反汇编 `0x10001440`（`FilterWords`）：
 
-### 3.2 `SentenceObj.dll` 里 14 个裸 `.lib` 不是加载路径
+```
+call [0x100050b0]        ; CoInitialize(0)
+push 0x100050d0          ; CLSID
+push 0x100050c0          ; IID
+push 4                   ; CLSCTX_LOCAL_SERVER
+call [0x100050b4]        ; CoCreateInstance(...)
+...
+mov  edx, [ecx]          ; vtable
+call [edx + 0x34]        ; FilterWords 真正实现
+call [ecx + 8]           ; Release
+call [0x100050b8]        ; CoUninitialize(0)
+```
+
+**`MPSvcDll.dll` 里这 19 个导出是同一套 COM 接口的转发层**，
+各自只差虚表偏移：
+
+| 导出 | 虚表偏移 |
+|---|---|
+| `UpdateWords` | `[edx+0x30]` |
+| `FilterWords` | `[edx+0x34]` |
+| `SnapShotScreen` | 同一模式 |
+
+CLSID 与 IID 就嵌在 `MPSvcDll.dll` 里：
+
+- CLSID `{56835A03-3BAA-49F0-BA6E-8EEFD6D62991}`
+- IID   `{56835A03-3BAA-49F0-BA6E-8EEFD6D62960}`
+
+两者的 `BYTES_LE` 形式在 **`MPSvcC.exe`、`MPSvcDll.dll`、
+`MPSvcPS.dll`** 三个模块里都能找到。`MPSvcC.exe` 的 `.rdata`
+`0x40c250` 处，这个 CLSID 后面紧跟一串函数指针
+（`0x402cc0`、`0x403d00`、`0x402c80`…），是标准 COM 类工厂登记结构。
+
+所以这条链是**活的**：
+
+```
+调用方 → MPSvcDll.dll!FilterWords (转发)
+       → CoCreateInstance(CLSID)
+       → MPSvcC.exe 的 COM 服务端
+       → vtable+0x34
+```
+
+`MPSvcPS.dll` 是配套的 RPC 代理/存根（`NdrProxy*` 全套，
+并自称 `MPSVCPROXY.dll`）。
+
+**方法论教训**：`GetProcAddress` 和 COM 都不需要静态导入表。
+全树有 27 个模块导入 `LoadLibraryA` + `GetProcAddress`，
+"导入表里没有"不能推出"没有调用者"。反汇编函数体才作数。
+
+## 3.5 `SentenceObj.dll` 里 14 个裸 `.lib` 不是加载路径
 
 `SentenceObj.dll` 里出现的 `.lib` 分两种形态，差别是决定性的：
 
@@ -189,13 +236,50 @@ python tools/audit_modules.py --legacy ../LH-installed-tree \
 
 `%s\sysdir\%02d%02d%02d.dat` 是运行期按日期拼的路径，不是固定文件名。
 
-## 5. 对复刻的影响
+## 5. 复刻现状
 
-- **必须复刻的只有三块**：词表判定（`FalunWord.lib`）、
-  分类规则（五张 `*fil.dat`）、信任/端口表（`TrustUrl.Dat`、
-  `filtport.dat`）。
-- **可以不做的**：AppFace 皮肤、`cximage`/OpenCV 图像识别、
-  运维工具集、LSP 本身（我们不需要插进 Winsock）。
-- **必须刻意不做的**：`HASrv`/`Handler` 的 11 条自保护 hook。
-- **不再追查的**：14 个裸 `.lib`、`FilterWords`、`uFWORD.dat` 家族
-  ——已有足够证据说明它们不在出厂包里或根本是死代码。
+按"有没有实证支撑"分，不按我的取舍偏好分。
+
+### 5.1 已复刻或有充分实证
+
+| 能力 | 载体 | 状态 |
+|---|---|---|
+| 词表判定 | `FalunWord.lib` | 已复刻 |
+| 分类规则 | `adwapp`/`adwfil`/`iawfil`/`lgwfil`/`vgamfil` | 已解析 |
+| 信任表 | `TrustUrl.dat`、`wfile.dat` | 已解析，未接入 |
+| 端口表 | `filtport.dat` | 已解析 |
+| 策略层 | `src/green_dam/policy.py` | 已实现，缺规则接线 |
+
+### 5.2 原厂确实在做，我们还没做
+
+| 能力 | 载体 | 现状 |
+|---|---|---|
+| **图像识别** | `CImage.dll` + `FImage.dll` + OpenCV | **未复刻**，见 `docs/image-recognition.md` |
+| **屏幕文字拦截** | `HASrv`/`Handler` 的 4 条 GDI hook | 未复刻 |
+| **端口/协议过滤** | `Surfgd.dll` LSP | 未复刻 |
+| **COM 服务接口** | `MPSvcDll` → `MPSvcC.exe` | 接口已解，语义未解 |
+
+图像识别这条**不是**"可以不做"。`XNet2.exe` 静态导入了
+`CImage.dll` 的 `CAPSCREEN`、`CHECKEX2`、`DES2GO`，调用路径确凿存在。
+它做的是全屏截图（`BitBlt` SRCCOPY）+ 肤色比例阈值 + Haar 人脸检测，
+详见 `docs/image-recognition.md`。
+
+而且它的依赖**是齐的**：`Windows\System32\XFimage.xml`（858,866 字节）
+就是完整的 `haarcascade_frontalface_alt2` 分类器（20 stage / 1,047 tree）。
+在所有未复刻模块里，图像识别的数据条件最好。
+
+### 5.3 证据不足，不能说死代码
+
+| 模块/导出 | 已知 | 未知 |
+|---|---|---|
+| `FilterWords`/`UpdateWords` | COM 转发，CLSID/IID 已解 | 服务端方法体的判定语义 |
+| `uFWORD.dat` 家族 6 个文件 | 被 4 个模块引用 | 是否由更新下发；本地无样本 |
+
+这些不再写成"死代码"或"死导出"。正确表述是
+**"我们还没解出它的语义"**。
+
+### 5.4 明确不做
+
+只有一项有充分理由，且是**道德理由不是技术理由**：
+`HASrv`/`Handler` 那 11 条自保护 hook（改注册表、`OpenProcess`、
+`OpenService`）——它们是对抗卸载，不属于过滤能力。
