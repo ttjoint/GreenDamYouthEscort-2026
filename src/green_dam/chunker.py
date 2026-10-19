@@ -117,6 +117,32 @@ class ChunkRole(str, Enum):
     def is_main(self) -> bool:
         return self in (ChunkRole.E, ChunkRole.A, ChunkRole.B, ChunkRole.C)
 
+    @property
+    def math_symbol(self) -> str:
+        """数学表示式里的符号（论题 34《语义块表示式及其应用》）。
+
+        原文表格：
+
+            语义块类型          物理表示              数学表示
+            特征语义块      X,P,T,Y,R,S,D,jD          E
+            广义对象语义块    A,B,C             JK, JKm, JKn
+            辅语义块      Ms,In,Wy,Re,Cn,Pr,Rt  fK, fKm, fKmn
+            两可语义块        RtB, ReC       fJK, fJKm, fJKmn
+
+        `math_symbol` 只给**类别层**的符号（E/JK/fK/fJK），不带序号。
+        序号需要块的出现次序，那是 `Chunking.math_pattern()` 的事。
+
+        两可块（RtB/ReC）目前不产出——它们是“果/参照”与“对象/内容”
+        之间的两可情形，需要句类知识才能定，本模块不猜。
+        """
+        if self is ChunkRole.E:
+            return "E"
+        if self.is_main:
+            return "JK"
+        if self is ChunkRole.UNKNOWN:
+            return "?"
+        return "fK"
+
 
 # ---------------------------------------------------------------------------
 # 介词 → 辅块子类（**推断**，非论文原表）
@@ -184,6 +210,43 @@ SINGLE_CHAR_SECONDARY = frozenset(
 _ORPHAN_MARKERS = frozenset(
     "于自打向朝以从经给至于为把被将连跟同和与就让叫替管往对"
 )
+#: 含单字 l 标记、但**不能**按标记切开的双字词。
+#:
+#: 论文 11.1 只说 l 类概念用作切分标志，没有提供"何时是词、何时是
+#: 标记"的判据（那需要词表）。这里只收实测造成误切的：
+#:
+#:   原因/因为/由于 → 误切"天气原 | 因"
+#:   同学/同事/同时 → 误切"同 | 学"（"同"是主标记符）
+#:   现在/正在/存在 → 误切"现 | 在"
+#:   目的/的确/有的 → 误切"有 | 的"
+_NON_TAG_WORDS = frozenset((
+    "原因", "因为", "由于", "因此", "因而", "因果",
+    "同学", "同事", "同时", "同意", "同等", "同一", "相同", "共同",
+    "现在", "正在", "存在", "实在", "所在", "内在", "外在", "潜在",
+    "目的", "的确", "有的", "所得", "所有", "有机", "有利", "有效",
+    "不是", "只是", "但是", "还是", "要是", "就是", "总是", "于是",
+    "何况", "如何", "为何", "结果", "结合", "适合", "综合", "结构",
+    "理解", "理论", "理想", "理由", "管理", "办理", "处理", "治理",
+    "通过", "经过", "不过", "超过", "路过", "难过",
+    "当地", "当前", "当然", "当做", "担当", "适当", "相当",
+    "用户", "用途", "费用", "作用", "采用", "使用", "适用", "应用",
+    "方向", "向上", "向往", "转向", "倾向", "指向", "一向",
+    "对于", "对岸", "对抗", "针对", "相对", "绝对",
+    "离开", "离别", "分离", "距离", "脱离", "隔离",
+    "按照", "按时", "按理", "按键",
+    "依靠", "依据", "依旧", "依照",
+    "照例", "照样", "照相",
+    "沿途", "沿线", "沿用",
+    "关于", "关系", "关注", "关联", "有关", "无关",
+    "至于", "甚至", "直至", "截止", "至此",
+    "除了", "清除", "排除", "删除",
+    "为了", "成为", "作为", "认为", "以为", "行为", "因为",
+    "本着", "本身", "根本", "基本", "资本", "样本",
+    "凭着", "凭借",
+    "朝着", "明朝", "朝代",
+    "沿着", "沿海", "沿用",
+))
+
 TIME_WORDS = frozenset((
     "昨天", "今天", "明天", "前天", "后天", "现在", "刚才", "以后",
     "之前", "之后", "去年", "今年", "明年", "上午", "下午", "晚上",
@@ -195,24 +258,19 @@ TIME_WORDS = frozenset((
 #: 与构词成分高度混淆（"空投"含"投"、"会议"不含动词），收进来会把名词
 #: 内部切开。宁可漏判 E（退化为低置信 B 块），也不误判。
 DEFAULT_VERBS = frozenset((
-    "发现", "认为", "表示", "指出", "希望", "要求", "同意", "反对",
-    "完成", "进行", "实现", "开始", "结束", "出现", "发生", "成为",
-    "打断", "召开", "举行", "参加", "通过", "决定", "提出", "提供",
-    "获得", "取得", "造成", "导致", "引起", "产生", "达到", "超过",
-    "研究", "分析", "处理", "解决", "建立", "发展", "提高", "增加",
-    "减少", "改变", "影响", "支持", "帮助", "保护", "打击", "检查",
-    "空投", "采访", "报道", "宣布", "承认", "否认", "担心", "害怕",
-    "喜欢", "讨厌", "知道", "明白", "理解", "相信", "怀疑", "注意",
-    "照顾", "帮助", "批评", "表扬", "鼓励", "安慰", "打扰", "欺负",
-    "包揽", "承担", "负责", "参与", "加入", "离开", "到达", "进入",
-    "回来", "出去", "进来", "上去", "下来", "起来", "得到", "失去",
-    "放弃", "拒绝", "接受", "告诉", "询问", "回答", "解释", "说明",
-    "空投", "运输", "转移", "接收", "发送", "传递", "交付", "征集",
-    # 单字谓语白名单：极度保守。只收 `[张]` §3 例子直接需要、且几乎
-    # 不会出现在名词内部的动词。实测“笑/走/开/拉”会误切“笑容”“走
-    # 廊”“开会”“拉长”，故只留下面这几个：
-    "笑", "哭", "坐", "站", "吃", "睡",
+"发现", "认为", "表示", "指出", "希望", "要求", "同意", "反对", "完成", "进行", "实现", "开始", "结束", "出现", "发生", "成为", "打断", "召开", "举行", "参加", "通过", "决定", "提出", "提供", "获得", "取得", "造成", "导致", "引起", "产生", "达到", "超过", "研究", "分析", "处理", "解决", "建立", "发展", "提高", "增加", "减少", "改变", "影响", "支持", "帮助", "保护", "打击", "检查", "空投", "采访", "报道", "宣布", "承认", "否认", "担心", "害怕", "喜欢", "讨厌", "知道", "明白", "理解", "相信", "怀疑", "注意", "照顾", "批评", "表扬", "鼓励", "安慰", "打扰", "欺负", "包揽", "承担", "负责", "参与", "加入", "离开", "到达", "进入", "回来", "出去", "进来", "上去", "下来", "起来", "得到", "失去", "放弃", "拒绝", "接受", "告诉", "询问", "回答", "解释", "说明", "运输", "转移", "接收", "发送", "传递", "交付", "征集", "看书", "读书", "写仚", "写字", "读写", "看报", "听课", "上课", "学习", "工作", "生活", "休息", "睡觉", "起床", "出门", "回家", "吃饭", "喝水", "开会", "说话", "打电", "走路", "跑步", "唱歌", "讲述", "介绍", "讨论", "交流", "沟通", "协商", "汇报", "报告", "安排", "布置", "实施", "执行", "落实", "推行", "开展", "遇刐", "碰到", "遇见", "感觉", "觉得", "意识", "记得", "看到", "听见", "闻到", "想到", "考虑", "思考", "忘记", "选择", "试探", "尝试", "努力", "坚持", "继续", "停止", "取消", "确认", "审核", "批准", "签订", "维修", "维护", "改善", "提升", "降低", "扩大", "缩小", "加强", "削弱", "消失", "增长", "下降", "上升", "下跌", "变化", "变动", "笑", "哭", "坐", "站", "吃", "睡", "遇到", "受到", "遭到", "送到", "找到", "听到", "读到", "买到", "拿到", "收到", "提交", "发出", "弄到", "改到", "学会", "掌握", "熟悉", "了解", "暴露"
 ))
+
+#: 晋耀红《基于HNC理论的句类分析系统的设计与实现》§2.1 的“指定字”。
+#: 原文：
+#:   "本系统设置了 7 个指定字：的、了、和、是、有、不、在，
+#:    都是汉语的高频字，而且它们对 E 语义块感知影响很大，
+#:    对它们采取指定的方式，可以大大减轻 E 语义块感知的模糊性。"
+#:
+#: 落地方式：这七个字不参与构词猜测（不当辅块内容、不当块首），
+#: 但可用于定位块边界。这直接修掉了本模块的一类错误：
+#: “表示反对”里的“反对”被切成独立 B 块、“看书”被吞进辅块。
+DESIGNATED_CHARS = frozenset("的了和是有不在")
 
 _CLAUSE_RE = re.compile(r"[^，。！？；,.!?;、\n]+")
 _SENT_END_RE = re.compile(r"[，。！？；,.!?;、\n]+")
@@ -270,6 +328,21 @@ class Chunking:
     def pattern_of_main(self) -> str:
         """只取主语义块的签名。式 (4) 的 `sim_gsem` 只比主块。"""
         return "+".join(c.role.value for c in self.main)
+
+    def math_pattern(self) -> str:
+        """数学结构表示式（论题 34 / 晋耀红式 2.1）。
+
+        晋耀红《基于HNC理论的句类分析系统的设计与实现》把简单句写成：
+
+            FJ = Σk（JKi）+ E + Σm（JKi）
+
+        即：E 把句子分成前后两段，每段若干个 JK。辅块 fK 不进入
+        这个结构式（它们不是句类函数的一部分），所以这里只排主块。
+
+        例：“张三打断了李四的腿” → `JK + E + JK`
+            “他认真地看书”        → `JK + E`
+        """
+        return " + ".join(c.role.math_symbol for c in self.main)
 
     def to_frame_hint(self) -> None:
         """留给 `hnc.classify` 的适配点。
@@ -355,10 +428,24 @@ class SentenceChunker:
             if taken[i]:
                 i += n
                 continue
-            # 纯主标记符（把/被/将…）：规范格式，宾语前置，不产生辅块。
-            # 只跳过标记符本身，让后随成分继续走主块判定。
+            # 单字标记符若只是某个词的内部字（“原因”的“因”、“由于”的
+            # “于”），它就不是独立 l 标记。这里**跳过整段词**，而不是
+            # 只跳一个字——否则辅块右边界会落在词中间。
+            # 词内字不是 l 标记。这里**只跳过、不写 taken**——写 taken
+            # 会让整段从 `_free_spans` 里消失，词也被丢掉（“同学”曾
+            # 因此凭空蒸发，只剩“我们班”）。
+            if n == 1:
+                if i > 0 and clause[i - 1 : i + 1] in _NON_TAG_WORDS:
+                    i += 1
+                    continue
+                if self._word_containing(clause, i) is not None:
+                    i += 1
+                    continue
+            # 纯主标记符（把/被/将/同/与…）：规范格式，宾语前置，
+            # 不产生辅块。这里**不**标记 taken：若把它当切点，
+            # “同学”“与会”这类词就会被劈成“同 | 学”。lv 准则要求
+            # l 标记只负责辅块，不应干扰主块的字面完整性。
             if tag.roles == TagRole.MAIN:
-                taken[i : i + n] = b"\x01" * n
                 i += n
                 continue
             if not (tag.roles & (TagRole.SECONDARY | TagRole.DUAL)):
@@ -370,10 +457,16 @@ class SentenceChunker:
 
             body_start, body_end = i + n, self._aux_end(clause, i + n, taken)
             sub = SUBCATEGORY_OF_TAG.get(tag.surface)
+            body = clause[body_start:body_end].strip()
+            # 空内容不建块。实测“由于天气原因”：标记符“由于”之后，
+            # 扫描器又把“因”当成了另一个标记符，产生一个 text="" 的块。
+            if not body:
+                i += n
+                continue
             chunks.append(
                 Chunk(
                     role=sub or ChunkRole.UNKNOWN,
-                    text=clause[body_start:body_end].strip(),
+                    text=body,
                     start=base + i,
                     end=base + body_end,
                     marker=tag.surface,
@@ -416,20 +509,132 @@ class SentenceChunker:
             # 它本身不携带可判定的语义信息，挂在相邻块上只会稀释信号。
             if len(segment) == 1 and segment in _ORPHAN_MARKERS:
                 continue
+            # 晋耀红 §2.1 的 7 个指定字：“的了和是有不在”。它们单独成段
+            # 时不独立成块——“张三打断了李四的腿”曾切出独立的 B 块
+            # “了”。归入相邻块更有意义。
+            if len(segment) == 1 and segment in DESIGNATED_CHARS:
+                continue
             chunks.extend(self._chunk_main(segment, base + offset))
 
         return chunks
 
+    @staticmethod
+    def _pick_e(verbs: list[tuple[int, int]]) -> tuple[int, int]:
+        """从多个动词候选里选 E 块（论题 17《论连动句和兼语句》）。
+
+        规则：若头两个动词**紧邻**（之间无宾语），取后一个作 E。
+        理由是汉语的连动结构里，前一个动词多作引导/伴随（“表示
+        反对”、“开始实施”、“建议采用”），真正的句类中心在后面。
+
+        早期版本无条件取 verbs[0]，于是“他对我的建议表示反对”得到
+        E=表示、B=反，完全错了。
+
+        这是**启发式**：只处理紧邻情形。带宾语的兼语句（“让他走”
+        不该并成一个 E）不在本函数范围内，因为那需要句类知识。
+        """
+        if len(verbs) >= 2 and verbs[0][1] == verbs[1][0]:
+            return verbs[1]
+        return verbs[0]
+
     def _aux_end(self, s: str, start: int, taken: bytearray) -> int:
-        """辅块右边界：下一个标记符 / 下一个谓语 / 分句尾。"""
+        """辅块右边界：下一个标记符 / 下一个谓语 / 分句尾。
+
+        ## 这里踩过的坑（lv 准则）
+
+        论文 11.1：“l 准则仅用于判定辅语义块”。早期版本拿到介词后
+        直接延到分句尾，于是“在教室里**认真地看书**”整句被吃成
+        一个 Cn，谓语没了。辅块的右边界不能由 l 标记自己定，
+        必须由下一个 v 事件定——这就是 v 准则。
+
+        ## 为什么要便宜地猜谓语
+
+        只靠 `_verbs` 词表判边界会漏（“看书”不在表里），所以这里
+        再用一层形态信号做补充：体标记（着/了/过）、
+        以及“动词不及物尾”（单个汉字后跟名词时不像谓语）。
+        两者都会在 `confidence` 上付出代价，不影响块类型。
+        """
         i = start
         while i < len(s):
             if taken[i]:
                 return i
             if i > start and self._is_boundary(s, i):
                 return i
+            pstart = self._predicate_start(s, i, start)
+            if pstart is not None:
+                return pstart
             i += 1
         return len(s)
+
+    @staticmethod
+    def _word_containing(s: str, i: int) -> int | None:
+        """s[i] 若是某个双字词的**首字**，返回词长 2；否则 None。
+
+        单字标记符（因/于/为/当/用/向…）在汉语里几乎都能作构词成分：
+        “原因”的“因”、“因为”的“为”、“当下”的“当”。不排除它们，
+        就会切出“天气原 | 因”。
+
+        只看“本字是否是词首”——词尾情形（“原因”的“因”在 i=5）由
+        `_aux_end` 处理：它在 i=4 处就看不出标记，于是把“因”一并
+        留在辅块里。
+        """
+        if i + 1 < len(s) and s[i : i + 2] in _NON_TAG_WORDS:
+            return 2
+        return None
+
+    def _predicate_start(self, s: str, i: int, floor: int) -> int | None:
+        """若 s[i] 落在谓语范围内，返回**谓语起点**；否则 None。
+
+        论文 11.1：“l 准则仅用于判定辅语义块，对主语义块的判定只有
+        v 准则可以利用。”辅块右边界必须靠 v 信号定位。
+
+        两种高精度形态信号：
+
+        1. **体标记后接**：s[i+1] 是 了/着/过。此时 s[i] 只是
+           谓语的**最后一个字**，真正起点要向左找（“遇到了”）。
+           早期版本直接返回 i，结果切成“图书馆遇 | 到了老朋友”。
+        2. **状语尾“地”**：s[i-1] == “地”，则 i 就是谓语起点。
+
+        刻意**不**做单字动词猜测——“笑容”“开会”就是这么被切碎的。
+        """
+        # 信号 1：X + 体标记
+        if i + 1 < len(s) and s[i + 1] in "着了过":
+            # 先试词表最长匹配（“遇到”“打断”…）
+            for n in range(min(self._max_verb, i - floor + 1), 1, -1):
+                if s[i - n + 1 : i + 1] in self._verbs:
+                    return i - n + 1
+            return i  # 词表没收录，就从这个字算起
+        # 信号 2：“…地”之后
+        if i > 0 and s[i - 1] == "地":
+            return i
+        return None
+
+    def _looks_like_predicate(self, s: str, i: int) -> bool:
+        """s[i:] 处是否像一个谓语的**开头**（不看词表）。
+
+        论文 11.1：“l 准则仅用于判定辅语义块，对主语义块的判定只有
+        v 准则可以利用。”所以辅块的右边界必须靠 v 信号定位。
+
+        只用两种高精度形态信号：
+
+        1. `V+了/着/过`：体标记。注意**必须整体回退**——命中
+           “遇”时真正的谓语是“遇到了”，如果把 i 定在“遇”，
+           就会切出“图书馆遇 | 到了老朋友”。所以这里返回的是
+           **谓语起点**，调用方往左做最长词表回溯。
+        2. 前面是“地”（状语尾）：“认真地看书”中的“看书”一定
+           是谓语部分。
+
+        刻意**不**做单字动词猜测——“笑容”“开会”就是这么被切碎的。
+        """
+        # 信号 1：左侧紧邻体标记 → i 已经在体标记后面，不是谓语起点
+        if i > 0 and s[i - 1] in "着了过":
+            return False
+        # 信号 2：X + 体标记。X 是动词，词表里找得到就往前扩
+        if i + 1 < len(s) and s[i + 1] in "着了过发":
+            return True
+        # 信号 3：“…地”之后的第一个字就是谓语开头
+        if i > 0 and s[i - 1] == "地":
+            return True
+        return False
 
     def _is_boundary(self, s: str, i: int) -> bool:
         """s[i:] 处是否是一个新块的开头。
@@ -443,7 +648,17 @@ class SentenceChunker:
             if s[i : i + n] in self._verbs:
                 return True
         hit = maximal_tag_at(s, i)
-        return bool(hit and self._usable_marker(hit[0], hit[1]))
+        if not hit:
+            return False
+        # 词内字不算边界。两种情形：
+        #   词尾：“天气原|因”的“因”、“现|在”的“在”
+        #   词首：“我|们班同学”的“同”——“同”本身是主标记符
+        if hit[1] == 1:
+            if i > 0 and s[i - 1 : i + 1] in _NON_TAG_WORDS:
+                return False
+            if s[i : i + 2] in _NON_TAG_WORDS:
+                return False
+        return self._usable_marker(hit[0], hit[1])
 
     @staticmethod
     def _usable_marker(tag, span: int) -> bool:
@@ -503,15 +718,25 @@ class SentenceChunker:
             return [Chunk(ChunkRole.B, text, base, base + len(text),
                           confidence=0.4)]
 
-        e_pos, e_end = verbs[0]
+        e_pos, e_end = self._pick_e(verbs)
         out: list[Chunk] = []
 
-        before = text[:e_pos].strip()
+        # 连动结构里 E 块的左边界：前方紧邻的同组动词也属于 E¶
+        # “表示反对”：E 不应只是“反对”，前面的“表示”也是谓语成分。
+        # 早期版本把它划进了 A，“他对我的建议表示”成为一个荒谬的 A 块。
+        e_start = e_pos
+        for vs, ve in verbs:
+            if ve == e_start:
+                e_start = vs
+            elif vs >= e_pos:
+                break
+
+        before = text[:e_start].strip()
         if before:
             # 前置成分是否已是"v+着"（单动词情形也降为方式辅块）
             if before.endswith("着") and len(before) > 1:
                 out.append(Chunk(ChunkRole.BK_MS, before, base,
-                                 base + e_pos, confidence=0.5))
+                                 base + e_start, confidence=0.5))
             elif self._looks_conditional(before):
                 # 论题 7 答 3 第三条（`book307.htm` 原文）：
                 #   "不带标记的辅块必然是以 K(jm) 为内容的条件辅块。
@@ -525,17 +750,22 @@ class SentenceChunker:
                     out.append(Chunk(ChunkRole.BK_CN, before[:cut], base,
                                      base + cut, confidence=0.4))
                     out.append(Chunk(ChunkRole.A, before[cut:],
-                                     base + cut, base + e_pos,
+                                     base + cut, base + e_start,
                                      confidence=0.5))
                 else:
                     out.append(Chunk(ChunkRole.BK_CN, before, base,
-                                     base + e_pos, confidence=0.4))
+                                     base + e_start, confidence=0.4))
             else:
                 out.append(Chunk(ChunkRole.A, before, base,
-                                 base + e_pos, confidence=0.6))
+                                 base + e_start, confidence=0.6))
 
-        out.append(Chunk(ChunkRole.E, text[e_pos:e_end], base + e_pos,
-                         base + e_end, confidence=0.8))
+        # 体标记属于 E 自身的形态，不是独立语义块。
+        # 早期版本把紧跟的“了”切成了一个独立的 B 块（“打断”+“了李四的腿”）。
+        while e_end < len(text) and text[e_end] in "着了过":
+            e_end += 1
+
+        out.append(Chunk(ChunkRole.E, text[e_start:e_end],
+                         base + e_start, base + e_end, confidence=0.8))
         out.extend(self._tail_chunk(text, e_end, base))
         return out
 

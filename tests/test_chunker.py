@@ -71,7 +71,9 @@ class RegressionLockTest(unittest.TestCase):
         # bug：单字“打”把“张三打了个…”切成 ? 块
         r = self.c.chunk("张三打断了李四的腿。")
         self.assertEqual(r.pattern, "A+E+B")
-        self.assertEqual(r.main[1].text, "打断")
+        # 体标记“了”属于 E 自身形态，不是独立块。
+        # 旧断言写的是 "打断"，丢弃了体标记；后来按 lv 准则修正。
+        self.assertEqual(r.main[1].text, "打断了")
 
     def test_verb_beats_single_char_marker(self):
         # bug：“离开会场”被切成辅块“开会场”，因为“离”是标记符
