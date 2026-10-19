@@ -80,9 +80,16 @@ def main() -> int:
             continue
         if len(word) == 1 and word in NOT_VERBS:
             continue
+        # 名动兼类（主要用法是名词）：`filter_candidates` 已按
+        # `NOUN_AMBIGUOUS` 砍过一遍，这里再兜一次，因为旧表并入时
+        # `DEFAULT_VERBS` 可能带进来。
+        if word in H.NOUN_AMBIGUOUS:
+            continue
         verbs[word] = n
     # 旧表并入：已经验证过的动词不该因为语料没覆盖就丢掉
     for word in DEFAULT_VERBS:
+        if word in H.NOUN_AMBIGUOUS:
+            continue
         verbs.setdefault(word, 0)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)

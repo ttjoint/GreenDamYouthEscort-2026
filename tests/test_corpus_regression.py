@@ -41,12 +41,20 @@ from green_dam.chunker import DEFAULT_VERBS, SentenceChunker  # noqa: E402
 
 #: 真实语料里仍会退化成单块的分句。
 #: **这份清单变短是好事**——修了词表就把对应行删掉。
-KNOWN_UNCHUNKED = (
+#: 扩展动词表（默认开启）修好了这几句——保留在此作为**回归锁**：
+#: 它们曾经找不出谓语，现在能。如果哪天又退回去，测试会失败。
+#: 早先用的是 `extended=False`，这四句属于「已知缺陷」清单；
+#: 扩展表把 `看/经历/想/看` 收进来之后就不再是缺陷了。
+FIXED_BY_EXTENDED_TABLE = (
     "看着这个行星上存在了五千年的文明",
     "它曾经历过比这大得多的巨变",
     "他们不想惹麻烦",
-    "被毛毛虫国吞并",
     "那个地球表面可以看得更细了",
+)
+
+#: 扩展表仍然找不到谓语的句子。不是 TODO，是现状记录。
+KNOWN_UNCHUNKED = (
+    "被毛毛虫国吞并",
     "周围还有一圈亮着屏幕的电脑",
     "他们还能干什么呢",
     "劳动强度更大",
@@ -67,13 +75,38 @@ class VocabularyCoverageTest(unittest.TestCase):
 
         这些句子都**有**谓语，却识别不出来。测试通过说明缺陷仍然存在
         且没有被意外修好——如果有人补了词表，这条会失败，那时应该
-        把对应句子从 KNOWN_UNCHUNKED 移到 `test_chunked_after_fix`。
+        把对应句子从 KNOWN_UNCHUNKED 移到 `FIXED_BY_EXTENDED_TABLE`。
         """
         c = SentenceChunker()
         for sent in KNOWN_UNCHUNKED:
             with self.subTest(sent=sent):
                 self.assertEqual(c._find_verbs_safe(sent), [],
                                  f"{sent!r} 居然认出谓语了，请更新测试")
+
+    def test_extended_table_fixed_these(self):
+        """扩展表修好的句子：锁住改善，防止回退。
+
+        `看` `经历` `想` 这些单字/双字动词原来不在 208 条手写表里，
+        于是整句退化成单块。扩展表（413 条）把它们收进来了。
+        """
+        c = SentenceChunker()
+        for sent in FIXED_BY_EXTENDED_TABLE:
+            with self.subTest(sent=sent):
+                self.assertNotEqual(
+                    c._find_verbs_safe(sent), [],
+                    f"{sent!r} 又退化了（扩展表本该认出谓语）")
+
+    def test_old_table_still_fails_on_those(self):
+        """对照：关掉扩展表，这几句仍然找不到谓语。
+
+        这条测试证明改善**确实来自**扩展表，不是别的原因。
+        """
+        c = SentenceChunker(extended=False)
+        for sent in FIXED_BY_EXTENDED_TABLE:
+            with self.subTest(sent=sent):
+                self.assertEqual(c._find_verbs_safe(sent), [],
+                                 f"{sent!r} 在旧表下也认出来了，"
+                                 "那改善就不是扩展表带来的")
 
 
 class ChunkedRealSentencesTest(unittest.TestCase):

@@ -526,13 +526,23 @@ class SentenceChunker:
     """
 
     def __init__(self, verbs: Iterable[str] | None = None,
-                 extended: bool = False) -> None:
-        """`extended=True` 时使用语料抽取的扩展动词表。
+                 extended: bool = True) -> None:
+        """`extended=True`（默认）使用语料抽取的扩展动词表。
 
-        默认仍用 208 条手写表：扩展表把覆盖率从 2.47% 提到约 30%，
-        但会引入新的切分错误（`代表带着` 被当成 E、`分析问题` 整体
-        吞进 E），在回归锁稳定之前不能当默认值。见
-        `docs/verb-table.md` 的对照数据。
+        ## 为什么现在可以默认开
+
+        扩展表（413 条）把单块退化率从 54.3%/66.9% 降到 41.0%/52.5%，
+        但早先有两个缺陷挡住它：
+
+        1. `问题`/`代表` 这类**名动兼类词**被当谓语，
+           `他正在分析问题` 变成 `E=分析问题`。
+           已由 `harvest_verbs.NOUN_AMBIGUOUS` 挡住。
+        2. `V+着` 伴随动词抢走 E，`日本代表带着满意的笑容离开会场`
+           变成 `E=带着`。
+           已由 `_strip_zhe_companion` 挡住。
+
+        两个都修好、回归测试稳定之后，扩展表才成为默认值。
+        要给对照实验留口子就用 `extended=False` 退回 208 条手写表。
         """
         if verbs is not None:
             self._verbs = frozenset(verbs)
@@ -700,6 +710,71 @@ class SentenceChunker:
             return verbs[1]
         return verbs[0]
 
+    @staticmethod
+    def _strip_zhe_companion(text: str, verbs: list[tuple[int, int]]
+                             ) -> tuple[list[tuple[int, int]], int | None]:
+        """把句首的“V+着”伴随动词从 E 候选里剔除。
+
+        `[张]` §3：“v+着+v”结构里，前一个动词整体降为**方式辅块**，
+        真正的 E 是后一个动词。
+
+            他拍着手笑          -> BK_MS=拍着，E=笑
+            日本代表带着满意的笑容离开会场
+                                -> BK_MS=带着，E=离开
+
+        早期版本（`extended=True`）在第二句上得到 `E=带着`，
+        因为 `带着` 和 `离开` 中间隔了宾语，`_pick_e` 的「紧邻」
+        规则不生效，于是退回 `verbs[0]`。
+
+        ## 判据为什么是「句首」而不是「任意 V+着」
+
+        只在**第一个动词**紧邻 `着` 且它位于句首段（前 6 字）时剔除。
+        句中段的 `V+着` 可能是主语的一部分（“他看着的那本书”），
+        也可能是真谓语（“他还想着那件事”）。
+
+        ## 为什么要扫前几个而不是只看 `verbs[0]`
+
+        `extended=True` 时 `代表` 也在动词表里，
+        “日本代表带着…” 的 `verbs[0]` 是 `代表`(2,4)，
+        `带着` 排在第二。只看第一个就漏掉了。
+
+        ## 词表覆盖不到时的兜底
+
+        `他拍着手笑` 里 `拍` 不在 `DEFAULT_VERBS`（单字动词只在块边界
+        认可，而 `拍` 后面紧跟 `着`，`_find_verbs_safe` 会认它，但
+        `_find_verbs` 根本查不到它）。此时 `verbs` 只有 `[笑]`。
+
+        所以最后按**形状**兜底：句首 6 字内出现「单字 + 着」，
+        且后面还有动词，就按伴随辅块处理。
+
+        返回 `(剩余动词, “着”的右边界或 None)`。
+        """
+        for k, (vs, ve) in enumerate(verbs):
+            if vs > 5:
+                break
+            # 词表里存的是**词干**（`带` 不是 `带着`），体标记是句中的字，
+            # 所以判“V 后面紧跟着「着」”，不是判“V 的末字是「着」”。
+            if ve >= len(text) or text[ve] != "着":
+                continue
+            if text[vs] in "随沿为接按照":
+                continue
+            # 找到了：剔除它和它之前的候选（`代表` 也一起剔，
+            # 因为它只是把主语切成了两半）
+            zhe_end = ve + 1
+            rest = [v for v in verbs[k + 1 :] if v[0] >= zhe_end]
+            if not rest:
+                return verbs, None
+            return rest, zhe_end
+
+        # 兜底：形状检测。句首的「X着」即使 X 不在词表里，也是伴随辅块。
+        p = text.find("着")
+        if 1 <= p <= 5 and text[p - 1] not in "随沿为接按照" and p - 1 >= 1:
+            zhe_end = p + 1
+            rest = [v for v in verbs if v[0] >= zhe_end]
+            if rest:
+                return rest, zhe_end
+        return verbs, None
+
     def _aux_end(self, s: str, start: int, taken: bytearray) -> int:
         """辅块右边界：下一个标记符 / 下一个谓语 / 分句尾。
 
@@ -853,30 +928,15 @@ class SentenceChunker:
     def _chunk_main(self, text: str, base: int) -> list[Chunk]:
         verbs = self._find_verbs_safe(text)
 
-        # `[张]` §3：“v+着+v”。首动词不必在词汇表内——汉语“v+着”
-        # 形式本身（任何一个字 + “着”在句首位置）就已经是充分信号，
-        # 而首动词的具体语义反而无关紧要（它整体降为方式辅块）。
-        # 所以这里先做“字+着”形状检测，再退回词语表检测。
-        zhe_end = self._zhe_prefix_end(text)
-        if zhe_end is not None and len(verbs) >= 1:
-            e_pos, e_end = verbs[0]
-            if e_pos >= zhe_end:
-                # `[张]` §3 的例子“他拍着手笑”：主语属于 A（作用者），
-                # “拍着”才是辅块，二者必须分开。主语长度取“着”前
-                # 第一个动词之前的字符数；启发式下按 1～2 字估计。
-                subj_end = max(0, zhe_end - 2)  # “x着”占 2 字
-                out: list[Chunk] = []
-                if subj_end > 0:
-                    out.append(Chunk(ChunkRole.A, text[:subj_end].strip(),
-                                     base, base + subj_end, confidence=0.5))
-                out.append(Chunk(ChunkRole.BK_MS,
-                                text[subj_end:zhe_end].strip(),
-                                base + subj_end, base + zhe_end,
-                                confidence=0.5))
-                out.append(Chunk(ChunkRole.E, text[e_pos:e_end],
-                                base + e_pos, base + e_end, confidence=0.8))
-                out.extend(self._tail_chunk(text, e_end, base))
-                return out
+        # `[张]` §3：“v+着+v”。句首的伴随动词整体降为方式辅块。
+        #
+        # 早期版本用 `_zhe_prefix_end()` 单独做一套形状检测，只处理
+        # “他拍着手笑”这种「V+着」紧贴 E 的情形。但
+        # “日本代表带着满意的笑容离开会场”中间隔了宾语，
+        # 那条路走不通，`_pick_e` 就退回 `verbs[0]`，得到 E=带着。
+        #
+        # 现在改成先整体剔除句首伴随动词，再走正常流程。
+        verbs, zhe_end = self._strip_zhe_companion(text, verbs)
 
         if not verbs:
             return [Chunk(ChunkRole.B, text, base, base + len(text),
@@ -897,8 +957,26 @@ class SentenceChunker:
 
         before = text[:e_start].strip()
         if before:
+            # 句首伴随动词已被 `_strip_zhe_companion` 识别出来：
+            # “日本|代表|带着” 里主语只到 `zhe_end - 2`（“带着”占 2 字），
+            # 前面是 A，`带着` 是方式辅块。
+            if zhe_end is not None:
+                # `[张]` §3 的“v+着+v”：主语 + 方式辅块 + E。
+                # 主语长度按“x着”占 2 字回推（启发式）。
+                subj_end = max(0, zhe_end - 2)
+                if subj_end > 0:
+                    out.append(Chunk(ChunkRole.A, text[:subj_end].strip(),
+                                     base, base + subj_end, confidence=0.5))
+                # 辅块一直延到 E 之前：`拍着` 的宾语（`手`）、
+                # `带着` 的宾语（`满意的笑容`）都属于方式辅块内部，
+                # 不是独立的 B。早期版本把 `手` 切成 B，
+                # 导致 math_pattern 变成 "JK + JK + E"。
+                out.append(Chunk(ChunkRole.BK_MS,
+                                 text[subj_end:e_start].strip(),
+                                 base + subj_end, base + e_start,
+                                 confidence=0.6))
             # 前置成分是否已是"v+着"（单动词情形也降为方式辅块）
-            if before.endswith("着") and len(before) > 1:
+            elif before.endswith("着") and len(before) > 1:
                 out.append(Chunk(ChunkRole.BK_MS, before, base,
                                  base + e_start, confidence=0.5))
             elif self._looks_conditional(before):

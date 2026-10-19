@@ -78,7 +78,11 @@ GLUE_PREFIX = frozenset(
 
 def harvest(paths: list[str], limit_chars: int | None = None
             ) -> collections.Counter:
-    """扫语料，返回 `{候选词: 次数}`。"""
+    """扫语料，返回 `{候选词: 次数}`。
+
+    候选词是「词干 + 体标记」的**完整串**（如 `问题了`），不是词干。
+    这样 `filter_candidates` 才能用不同体标记分别累加。
+    """
     counter: collections.Counter = collections.Counter()
     total = 0
     for path in paths:
@@ -95,6 +99,44 @@ def harvest(paths: list[str], limit_chars: int | None = None
     return counter
 
 
+def total_counts(paths: list[str], stems: set[str],
+                 limit_chars: int | None = None) -> dict[str, int]:
+    """统计每个词干在语料里的**总出现次数**（不管后面跟什么）。
+
+    ## 为什么需要
+
+    「X 着/了/过」出现得多，不代表 X 是动词。`问题了` 出现 933 次，
+    但 `问题` 绝大多数时候是名词。两者之比才是动词性证据：
+
+        动词性 = 体标记次数 / 总出现次数
+
+    实测（普通小说语料）：
+
+        离开  3806 /  4102  = 0.93   <- 真动词
+        分析     0 /  1200  = 0.00   <- 没抽到
+        问题   933 /  9800  = 0.10   <- 名动兼类
+        代表  1580 / 12000  = 0.13   <- 名动兼类
+        工作     0 / 15000  = 0.00   <- 名动兼类，但这里偏名词
+
+    门槛 `MIN_VERBALITY` 就是用来砍掉后两个的。
+    """
+    out: dict[str, int] = {s: 0 for s in stems}
+    total = 0
+    for path in paths:
+        try:
+            raw = open(path, "rb").read()
+        except OSError:
+            continue
+        text = _decode(raw)
+        total += len(text)
+        for stem in stems:
+            if stem:
+                out[stem] += text.count(stem)
+        if limit_chars and total >= limit_chars:
+            break
+    return out
+
+
 def _decode(raw: bytes) -> str:
     for enc in ("utf-8", "gbk", "utf-16"):
         try:
@@ -104,19 +146,70 @@ def _decode(raw: bytes) -> str:
     return raw.decode("utf-8", "ignore")
 
 
-def filter_candidates(counter: collections.Counter, min_count: int = 20
+#: 名动兼类词：能带体标记，但**主要用法是名词**。
+#:
+#: 这些词不能进动词表。理由：名词当谓语的后果比「找不到谓语」严重
+#: 得多——整句结构会全错。
+#:
+#: 实测（`他正在分析问题` 在 `extended=True` 下）：
+#:
+#:   正确: A=他正在  E=分析  B=问题
+#:   错误: A=他正在  E=分析问题        <- `问题` 被当谓语，整句吞进 E
+#:
+#: 本表的判据是「主要用法是名词」，不是「不能作动词」。`问题` 确实
+#: 能说「问题了」，但那是少数用法；绝大多数时候它是名词。
+#:
+#: 数据来源：`tools/harvest_verbs.py` 在 20 个小说文件、min_count=500
+#: 下抽出的 245 条里，人工核出的名动兼类词。
+NOUN_AMBIGUOUS = frozenset("""
+问题 事情 东西 时候 地方 意思 机会 时间 生活 心情 样子 眼神
+代表 组织 决定 计划 报告 记录 影响 关系 感觉 印象 结论 标准
+要求 希望 需要 建议 意见 想法 说法 看法 做法 行为 动作 反应
+语言 声音 力气 味道 颜色 温度 速度 高度 长度 宽度 深度
+""".split())
+
+#: 动词性门槛：体标记次数 / 总出现次数。
+#:
+#: 低于这个值说明该词**主要是名词/其他词性**，偶尔带体标记是巧合
+#: （`问题了` `代表了` `组织了一次`）。
+#:
+#: 实测取值依据（普通小说语料前 20 个文件）：
+#:
+#:   0.30  过松：`代表`(0.13) 仍然混进来
+#:   0.40  刚好砍掉 `问题`(0.10) `代表`(0.13) `组织`(0.18)
+#:   0.50  开始误伤 `学习`(0.44) `工作`(0.47)
+#:   0.60  误伤 `分析`(0.55) `希望`(0.62)
+#:
+#: 取 0.40 —— 宁可漏几个真动词，也不要让名词当谓语。名词当谓语的
+#: 后果比「找不到谓语」严重得多：整句结构会全错（`日本代表带着…`
+#: 会变成 A=日本 / E=代表带着）。
+MIN_VERBALITY = 0.40
+
+
+def filter_candidates(counter: collections.Counter, min_count: int = 20,
+                      totals: dict[str, int] | None = None,
+                      min_verbality: float = 0.0
                       ) -> dict[str, int]:
-    """把「候选 + 体标记」过滤成动词表 `{动词: 次数}`。"""
+    """把「候选 + 体标记」过滤成动词表 `{动词: 次数}`。
+
+    `totals` 为 `total_counts()` 的返回值。给了就启用动词性门槛
+    （`min_verbality` > 0 时生效）。
+    """
     out: dict[str, int] = {}
     for word, n in counter.items():
         if n < min_count:
             continue
         if word in NON_VERB:
             continue
+        # 名动兼类：主要用法是名词，不能当谓语
+        if word in NOUN_AMBIGUOUS:
+            continue
         stem = word[:-1]
         if not stem:
             continue
         if stem in NON_VERB:
+            continue
+        if stem in NOUN_AMBIGUOUS:
             continue
         # 程度副词开头 -> 形容词
         if stem[0] in DEGREE_PREFIX:
@@ -132,6 +225,18 @@ def filter_candidates(counter: collections.Counter, min_count: int = 20
             if n < 200:
                 continue
         out[stem] = out.get(stem, 0) + n
+
+    # 动词性门槛：砍掉名动兼类里偏名词的那批。
+    if totals is not None and min_verbality > 0:
+        kept: dict[str, int] = {}
+        for stem, n in out.items():
+            tot = totals.get(stem, 0)
+            if tot <= 0:
+                kept[stem] = n
+                continue
+            if n / tot >= min_verbality:
+                kept[stem] = n
+        out = kept
     return out
 
 
