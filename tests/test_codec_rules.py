@@ -64,6 +64,15 @@ class RuleGrammarTest(unittest.TestCase):
         r = legacy_rules.parse_line("[=sx600]")
         self.assertEqual(r["terms"], [{"text": "sx600", "match": "suffix"}])
 
+    def test_mid_modifier_group_applies_to_whole_composition(self):
+        # "[+,=][commit][,+][suicide]" omits the bare "=" the author was
+        # writing, but the modifier block applies to the composed term.
+        r = legacy_rules.parse_line("[+,=][commit][,+][suicide]")
+        modes = {t["match"] for t in r["terms"]}
+        self.assertEqual(modes, {"prefix", "suffix"})
+        texts = {t["text"] for t in r["terms"]}
+        self.assertEqual(texts, {"commitsuicide"})
+
     def test_composed_fragments(self):
         r = legacy_rules.parse_line("[,homo,bi][sex][y,ual,uality]")
         got = {t["text"] for t in r["terms"]}

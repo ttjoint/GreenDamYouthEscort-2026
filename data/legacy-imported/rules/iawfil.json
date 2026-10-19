@@ -683,6 +683,21 @@
       "raw": "[+,=][,22][vicodin,xanax,oxycontin,mdma,darvocet,norco,stadol,lortab,percocet,percodan,lorcet,mscontin]"
     },
     {
+      "terms": [
+        {
+          "text": "commitsuicide",
+          "match": "prefix"
+        },
+        {
+          "text": "commitsuicide",
+          "match": "suffix"
+        }
+      ],
+      "mode": "mixed",
+      "groups": [
+        "commit",
+        "suicide"
+      ],
       "raw": "[+,=][commit][,+][suicide]"
     },
     {

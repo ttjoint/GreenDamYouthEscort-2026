@@ -97,29 +97,39 @@ def parse_line(line: str) -> dict:
     if not groups:
         return {"raw": line}
 
-    # A leading modifier-only group such as "[+,=]" applies to the group
-    # that follows it. Peel it off first.
-    pending = ""
-    if groups and all(c in "+=," for c in groups[0]):
-        pending = groups[0]
-        groups = groups[1:]
+    # A leading modifier-only group such as "[+,=]" applies to the group that
+    # immediately follows it. The same holds for modifier groups that appear
+    # in the middle of a concatenation, e.g. "[commit][,+][suicide]", so
+    # modifiers are peeled off the whole group list first and attached to the
+    # next productive group.
+    modifiers: dict[int, str] = {}
+    productive: list[str] = []
+    carry = ""
+    for body in groups:
+        if body and all(c in "+=," for c in body):
+            # "+," and "+,=" both mean prefix and/or suffix; "[,]" adds no
+            # direction and simply carries over.
+            carry += body
+            continue
+        modifiers[len(productive)] = carry
+        carry = ""
+        productive.append(body)
+    groups = productive
     if not groups:
         return {"raw": line}
 
-    def group_dirs(extra: str) -> list[str]:
-        flags = extra or ""
-        return ["prefix"] if "+" in flags else []
+    def _dirs_from(flags: str) -> list[str]:
+        out = []
+        if "+" in flags:
+            out.append("prefix")
+        if "=" in flags:
+            out.append("suffix")
+        return out
 
     # Expand groups left-to-right; each partial term carries its mode.
     partials: list[tuple[str, str]] = [("", "literal")]
     for gi, body in enumerate(groups):
-        dirs = None
-        if gi == 0 and pending:
-            dirs = []
-            if "+" in pending:
-                dirs.append("prefix")
-            if "=" in pending:
-                dirs.append("suffix")
+        dirs = _dirs_from(modifiers.get(gi, "")) or None
         nxt: list[tuple[str, str]] = []
         for prefix, pmode in partials:
             for a, gmode in _expand_group(body):

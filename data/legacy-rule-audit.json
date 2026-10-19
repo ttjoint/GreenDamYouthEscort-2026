@@ -26,17 +26,15 @@
   {
     "source": "iawfil.dat.txt",
     "rules": 113,
-    "expanded_terms": 334,
-    "unique_terms": 325,
+    "expanded_terms": 336,
+    "unique_terms": 327,
     "modes": {
       "literal": 194,
-      "prefix": 70,
-      "suffix": 70
+      "prefix": 71,
+      "suffix": 71
     },
-    "raw_rules": 1,
-    "raw_examples": [
-      "[+,=][commit][,+][suicide]"
-    ]
+    "raw_rules": 0,
+    "raw_examples": []
   },
   {
     "source": "lgwfil.dat.txt",
