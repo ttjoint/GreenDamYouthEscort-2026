@@ -52,15 +52,21 @@ class QuoteHandlingTest(unittest.TestCase):
     def test_speaker_verb_kept_with_quote(self):
         """`他说道：` 和后面的引文不该被拆开。
 
-        拆开会让 `他说道` 变成一个无内容的独立分句。
+        拆开会让 `他说道` 变成一个无内容的独立分句 —— 它本来就没有
+        宾语，单独成句必然退化成无标记块。
+
+        早期版本的断言是 `["他说道", "「好。」"]`（拆开），与它自己
+        的 docstring 矛盾。分句层的 `_is_attach_fragment()` 现在把
+        提示语和后面黏在一起，断言随之修正。
         """
         got = pieces("他说道：「好。」")
-        self.assertEqual(got, ["他说道", "「好。」"],
-                         "说话动词自成一句，引文另起")
+        self.assertEqual(got, ["他说道：「好。」"],
+                         "说话动词必须和它的引文待在一起")
 
     def test_full_sentence(self):
         got = pieces("他说道：「啊，我不知道。」然后就走开了。")
-        self.assertEqual(got, ["他说道", "「啊，我不知道。」", "然后就走开了"])
+        self.assertEqual(got,
+                         ["他说道：「啊，我不知道。」", "然后就走开了"])
 
 
 class FragmentDropTest(unittest.TestCase):

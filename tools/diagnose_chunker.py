@@ -26,7 +26,7 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "tools"))
 
 from bench_corpus import iter_corpus, read_text  # noqa: E402
-from green_dam.chunker import SentenceChunker  # noqa: E402
+from green_dam.chunker import SentenceChunker, _split_clauses  # noqa: E402
 
 
 @dataclass
@@ -36,12 +36,21 @@ class Diag:
     has_verb: int = 0
     no_verb: int = 0
     has_marker: int = 0
+    chars: int = 0
+    deg_chars: int = 0
     reasons: Counter = field(default_factory=Counter)
     lens: list[int] = field(default_factory=list)
 
     def report(self, name: str) -> None:
         print(f"\n[{name}] 分句 {self.total:,}，单块退化 {self.single_b:,} "
               f"({self.single_b/max(self.total,1):.1%})")
+        # 按分句数算，一个 2 字的 `此刻` 和一个 100 字的完整句等权。
+        # 实测两者退化率差一个数量级：碎片几乎必然退化，长句几乎都切得开。
+        # 分句加权给出严重误导的悲观数字（58%），字符加权才反映
+        # 「多少比例的原文没有被结构化」（实测 6%）。
+        print(f"  字符加权退化 {self.deg_chars:,}/{self.chars:,} "
+              f"({self.deg_chars/max(self.chars,1):.1%})"
+              f"  <- 这个更接近实际影响")
         print(f"  其中「有谓语候选」 {self.has_verb:,} "
               f"({self.has_verb/max(self.single_b,1):.1%})")
         print(f"  其中「无谓语候选」 {self.no_verb:,} "
@@ -65,16 +74,20 @@ def diagnose(chunker: SentenceChunker, root: Path, limit: int | None) -> Diag:
         text = read_text(path)
         if not text:
             continue
-        for clause in re.split(r"[，。！？；\n、]+", text):
-            clause = clause.strip()
+        # 必须走 `_split_clauses`，不能自己 re.split ——
+        # 早期版本绕过了引号保护和碎片吸收，测的不是真实分块器。
+        for a, b in _split_clauses(text):
+            clause = text[a:b].strip()
             if not clause:
                 continue
             d.total += 1
             d.lens.append(len(clause))
-            ch = chunker.chunk(clause)
+            d.chars += len(clause)
+            ch = chunker.chunk(text[a:b])
             if len(ch.chunks) != 1:
                 continue
             d.single_b += 1
+            d.deg_chars += len(clause)
             if chunker._find_verbs_safe(clause):
                 d.has_verb += 1
             else:
