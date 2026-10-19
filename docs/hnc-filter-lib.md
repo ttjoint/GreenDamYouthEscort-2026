@@ -15,7 +15,7 @@
 ```
 
 `GetWordFanDong` / `GetWordHongHei` 是 **`CFWordLib` 的成员函数**，
-不碰 `CSentenceObj`，所以那 12 个缺失文件跟它们毫无关系。
+不碰 `CSentenceObj`，所以那些缺失文件跟它们毫无关系。
 
 我之前的错误是把两者混为一谈：看到 `Ini` 失败、`GetSentenceALC` 返回 7，
 就笼统地判定「引擎没用」。**实际上大部分导出函数都不走 `Ini`。**
@@ -181,7 +181,7 @@ D:\Python27\python.exe -u tools/dump_falun_filter.py
 
 ### 仍然不能做的
 
-句类分析依然走不通（12 个 `.lib` 缺失）。`GetSentenceALC` 依然返回 7。
+句类分析依然走不通（14 个裸 `.lib` 缺失）。`GetSentenceALC` 依然返回 7。
 **过滤能用 ≠ 分析能用**，这一点没有变。
 
 ## 8. 未确认
