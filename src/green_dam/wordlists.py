@@ -94,3 +94,33 @@ class WordlistIndex:
     @property
     def size(self) -> int:
         return len(self._items)
+
+    def source_counts(self) -> dict[str, int]:
+        """Number of unique words contributed by each source."""
+        counts: dict[str, int] = {}
+        for item in self._items.values():
+            for source in item["sources"]:
+                counts[source] = counts.get(source, 0) + 1
+        return dict(sorted(counts.items()))
+
+    def level_conflicts(self) -> list[WordHit]:
+        """Words whose explicitly assigned numeric levels disagree."""
+        out = []
+        for word in sorted(self._items):
+            item = self._items[word]
+            if len(item["levels"]) > 1:
+                hit = self.get(word)
+                assert hit is not None
+                out.append(hit)
+        return out
+
+    def duplicate_sources(self) -> list[WordHit]:
+        """Words occurring in at least two input files."""
+        out = []
+        for word in sorted(self._items):
+            item = self._items[word]
+            if len(item["sources"]) > 1:
+                hit = self.get(word)
+                assert hit is not None
+                out.append(hit)
+        return out

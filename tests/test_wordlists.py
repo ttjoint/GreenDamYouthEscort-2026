@@ -40,6 +40,15 @@ class WordlistIndexTest(unittest.TestCase):
         self.assertGreaterEqual(len(hits), 1)
         self.assertEqual(hits[0][1].word, "黄色网站")
 
+    def test_duplicate_and_conflict_reports(self):
+        index = WordlistIndex()
+        index.add("甲", "a", level=1)
+        index.add("甲", "b", level=4)
+        index.add("乙", "a")
+        self.assertEqual(index.source_counts(), {"a": 2, "b": 1})
+        self.assertEqual(index.level_conflicts()[0].word, "甲")
+        self.assertEqual(index.duplicate_sources()[0].word, "甲")
+
 
 if __name__ == "__main__":
     unittest.main()
