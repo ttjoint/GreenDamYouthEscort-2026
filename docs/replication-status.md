@@ -128,8 +128,8 @@ CSentenceObj::Ini
 | `chunker.py` | 论文 11.2 切分策略 | 退化率 41.4%（`docs/verb-table.md`） |
 | `similarity.py` | [王] 论文 1/3/4/5/6 式 | 替代实现，`degraded=True` |
 
-**这套东西原厂没有。** 从这个角度说，我们比原厂走得远——
-原厂只做了词表过滤，我们试图做论文说的语义块分析。
+**这套东西原厂没有。** 原厂的中文文本判定只到词表为止，
+不做论文说的语义块分析；这部分是我们补的，不是复刻来的。
 
 但也要诚实：**我们的 chunker 还没在真实语料上跑通**。
 单块退化 41.4%，意味着近一半分句找不出谓语。
@@ -148,10 +148,9 @@ CSentenceObj::Ini
 | L3 信任/黑名单网址 | `TrustUrl.dat` + `wfile.dat` | `Surfgd.dll` 逐条比对 | ✅ 已导入（1,157 主机） |
 | L4 进程/端口黑名单 | `filtport.dat` + LSP（`dbfilter.dll` → `Surfgd.dll`） | Winsock 劫持，按进程/端口判定 | ✅ 已审计（2 条明文） |
 
-> **注意**：`1.urf`–`7.urf` **不是**过滤层的任何一部分。
-> 它们是 AppFace 换肤库的皮肤资源包（内嵌 GIF/BMP/JPEG，无加密），
-> 详见 `docs/legacy-control-files.md` §4 与
-> `REVERSE-ENGINEERING/04-urf规则库格式分析.md` §7。
+> **注意**：`1.urf`–`9.urf` **不是**过滤层的任何一部分，
+> 而是 AppFace 换肤库的皮肤资源包（内嵌未加密 GIF）。
+> 定论与判定依据见 `docs/legacy-control-files.md` §4，此处不再重复推导。
 
 关键证据：
 
@@ -159,30 +158,29 @@ CSentenceObj::Ini
   共 30+ 个文件，我们只拿到其中 5 个的分类规则和 1 个信任表。
   **`auctfil`/`bnrfil`/`chtfil`/`cultfil`/`entfil`/`imgfil`/`pkmon`/`wrestfil`
   等分类在安装表里存在，但安装树里根本没有**——缺的不只是 HNC 的 `.lib`。
-- `_build-manifest.txt` 要求 `1.urf`–`9.urf` 共 9 个，实际只有 7 个。
 - `HncEng.exe` 是**独立服务进程**（`HncEngServer.exe`，`LocalService`，
   导入 `SentenceObj.dll` 的 `CreateHncTextGroup`/`ReleaseHncTextGroup`
   和 `hnclib\` 路径），说明 HNC 引擎确实有常驻进程形态；
   但 `Handler.dll` 是**进程内直接链接** `SentenceObj.dll`，不走 IPC 服务。
   两条路都存在，产品默认走进程内那条。
 
-结论修正：
+因此准确的定位是：**原厂的中文文本判定只有词表；
+但网络侧还有规则库、信任表、进程/端口表**，四条路径各自独立生效。
 
-- 之前写「原厂只有词表过滤」**说过头了**。准确说法是：
-  **原厂的中文文本判定只有词表；但网络侧还有规则库、信任表、进程/端口表。**
-- 一个请求要真正被放行，得同时穿过 L3 和 L4；词表只影响 L1。
-  所以「`法轮功` 裸词不在打分表里」不等于产品漏放——
-  它可能被 L2 的网址规则或 L3 的 `.urf` 挡住。
+- 词表只影响 L1。一个请求最终是否被放行，还要看 L3 与 L4。
+- L3 是信任表，语义是**放行优先**：命中信任域即 `allow`，
+  这会覆盖 L1/L2 的命中结果（`policy.py` 的 `in_trust` 分支）。
+- 所以「某裸词不在打分表里」不能推出「产品会放行它」。
 
-### `gn.exe` 的 `.urf` 加载点（本轮新证据，**定性已翻转**）
+### `gn.exe` 的 `.urf` 加载点
 
-> **2025 重勘结论：`.urf` 不是过滤规则库，是 AppFace 换肤库的皮肤资源包。**
-> 完整证据链见 `REVERSE-ENGINEERING/04-urf规则库格式分析.md` §7，
-> 提取脚本 `tools/extract_urf_images.py`，产物 `_urf_images/`（12 张 GIF）。
-> 下面保留本轮反汇编记录，因为它是证据链的最后一环。
+> `.urf` 是 AppFace 换肤库的皮肤资源包，**不属于过滤层**。
+> 定论与判定依据见 `docs/legacy-control-files.md` §4，
+> 复现资产在仓库外：`../tools/extract_urf_images.py`、`../_urf_images/`。
+> 下面反汇编记录只用于说明宿主如何把它加载起来。
 
 `gn.exe`（`%WinSysDir%\gn.exe`，来自 `xxxnet2\play\Release\gn.exe`）
-里有一个完整的最小加载器，和 `XNet2.exe` 的 `EnsureUrfReady` 同构：
+里有一个皮肤加载函数，与 `XNet2.exe` @ 0x421D00 的那个调用约定相同：
 
 ```
 0x40b4f0  sub esp, 0x200
@@ -228,7 +226,7 @@ LoadLibraryA("AppFace.dll")
 `1PPRNFQ5…` 是 AppFace 皮肤的口令参数，**不是解密密钥、不是属性名**。
 实际提取验证：7 个 `.urf` 里的 payload 是未加密的
 GIF/BMP/JPEG（12 张完整 GIF，含 285×24 的 4 状态工具条按钮贴图条），
-此前看到的「高熵、magic `5599259b`、记录标记」全是 AppFace 容器元数据。
+这些「高熵、magic `5599259b`、记录标记」都是 AppFace 容器元数据，不是密文特征。
 
 差别有两处，说明这是**同一套 MFC 封装库的不同宿主**：
 
@@ -245,30 +243,6 @@ GIF/BMP/JPEG（12 张完整 GIF，含 285×24 的 4 状态工具条按钮贴图�
 所以安装后的默认行为是：**装 7 个皮肤方案，只加载第 1 个**
 （索引被钳到 1），其余 2–7 是备选皮肤，由 `PARAM` 切换——
 不是「规则分类」，更不是「加密规则库」。
-
-### 对「四层过滤」结论的修正
-
-| 层 | 载体 | 机制 | 我们能复刻吗 |
-|---|---|---|---|
-| L1 文本词表 | `FalunWord.lib` | `CFWordLib` 字符串扫描 + 打分 | ✅ 已复刻（`data/hnc-falun-filter.json`） |
-| L2 网址/文件名规则 | `adwapp`/`adwfil`/`iawfil`/`lgwfil`/`vgamfil.dat` | 前缀/后缀/字面组合展开，9,143 条规则 → 11,187 词条 | ✅ 已复刻（`data/legacy-rule-audit.json`） |
-| L3 信任/黑名单网址 | `TrustUrl.dat` + `wfile.dat` | `Surfgd.dll` 逐条比对 | ✅ 已导入（1,157 主机） |
-| L4 进程/端口黑名单 | `filtport.dat` + LSP（`dbfilter.dll` → `Surfgd.dll`） | Winsock 劫持，按进程/端口判定 | ✅ 已审计（2 条明文） |
-
-`.urf` 从这张表里**移除**了。剩下的未复刻资产是：
-
-- `uFWORD.dat` / `uTUrl.Dat` / `uFUrl.Dat` / `filtpros.Dat` /
-  `FiltUrl.Dat` / `server.dat` —— `Surfgd.dll` 声明了但安装包没带，
-  应为联网更新下发；
-- 安装表里提到、包里缺席的 `auctfil`/`bnrfil`/`chtfil`/`cultfil` 等分类规则。
-
-结论修正：
-
-- 之前写「原厂只有词表过滤」**说过头了**。准确说法是：
-  **原厂的中文文本判定只有词表；但网络侧还有规则库、信任表、端口表。**
-- 一个请求要真正被放行，得同时穿过 L3 和 L4；词表只影响 L1。
-  所以「`法轮功` 裸词不在打分表里」不等于产品漏放——
-  它可能被 L2 的网址规则或 L3 的信任表反向放行所覆盖。
 
 ## 4. 诚实的差距清单
 

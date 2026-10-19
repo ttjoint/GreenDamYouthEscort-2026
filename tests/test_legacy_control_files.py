@@ -125,7 +125,12 @@ class UrfLoaderCallSiteTest(unittest.TestCase):
         self.assertEqual(len(self.gn["urf_format_sites"]), 1)
 
     def test_loader_name_string_is_identical_across_hosts(self):
-        """两个模块 push 的 32 字母名字串哈希相同 —— 同一个密钥名。"""
+        """两个模块 push 的 32 字母名字串哈希相同 —— 同一把皮肤口令。
+
+        它既不是 `.urf` 的解密密钥，也不是属性名：宿主把 `AppFace.dll`
+        的 `SkinStart` 存进 `+0xc8`，调用时把这个串当第六个参数传进去。
+        见 docs/legacy-control-files.md §4。
+        """
         n = D.loader_call_prologue(self.net)
         g = D.loader_call_prologue(self.gn)
         self.assertIn("name", n)

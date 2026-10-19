@@ -1,4 +1,4 @@
-# 原厂控制文件与 `.urf` 定性（含皮肤包翻转结论）
+# 原厂控制文件分类与 `.urf` 定性
 
 这份文档只讲**结构**，不复述任何条目原文。可复现命令：
 
@@ -173,47 +173,35 @@ loader call prologue: {"flag": {...1}, "name": {"sha1_8": "322b599b"}}
    两个 EXE 全文都没有这 4 个字节 —— 解析逻辑在 `appface.dll` 内部，
    不在 UI/宿主进程里。
 
-## 4. 翻转结论：`.urf` 是 AppFace 皮肤资源包，不是规则库
+## 4. `.urf` 是什么：AppFace 皮肤资源包
 
-**本轮最重要的更正**：`.urf` 根本不是过滤规则库，也**没有任何加密**。
+**结论先行，不必再推导**：`1.urf`–`9.urf` 是 Matinsoft
+**AppFace UI Development Kits 2.9.2.3** 的皮肤资源包。
+它们**不是**过滤规则库，**不是**任何形式的加密文件，
+与关键词、网址分类、词表全无关系。
+这一条是定论，后续任何分析都不应再把 `.urf` 放进过滤层。
 
-它就是 Matinsoft **AppFace UI Development Kits 2.9.2.3** 的皮肤资源包，
-和过滤、关键词、网址分类毫无关系。证据链：
+判定依据（每一条都可独立复核）：
 
-1. `call [host+0xc8]` 的函数指针来源是
-   `LoadLibraryA("AppFace.dll") + GetProcAddress("SkinStart")`，
-   `+0xcc..0xe4` 依次是 `SkinStartW / SkinRemove / SkinWindowSet /
-   SkinThread / BkCreate / BkDraw / BkDelete` —— 这是
-   AppFace SDK 的完整导出表，不是自定义 `.urf` 回调；
-2. `1PPRNFQ5YPKZI0UYV4U5GB5RKHDYNEKJ` 是 **AppFace 皮肤口令参数**，
-   不是解密密钥；
-3. 7 个 `.urf` 的 payload 里提取出 **12 张完整 GIF**
-   （LZW 流 + trailer 校验通过），实图渲染出来是
-   **4 状态工具条按钮贴图条**（普通/悬停/按下/禁用）、
-   竖排按钮组、状态条图标 —— 标准换肤素材；
-4. 「高熵 7.96、`a8` 大量出现、固定块 A/B/C」
-   全部是 **AppFace 容器元数据 + GIF LZW 压缩数据** 的自然表现，
-   不是密文特征；
-5. 索引 `1..9` 是**皮肤方案编号**，不是「9 套规则分类」。
+1. `call [host+0xc8]` 的函数指针来自
+   `LoadLibraryA("AppFace.dll")` + `GetProcAddress("SkinStart")`。
+   `+0xc4` 存模块句柄，`+0xc8..+0xe4` 依次是
+   `SkinStart / SkinStartW / SkinRemove / SkinWindowSet / SkinThread /
+   BkCreate / BkDraw / BkDelete` —— 这是 AppFace SDK 的导出表。
+2. 调用该指针时压入的六参数里，有一个 32 字母串
+   （`gn.exe` @ `0x44d39c`、`XNet2.exe` @ `0x469080`，
+   `sha1_8 = 322b599b`）。它是**皮肤口令参数**，不是解密密钥、
+   不是注册表属性名。
+3. 索引 `1..9` 是**皮肤方案编号**：`gn.exe` 钳到 `1..8`，
+   `XNet2.exe` 钳到 `1..9`，由注册表 `SOFTWARE\KingWay\PARAM` 选择。
+   出厂默认加载 1 号，其余为备选皮肤。
+4. payload 里是**未加密的 GIF**（LZW 流，含 trailer），
+   解出 12 张，渲染为 4 状态工具条按钮贴图、竖排按钮组、状态图标。
+5. magic `5599259b` 不在两个宿主里 —— 解析逻辑在 `appface.dll` 内部。
 
-提取脚本：`tools/extract_urf_images.py`；
-产物：`_urf_images/`（12 张 GIF）。
-更早的完整推导见
-`REVERSE-ENGINEERING/04-urf规则库格式分析.md` §5–§7。
-
-### 「皮肤包」如何被误判成「加密规则库」
-
-1. **文件名误导**：`1.urf`–`7.urf` 按编号分布，配合
-   `cmp eax,9` 的 clamp 逻辑，看起来像「9 套规则分类」；
-2. **熵 7.96**：GIF LZW 压缩数据本身高熵，256 值全出现，
-   与密文统计无异；
-3. **`a8` 大量出现**（1.urf 886 次）：这是 AppFace 容器的**分隔符**，
-   非填充字节；
-4. **固定块 A/B/C**：AppFace 容器元数据（含进程内指针 `0x439dxxxx`），
-   看似「密钥表」实为结构字段；
-5. **`goldlock.exe -i` 的假关联**：它装 `MgTaki` 注册表保护驱动
-   （导入全为 `Zw*` 注册表 API + `IoCreateDevice`，DriverWorks 1998），
-   与 `.urf` 毫无关系——只是碰巧在「皮肤加载失败」分支里被顺带启动。
+> **复现路径**：提取脚本与产物都在仓库**外**的上一级目录：
+> `../tools/extract_urf_images.py`、`../_urf_images/`（12 张 GIF）。
+> 它们不随仓库分发，因为 `.urf` 与复刻无关。
 
 ## 5. 这对复刻意味着什么
 
@@ -223,15 +211,10 @@ loader call prologue: {"flag": {...1}, "name": {"sha1_8": "322b599b"}}
 | L2 分类规则 `*fil.dat` | ✅ | ✅ 完整 | ✅ 已复刻 |
 | L3 信任表 `TrustUrl.dat` | ✅ | ✅ 完整 | ✅ 已导入 |
 | L4 端口表 `filtport.dat` | ✅ 2 条 | ✅ 明文 | ✅ 已审计 |
-| ~~L3 网址规则 `.urf`~~ | — | — | **定性翻转：根本不是过滤层** |
 | L4 进程表 `filtpros.Dat` | ❌ 缺 | — | ❌ |
-| L4 更新表 `uFWORD/uTUrl/uFUrl/FiltUrl` | ❌ 缺 | — | ❌ |
+| L4 更新表 `uFWORD/uTUrl/uFUrl/FiltUrl` | ❌ 缺 | — | — |
 
-所以最终结论是：**过滤层里不存在「数据在、结构不明」的黑盒**。
-剩下的缺口只有「包里根本没带的 4 张更新表」，
-它们出厂包里本来就没有，复刻需要自行重建对应能力。
+所以过滤层里**不存在「数据在、结构不明」的黑盒**。
+剩下的缺口只有四张包内根本没带的更新表，复刻需要自行重建。
 
-历史上关于 `.urf` 的所有「规则库」「加密」「分类规则」假设
-（包括本项目自己的 `replication-status.md` §3.5 早期版本、
-`docs/legacy-filter-efficacy.md` 相关推论）
-都应在本文档发布之日视为作废。
+`.urf` 不在这张表里，因为它不是过滤层的一部分。
