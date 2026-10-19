@@ -134,12 +134,12 @@ CSentenceObj::Ini
 但也要诚实：**我们的 chunker 还没在真实语料上跑通**。
 单块退化 41.4%，意味着近一半分句找不出谓语。
 
-## 3.5 产品的过滤是「四层」，不是「一层词表」
+## 3.5 产品是分层过滤，不是「一层词表」
 
-前面的分析只说清了一个模块（`Handler.dll` -> `SentenceObj.dll` ->
-`FalunWord.lib`）。把安装清单 `_build-manifest.txt` 和 `xstring.s2g`
-的安装表对齐后，可以确认产品其实有**四条互相独立的过滤路径**，
-任何一条都可以单独拦截：
+只看 `Handler.dll` -> `SentenceObj.dll` -> `FalunWord.lib` 会以为
+产品只有词表。把安装清单 `_build-manifest.txt`、`xstring.s2g`
+的安装表和反汇编对齐后，可以确认它由**若干条互相独立的拦截路径**
+构成，任何一条都可以单独生效：
 
 | 层 | 载体 | 机制 | 我们能复刻吗 |
 |---|---|---|---|
@@ -147,6 +147,7 @@ CSentenceObj::Ini
 | L2 网址/文件名规则 | `adwapp`/`adwfil`/`iawfil`/`lgwfil`/`vgamfil.dat` | 前缀/后缀/字面组合展开，9,143 条规则 → 11,187 词条 | ✅ 已复刻（`data/legacy-rule-audit.json`） |
 | L3 信任/黑名单网址 | `TrustUrl.dat` + `wfile.dat` | `Surfgd.dll` 逐条比对 | ✅ 已导入（1,157 主机） |
 | L4 进程/端口黑名单 | `filtport.dat` + LSP（`dbfilter.dll` → `Surfgd.dll`） | Winsock 劫持，按进程/端口判定 | ✅ 已审计（2 条明文） |
+| L5 API hook | `Handler.dll` 表 → `HASrv.dll` | 15 条 inline hook，4 条拦 GDI 文字渲染、11 条自保护 | ✅ 已解析（`docs/api-hook-layer.md`） |
 
 > **注意**：`1.urf`–`9.urf` **不是**过滤层的任何一部分，
 > 而是 AppFace 换肤库的皮肤资源包（内嵌未加密 GIF）。

@@ -1,0 +1,231 @@
+{
+  "_note": "API hook tables passed from Handler.dll to HASrv.dll. HASrv.dll itself contains no hooked API names.",
+  "handler_size": 684032,
+  "record_size": 108,
+  "engine_max_records": 20,
+  "ansi": {
+    "va": "0x31014178",
+    "count": 6,
+    "by_dll": {
+      "advapi32.dll": [
+        "RegDeleteValueA",
+        "RegDeleteKeyA",
+        "RegSetValueA",
+        "RegSetValueExA"
+      ],
+      "gdi32.dll": [
+        "TextOutA",
+        "ExtTextOutA"
+      ]
+    },
+    "records": [
+      {
+        "index": 0,
+        "dll": "advapi32.dll",
+        "api": "RegDeleteValueA",
+        "key": "",
+        "arg_count": 2
+      },
+      {
+        "index": 1,
+        "dll": "advapi32.dll",
+        "api": "RegDeleteKeyA",
+        "key": "",
+        "arg_count": 2
+      },
+      {
+        "index": 2,
+        "dll": "advapi32.dll",
+        "api": "RegSetValueA",
+        "key": "",
+        "arg_count": 5
+      },
+      {
+        "index": 3,
+        "dll": "advapi32.dll",
+        "api": "RegSetValueExA",
+        "key": "",
+        "arg_count": 6
+      },
+      {
+        "index": 4,
+        "dll": "gdi32.dll",
+        "api": "TextOutA",
+        "key": "",
+        "arg_count": 5
+      },
+      {
+        "index": 5,
+        "dll": "gdi32.dll",
+        "api": "ExtTextOutA",
+        "key": "",
+        "arg_count": 8
+      }
+    ]
+  },
+  "wide": {
+    "va": "0x31014470",
+    "count": 15,
+    "by_dll": {
+      "advapi32.dll": [
+        "RegDeleteValueA",
+        "RegDeleteValueW",
+        "RegDeleteKeyA",
+        "RegDeleteKeyW",
+        "RegSetValueA",
+        "RegSetValueW",
+        "RegSetValueExA",
+        "RegSetValueExW",
+        "OpenServiceA",
+        "OpenServiceW"
+      ],
+      "gdi32.dll": [
+        "TextOutA",
+        "TextOutW",
+        "ExtTextOutA",
+        "ExtTextOutW"
+      ],
+      "kernel32.dll": [
+        "OpenProcess"
+      ]
+    },
+    "records": [
+      {
+        "index": 0,
+        "dll": "advapi32.dll",
+        "api": "RegDeleteValueA",
+        "key": "",
+        "arg_count": 2
+      },
+      {
+        "index": 1,
+        "dll": "advapi32.dll",
+        "api": "RegDeleteValueW",
+        "key": "",
+        "arg_count": 2
+      },
+      {
+        "index": 2,
+        "dll": "advapi32.dll",
+        "api": "RegDeleteKeyA",
+        "key": "",
+        "arg_count": 2
+      },
+      {
+        "index": 3,
+        "dll": "advapi32.dll",
+        "api": "RegDeleteKeyW",
+        "key": "",
+        "arg_count": 2
+      },
+      {
+        "index": 4,
+        "dll": "advapi32.dll",
+        "api": "RegSetValueA",
+        "key": "",
+        "arg_count": 5
+      },
+      {
+        "index": 5,
+        "dll": "advapi32.dll",
+        "api": "RegSetValueW",
+        "key": "",
+        "arg_count": 5
+      },
+      {
+        "index": 6,
+        "dll": "advapi32.dll",
+        "api": "RegSetValueExA",
+        "key": "",
+        "arg_count": 6
+      },
+      {
+        "index": 7,
+        "dll": "advapi32.dll",
+        "api": "RegSetValueExW",
+        "key": "",
+        "arg_count": 6
+      },
+      {
+        "index": 8,
+        "dll": "gdi32.dll",
+        "api": "TextOutA",
+        "key": "",
+        "arg_count": 5
+      },
+      {
+        "index": 9,
+        "dll": "gdi32.dll",
+        "api": "TextOutW",
+        "key": "",
+        "arg_count": 5
+      },
+      {
+        "index": 10,
+        "dll": "gdi32.dll",
+        "api": "ExtTextOutA",
+        "key": "",
+        "arg_count": 8
+      },
+      {
+        "index": 11,
+        "dll": "gdi32.dll",
+        "api": "ExtTextOutW",
+        "key": "",
+        "arg_count": 8
+      },
+      {
+        "index": 12,
+        "dll": "kernel32.dll",
+        "api": "OpenProcess",
+        "key": "",
+        "arg_count": 3
+      },
+      {
+        "index": 13,
+        "dll": "advapi32.dll",
+        "api": "OpenServiceA",
+        "key": "",
+        "arg_count": 3
+      },
+      {
+        "index": 14,
+        "dll": "advapi32.dll",
+        "api": "OpenServiceW",
+        "key": "",
+        "arg_count": 3
+      }
+    ]
+  },
+  "buckets": {
+    "self_protect": [
+      "OpenProcess",
+      "OpenServiceA",
+      "OpenServiceW",
+      "RegDeleteKeyA",
+      "RegDeleteKeyW",
+      "RegDeleteValueA",
+      "RegDeleteValueW",
+      "RegSetValueA",
+      "RegSetValueExA",
+      "RegSetValueExW",
+      "RegSetValueW"
+    ],
+    "text_rendering": [
+      "ExtTextOutA",
+      "ExtTextOutW",
+      "TextOutA",
+      "TextOutW"
+    ]
+  },
+  "wide_superset_of_ansi": true,
+  "selector": {
+    "global_va": "0x31018fac",
+    "write_rva": "0x2290",
+    "ini_path": "c:\\settings.ini",
+    "section": "Settings",
+    "key": "WriteLog",
+    "ansi_table_when": "value == 2",
+    "wide_table_when": "value != 2"
+  }
+}
