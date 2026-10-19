@@ -10,6 +10,12 @@ LH-installed-tree/
 # The staging area holds decoded plaintext dumps produced during import.
 data/_staging/
 
+# Scratch pages saved while hunting down the HNC literature. These are
+# search-engine results and fetched articles, not inputs to anything.
+_bing.html
+_hnc_web/
+*.har
+
 __pycache__/
 *.py[cod]
 .pytest_cache/
