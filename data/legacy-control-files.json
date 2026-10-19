@@ -1,0 +1,152 @@
+{
+  "_note": "Structure and counts only. No list entry is reproduced.",
+  "system32": "..\\LH-installed-tree\\Windows\\System32",
+  "dword_files": [
+    {
+      "name": "sys.dat",
+      "size": 268,
+      "sha256": "882ad7fde63742539d53a6d120ec1159a04b7ad25ce168ee0d155116a1ab7a33",
+      "word_count": 67,
+      "value_histogram": {
+        "0": 53,
+        "1": 8,
+        "2": 1,
+        "3": 3,
+        "5": 1,
+        "14": 1
+      },
+      "max_value": 14,
+      "nonzero_count": 14,
+      "codec_roundtrip_is_ascii_garbage": true
+    },
+    {
+      "name": "sysEx.dat",
+      "size": 32,
+      "sha256": "476c88314b447dfb8ffe6ebdb9aaf97d83659dd1700206bda750a60f9ca3ee43",
+      "word_count": 8,
+      "value_histogram": {
+        "0": 1,
+        "1": 5,
+        "4": 1,
+        "262494": 1
+      },
+      "max_value": 262494,
+      "nonzero_count": 7,
+      "codec_roundtrip_is_ascii_garbage": false
+    },
+    {
+      "name": "xconfigs.dat",
+      "size": 268,
+      "sha256": "882ad7fde63742539d53a6d120ec1159a04b7ad25ce168ee0d155116a1ab7a33",
+      "word_count": 67,
+      "value_histogram": {
+        "0": 53,
+        "1": 8,
+        "2": 1,
+        "3": 3,
+        "5": 1,
+        "14": 1
+      },
+      "max_value": 14,
+      "nonzero_count": 14,
+      "codec_roundtrip_is_ascii_garbage": true
+    }
+  ],
+  "plain_files": [
+    {
+      "name": "filtport.dat",
+      "size": 33,
+      "sha256": "508c9ad62304c30c6e3448ff1da6c02d7196e289ffc4e0e72285377e2f6087e2",
+      "trailing_crlf": true,
+      "ascii_only": true,
+      "line_count": 2,
+      "entry_fields": 3,
+      "entries_with_numeric_tail": 2,
+      "entries_with_named_proto": 2,
+      "kinds": {
+        "alpha": 4,
+        "digits": 2
+      }
+    }
+  ],
+  "codec_files": [
+    {
+      "name": "wfile.dat",
+      "size": 260,
+      "sha256": "414dd3c817b78fd478f967bccb7ac8ec0221d37fe34cac4d89b72b3ffb75d626",
+      "obfuscated": true,
+      "line_count": 5,
+      "unique_lines": 5,
+      "min_len": 16,
+      "max_len": 24
+    },
+    {
+      "name": "TrustUrl.dat",
+      "size": 28636,
+      "sha256": "84a861f370632a3c910a7c168f99a3168d49d09fac88447b0cc6cc101dca1ed2",
+      "obfuscated": true,
+      "line_count": 1177,
+      "unique_lines": 1157,
+      "min_len": 6,
+      "max_len": 22
+    },
+    {
+      "name": "adwapp.dat",
+      "size": 223674,
+      "sha256": "1e1b0f017f3c09ebe06bedc51824df570f9df767090c16953cc36ed175643ace",
+      "obfuscated": true,
+      "line_count": 6856,
+      "unique_lines": 6775,
+      "min_len": 8,
+      "max_len": 58
+    },
+    {
+      "name": "adwfil.dat",
+      "size": 71634,
+      "sha256": "83da6970e1c97a110f993cb11f9f6963691097b6c6cb6baecd98559189ae456a",
+      "obfuscated": true,
+      "line_count": 2003,
+      "unique_lines": 1993,
+      "min_len": 4,
+      "max_len": 81
+    },
+    {
+      "name": "iawfil.dat",
+      "size": 5166,
+      "sha256": "5044240a7e8de15dd2a16398aa4ae70c426ff1b505547a93735420b2d3a59dbe",
+      "obfuscated": true,
+      "line_count": 113,
+      "unique_lines": 112,
+      "min_len": 8,
+      "max_len": 117
+    },
+    {
+      "name": "lgwfil.dat",
+      "size": 2756,
+      "sha256": "35113441fbd30a821267f21f0509f6d4c1a81291eff23ab915083ff80fcbfd40",
+      "obfuscated": true,
+      "line_count": 54,
+      "unique_lines": 54,
+      "min_len": 8,
+      "max_len": 74
+    },
+    {
+      "name": "vgamfil.dat",
+      "size": 5782,
+      "sha256": "44ff340847ca5946e3e115b2bc0c8b1e008c2e16b8a941d05af07dd6e5f5bf6c",
+      "obfuscated": true,
+      "line_count": 117,
+      "unique_lines": 117,
+      "min_len": 8,
+      "max_len": 71
+    }
+  ],
+  "missing_declared": [
+    "uFWORD.dat",
+    "uTUrl.Dat",
+    "uFUrl.Dat",
+    "filtpros.Dat",
+    "FiltUrl.Dat",
+    "server.dat"
+  ]
+}

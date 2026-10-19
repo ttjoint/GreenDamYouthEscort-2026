@@ -134,6 +134,142 @@ CSentenceObj::Ini
 但也要诚实：**我们的 chunker 还没在真实语料上跑通**。
 单块退化 41.4%，意味着近一半分句找不出谓语。
 
+## 3.5 产品的过滤是「四层」，不是「一层词表」
+
+前面的分析只说清了一个模块（`Handler.dll` -> `SentenceObj.dll` ->
+`FalunWord.lib`）。把安装清单 `_build-manifest.txt` 和 `xstring.s2g`
+的安装表对齐后，可以确认产品其实有**四条互相独立的过滤路径**，
+任何一条都可以单独拦截：
+
+| 层 | 载体 | 机制 | 我们能复刻吗 |
+|---|---|---|---|
+| L1 文本词表 | `FalunWord.lib` | `CFWordLib` 字符串扫描 + 打分 | ✅ 已复刻（`data/hnc-falun-filter.json`） |
+| L2 网址/文件名规则 | `adwapp`/`adwfil`/`iawfil`/`lgwfil`/`vgamfil.dat` | 前缀/后缀/字面组合展开，9,143 条规则 → 11,187 词条 | ✅ 已复刻（`data/legacy-rule-audit.json`） |
+| L3 信任/黑名单网址 | `TrustUrl.dat` + `wfile.dat` | `Surfgd.dll` 逐条比对 | ✅ 已导入（1,157 主机） |
+| L4 进程/端口黑名单 | `filtport.dat` + LSP（`dbfilter.dll` → `Surfgd.dll`） | Winsock 劫持，按进程/端口判定 | ✅ 已审计（2 条明文） |
+
+> **注意**：`1.urf`–`7.urf` **不是**过滤层的任何一部分。
+> 它们是 AppFace 换肤库的皮肤资源包（内嵌 GIF/BMP/JPEG，无加密），
+> 详见 `docs/legacy-control-files.md` §4 与
+> `REVERSE-ENGINEERING/04-urf规则库格式分析.md` §7。
+
+关键证据：
+
+- `xstring.s2g`（安装表，128 条 `File=`/`Folder=`）里，`2006data\*.dat`
+  共 30+ 个文件，我们只拿到其中 5 个的分类规则和 1 个信任表。
+  **`auctfil`/`bnrfil`/`chtfil`/`cultfil`/`entfil`/`imgfil`/`pkmon`/`wrestfil`
+  等分类在安装表里存在，但安装树里根本没有**——缺的不只是 HNC 的 `.lib`。
+- `_build-manifest.txt` 要求 `1.urf`–`9.urf` 共 9 个，实际只有 7 个。
+- `HncEng.exe` 是**独立服务进程**（`HncEngServer.exe`，`LocalService`，
+  导入 `SentenceObj.dll` 的 `CreateHncTextGroup`/`ReleaseHncTextGroup`
+  和 `hnclib\` 路径），说明 HNC 引擎确实有常驻进程形态；
+  但 `Handler.dll` 是**进程内直接链接** `SentenceObj.dll`，不走 IPC 服务。
+  两条路都存在，产品默认走进程内那条。
+
+结论修正：
+
+- 之前写「原厂只有词表过滤」**说过头了**。准确说法是：
+  **原厂的中文文本判定只有词表；但网络侧还有规则库、信任表、进程/端口表。**
+- 一个请求要真正被放行，得同时穿过 L3 和 L4；词表只影响 L1。
+  所以「`法轮功` 裸词不在打分表里」不等于产品漏放——
+  它可能被 L2 的网址规则或 L3 的 `.urf` 挡住。
+
+### `gn.exe` 的 `.urf` 加载点（本轮新证据，**定性已翻转**）
+
+> **2025 重勘结论：`.urf` 不是过滤规则库，是 AppFace 换肤库的皮肤资源包。**
+> 完整证据链见 `REVERSE-ENGINEERING/04-urf规则库格式分析.md` §7，
+> 提取脚本 `tools/extract_urf_images.py`，产物 `_urf_images/`（12 张 GIF）。
+> 下面保留本轮反汇编记录，因为它是证据链的最后一环。
+
+`gn.exe`（`%WinSysDir%\gn.exe`，来自 `xxxnet2\play\Release\gn.exe`）
+里有一个完整的最小加载器，和 `XNet2.exe` 的 `EnsureUrfReady` 同构：
+
+```
+0x40b4f0  sub esp, 0x200
+0x40b50c  GetWindowsDirectoryA(buf)          ; 栈 buffer 512 字节
+0x40b519  call 0x40b580                     ; 读 PARAM 子键, 默认 10, 钳 10..30
+0x40b51e  mov eax, [0x451d10]               ; 注册表读出的索引
+0x40b523  cmp eax, 1 / jl  -> eax = 1
+0x40b528  cmp eax, 8 / jle -> 保留
+0x40b52d  else              -> eax = 1
+0x40b538  lea edx, [esp+0x110]
+0x40b53f  push 0x44d3c0                     ; "%s\\%d.urf"
+0x40b545  call 0x41978e                     ; sprintf
+0x40b54a  mov eax, [esi+0xc8]               ; AppFace.dll!SkinStart
+0x40b56e  call eax                          ; SkinStart(0, path, 1, name, 0, 0)
+```
+
+`call [esi+0xc8]` 的实现在 `gn.exe` 构造函数 0x40a8b0 处可以逐字段对账：
+
+```text
+0x40a8de  call [0x43e32c]        ; LoadLibraryA
+0x40a8f8  push 0x44d338          ; "SkinStart"
+0x40a8fe  call edi               ; GetProcAddress
+0x40a902  mov  [esi+0xc8], eax   ; ← 这就是「+0xc8 处的 .urf 回调」
+0x40a914  push 0x44d32c          ; "SkinStartW" → +0xcc
+0x40a930  push 0x44d320          ; "SkinRemove" → +0xd0
+0x40a94c  push 0x44d310          ; "SkinWindowSet" → +0xd4
+0x40a964  push 0x44d304          ; "SkinThread" → +0xd8
+0x40a97c  push 0x44d2f8          ; "BkCreate" → +0xdc
+0x40a994  push 0x44d2f0          ; "BkDraw" → +0xe0
+0x40a9ac  push 0x44d2e4          ; "BkDelete" → +0xe4
+0x40a9be  mov  [esi+0xc0], 1     ; 初始化完成标志
+```
+
+也就是说整个 `.urf` 加载链是：
+
+```
+LoadLibraryA("AppFace.dll")
+  → GetProcAddress("SkinStart")   → [this+0xc8]
+  → SkinStart(0, "%WinDir%\\%d.urf", 1,
+               "1PPRNFQ5YPKZI0UYV4U5GB5RKHDYNEKJ", 0, 0)
+```
+
+`1PPRNFQ5…` 是 AppFace 皮肤的口令参数，**不是解密密钥、不是属性名**。
+实际提取验证：7 个 `.urf` 里的 payload 是未加密的
+GIF/BMP/JPEG（12 张完整 GIF，含 285×24 的 4 状态工具条按钮贴图条），
+此前看到的「高熵、magic `5599259b`、记录标记」全是 AppFace 容器元数据。
+
+差别有两处，说明这是**同一套 MFC 封装库的不同宿主**：
+
+1. `gn.exe` 的索引上界是 **8**，`XNet2.exe` 是 **9**；
+2. `gn.exe` 索引来自注册表 `SOFTWARE\KingWay` 的 `PARAM` 值
+   （默认 10，钳到 10..30），而 `XNet2.exe` 的 `g_urfIndex` 初始为 1。
+
+`gn.exe` 的 `PARAM` 读函数（0x40b580）还顺手做了三件事：
+
+- `RegOpenKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\KingWay", ...)`
+- `RegQueryValueExA(..., "PARAM", ...)` -> 12 字节缓冲
+- 值不在 `[0xa, 0x1e]` 就重置为 `0xa`
+
+所以安装后的默认行为是：**装 7 个皮肤方案，只加载第 1 个**
+（索引被钳到 1），其余 2–7 是备选皮肤，由 `PARAM` 切换——
+不是「规则分类」，更不是「加密规则库」。
+
+### 对「四层过滤」结论的修正
+
+| 层 | 载体 | 机制 | 我们能复刻吗 |
+|---|---|---|---|
+| L1 文本词表 | `FalunWord.lib` | `CFWordLib` 字符串扫描 + 打分 | ✅ 已复刻（`data/hnc-falun-filter.json`） |
+| L2 网址/文件名规则 | `adwapp`/`adwfil`/`iawfil`/`lgwfil`/`vgamfil.dat` | 前缀/后缀/字面组合展开，9,143 条规则 → 11,187 词条 | ✅ 已复刻（`data/legacy-rule-audit.json`） |
+| L3 信任/黑名单网址 | `TrustUrl.dat` + `wfile.dat` | `Surfgd.dll` 逐条比对 | ✅ 已导入（1,157 主机） |
+| L4 进程/端口黑名单 | `filtport.dat` + LSP（`dbfilter.dll` → `Surfgd.dll`） | Winsock 劫持，按进程/端口判定 | ✅ 已审计（2 条明文） |
+
+`.urf` 从这张表里**移除**了。剩下的未复刻资产是：
+
+- `uFWORD.dat` / `uTUrl.Dat` / `uFUrl.Dat` / `filtpros.Dat` /
+  `FiltUrl.Dat` / `server.dat` —— `Surfgd.dll` 声明了但安装包没带，
+  应为联网更新下发；
+- 安装表里提到、包里缺席的 `auctfil`/`bnrfil`/`chtfil`/`cultfil` 等分类规则。
+
+结论修正：
+
+- 之前写「原厂只有词表过滤」**说过头了**。准确说法是：
+  **原厂的中文文本判定只有词表；但网络侧还有规则库、信任表、端口表。**
+- 一个请求要真正被放行，得同时穿过 L3 和 L4；词表只影响 L1。
+  所以「`法轮功` 裸词不在打分表里」不等于产品漏放——
+  它可能被 L2 的网址规则或 L3 的信任表反向放行所覆盖。
+
 ## 4. 诚实的差距清单
 
 按「离可用有多远」排序：
@@ -167,6 +303,7 @@ CSentenceObj::Ini
 | 高 | 修 `_predicate_start` 右边界 | 修好才能开扩展动词表（收益 −15pp） |
 | 高 | 修 `v+着` 优先级（`[张]` §3） | 同上 |
 | 中 | 查 `HASrv.dll` 里反动度/红黑度的映射 | 才知道分数怎么变成拦截动作 |
+| 中 | 补上 `wfile.dat`（260 字节）与 `filtport.dat` 的规则语义 | L4 结构与 L2 不同 |
 | 低 | 继续找那 12 个 `.lib` | 产品不用，找到也只是研究价值 |
 | 低 | 反汇编 `CheckVV` / `CheckRelNigRule` | 过滤 API 的补充 |
 
