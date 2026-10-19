@@ -79,6 +79,32 @@ OFF_GLOBAL_SLOT = 0xB31E8
 # 子对象相对主对象的位移。
 SUB_OBJ_DELTA = 0x124
 
+# CSentenceObj 相关
+FN_CSENTENCEOBJ_CTOR = 0x5190   # ??0CSentenceObj@@QAE@XZ
+FN_CSENTENCEOBJ_INI = 0x68D0    # ?Ini@CSentenceObj@@QAEHPAD@Z
+FN_GETSENTENCEALC = 0x6DC0      # ?GetSentenceALC@CSentenceObj@@QAEHPAG0PAVCWordSet_Simple@@@Z
+FN_BIGOBJ_CTOR = 0x6230         # 构造 CSentenceObj->member0 指向的大对象
+BIG_OBJ_SIZE = 0x4FC280         # Ini 里 operator new 的实参
+
+# GetSentenceALC 的长度上限（反汇编 @0x6dcc: cmp esi,0x23）
+GETSENTENCEALC_MAX_CHARS = 0x23
+
+# 引擎启动检查点 -> 所需文件。全部反汇编自 CSentenceObj::Ini 的串行链。
+REQUIRED_DATA_FILES = (
+    ("Ini Error!",              "%s\FalunWord.lib",  True),
+    ("WordLib Ini Err!",        "Word.lib",            False),
+    ("SentLib Ini Err!",        "SentLib.lib",         False),
+    ("EsseSentCat Ini Err!",    "句类表",               False),
+    ("ActiveRule Ini Err!",     "ActiveMode.lib",      False),
+    ("DefInit Ini Err!",        "DefIndex/Defl0*.lib", False),
+    ("UnifyPercList Ini Err!",  "UnifyPerc.lib",       False),
+    ("UserDefine_hNotV Ini Err!", "(用户定义)",         False),
+    ("EgPerc Ini Err!",         "EgPerc.lib",          False),
+    ("MoreVFrame Ini Err!",     "(多动词框架)",         False),
+    ("Asc Disp Ini Err!",       "(ASCII 处理表)",       False),
+    ("SentStructure Ini Err!",  "句结构表",             False),
+)
+
 
 def _find_engine_dir():
     for base in CANDIDATE_BASES:
@@ -220,6 +246,54 @@ class HncEngine(object):
                     "out1": None, "out2": None}
 
 
+    # ---- CSentenceObj 路线 ----
+
+    def new_sentence_obj(self):
+        """手工构造一个 CSentenceObj + member0 大对象。
+
+        Ini 会做两件事：operator new(0x4fc280) 构造 member0，
+        再加载 12 个 .lib。这里只做第一件（绕开文件依赖），
+        用来验证"卡住的到底是文件还是调用方式"。
+        """
+        kern = ctypes.WinDLL("kernel32")
+        kern.VirtualAlloc.restype = ctypes.c_void_p
+        kern.VirtualAlloc.argtypes = [
+            ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_uint32,
+        ]
+        MEM_COMMIT_RESERVE = 0x3000
+        PAGE_READWRITE = 0x04
+
+        obj = kern.VirtualAlloc(None, 0x4000, MEM_COMMIT_RESERVE, PAGE_READWRITE)
+        self.call_raw(self.base + FN_CSENTENCEOBJ_CTOR, obj, [])
+
+        big = kern.VirtualAlloc(
+            None, BIG_OBJ_SIZE + 0x1000, MEM_COMMIT_RESERVE, PAGE_READWRITE
+        )
+        ctypes.memset(big, 0, BIG_OBJ_SIZE + 0x1000)
+        self.call_raw(self.base + FN_BIGOBJ_CTOR, big, [])
+
+        # CSentenceObj->member0 = big
+        ctypes.cast(obj, ctypes.POINTER(ctypes.c_uint32))[0] = big
+        return obj, big
+
+    def ini(self, obj, path):
+        """调 CSentenceObj::Ini。返回 0 成功，1 失败（并打印 Xxx Ini Err!）。"""
+        pbuf = ctypes.create_string_buffer(path)
+        return self.call_raw(
+            self.base + FN_CSENTENCEOBJ_INI, obj, [ctypes.addressof(pbuf)]
+        )
+
+    def get_sentence_alc(self, obj, text):
+        """调 GetSentenceALC。返回 7 表示失败（会真的失败，见文档 §0.3）。"""
+        wbuf = ctypes.create_unicode_buffer(text)
+        start = ctypes.addressof(wbuf)
+        end = start + len(text) * 2
+        try:
+            return self.call_raw(self.base + FN_GETSENTENCEALC, obj, [start, end, 0])
+        except Exception as exc:
+            return "ERR " + str(exc)[:50]
+
+
 def main(argv):
     print("Python:", sys.version.split()[0], "(%d-bit)" % (8 * struct.calcsize("P")))
     if struct.calcsize("P") * 8 != 32:
@@ -284,11 +358,41 @@ def main(argv):
                 note = "  " + r["error"][:40]
             print("   len=%2d -> %r%s" % (n, r.get("ret"), note))
         print()
+        # 6) CSentenceObj 路线
+        print("== 6. CSentenceObj::Ini（分析入口的前置）==")
+        obj, big = eng.new_sentence_obj()
+        print("   CSentenceObj @ %#x, member0 @ %#x" % (obj, big))
+        for path in (os.path.join(eng.tmpdir, "HNCLIB"),
+                     os.path.join(eng.tmpdir, "HNCLIB") + "\\"):
+            label = "HNCLIB" + ("\\" if path.endswith("\\") else "")
+            print("   Ini(%-8s) -> %r" % (label, eng.ini(obj, path)))
+        print()
+
+        # 7) 绕过 Ini 直接 GetSentenceALC
+        print("== 7. 绕过 Ini 直接 GetSentenceALC ==")
+        for text in (u"他昨天来了",
+                     u"我要杀了你"):
+            shown = text.encode("gbk", "replace")
+            print("   %-8s -> %r" % (shown, eng.get_sentence_alc(obj, text)))
+        print()
+
+        # 8) 缺哪些文件
+        print("== 8. 引擎必需的 12 个数据文件 ==")
+        for label, fname, shipped in REQUIRED_DATA_FILES:
+            mark = "OK " if shipped else "MISS"
+            print("   [%s] %-26s <- %s" % (mark, fname, label))
+        print()
     finally:
         eng.close()
 
-    print("结论：引擎可加载、可初始化、可接受调用；")
-    print("      但没有可直接「喂文本拿块结构」的导出入口。")
+    print("结论：")
+    print("  - 引擎可加载、可建组、可调函数")
+    print("  - CSentenceObj 可构造，但 Ini 第一条就失败（缺 Word.lib）")
+    print("  - 绕过 Ini 直接 GetSentenceALC 不崩了，但一律返回 7")
+    print("    （MakeObjList 切词失败，因为没有词表）")
+    print("  - 12 个必需数据文件，分发包里只有 FalunWord.lib")
+    print()
+    print("所以：不能拿原始引擎当分析后端。这是数据缺失，不是调用问题。")
     return 0
 
 

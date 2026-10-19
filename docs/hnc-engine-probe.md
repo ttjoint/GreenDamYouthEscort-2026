@@ -7,48 +7,105 @@
 
 ---
 
-## 0. 结论（已修正两次，见 §0.2）
+## 0. 结论：引擎能跑，但分析那条路被数据文件堵死
 
-**引擎可以加载、可以初始化、可以调用，但还不能当分析后端用。**
+**一句话**：`SentenceObj.dll` 能加载、能建组、能调函数，但
+**真正做句类分析需要 12 个 `.lib` 数据文件，分发包里一个都没有。**
 
-分三层说：
+### 0.1 引擎的 12 个启动检查点（反汇编确认）
 
-| 能力 | 状态 |
-|---|---|
-| 加载 DLL（PE32 x86，32 位 Python） | ✅ 通 |
-| `CreateHncTextGroup` 建组 | ✅ 通（路径须带尾 `\`） |
-| 读 vtable、调无参计数函数 | ✅ 通 |
-| `MakeALC`（逐 token 处理） | ⚠️ 通但只走一个 token |
-| `GetALC`（全局包装） | ❌ 抛 C++ 异常 0xE06D7363 |
-| `CSentenceObj::GetSentenceALC`（整句分析） | ❌ 构造链未打通 |
+`CSentenceObj::Ini` 走一条串行链，任何一步失败就打印对应的
+`Xxx Ini Err!` 并返回 1。全部检查点及所需文件：
 
-**卡点在哪**：`MakeALC` 是**逐 token** 的，返回 7 表示"处理完一个
-token"。整句循环骨架在 `CSentenceObj` 里，要
-`?Ini@CSentenceObj@@QAEHPAD@Z`（0x68d0）先初始化一个实例。
+| 顺序 | 错误字符串（DLL 内偏移） | 所需文件 | 分发包含有 |
+|---|---|---|---|
+| — | `Ini Error!` @0x45334 | `%s\FalunWord.lib` | ✅ |
+| 1 | `WordLib Ini Err!` @0x459d0 | `Word.lib` | ❌ |
+| 2 | `SentLib Ini Err!` @0x459bc | `SentLib.lib` | ❌ |
+| 3 | `EsseSentCat Ini Err!` @0x459a4 | 句类表 | ❌ |
+| 4 | `ActiveRule Ini Err!` @0x4598c | `ActiveMode.lib` | ❌ |
+| 5 | `DefInit Ini Err!` @0x45978 | `DefIndex.lib` / `Defl0Index.lib` / `Defl0Data.lib` | ❌ |
+| 6 | `UnifyPercList Ini Err!` @0x45960 | `UnifyPerc.lib` | ❌ |
+| 7 | `UserDefine_hNotV Ini Err!` @0x45944 | （用户定义） | ❌ |
+| 8 | `EgPerc Ini Err!` @0x45930 | `EgPerc.lib` | ❌ |
+| 9 | `MoreVFrame Ini Err!` @0x45918 | （多动词框架） | ❌ |
+| 10 | `Asc Disp Ini Err!` @0x45904 | （ASCII 处理表） | ❌ |
+| — | `SentStructure Ini Err!` @0x453d0 | 句结构表 | ❌ |
+| — | `JiBenJL.lib` @0x45c64 | 基本句类 | ❌ |
+| — | `rule.lib` @0x45d00 | 规则 | ❌ |
+| — | `AttribE.lib` @0x7fb60 | E 块属性 | ❌ |
 
-### 0.2 修正记录（第二次 — 关于 `MakeALC` 返回码）
+**只有 `FalunWord.lib` 一个文件在包里。** 这正是它能"建组成功"
+却"无法分析"的原因——建组只用到 `FalunWord.lib`，分析要用其余 12 个。
 
-第一次修正后我在报告里写 `GetALC` 返回 7 = "全局未初始化"。
-**那句话只对 `GetALC` 成立，不适用于 `MakeALC`。**
-反汇编 `MakeALC` 全部返回点后，真实返回码是：
+### 0.2 实测复现
 
 ```
-@0x2c64  return 1    整句处理完成
-@0x2c21  return 7    单个 token 处理完（累加 [ebp+0x10047c] 后返回）
-@0x2c05  return 2
-@0x2c37  return 4
-@0x2d45 / 0x2d4d  return -1   失败
+Ini('D:\_tmp2\HNCLIB'  ) -> 1     WordLib Ini Err!
+Ini('D:\_tmp2\HNCLIB\') -> 1     WordLib Ini Err!
 ```
 
-所以 `ret=7` 是**正常推进**，不是错误。误读它会得出
-"引擎拒绝处理"的错误结论。
+第一条就挂。`Word.lib` 的路径拼接代码在 `0xff90`：
 
-### 0.3 踩坑记录：硬编码基址
+```asm
+0xffa3: push 0x10045778       ; "Word.lib"
+0xffa8: push path
+0xffad: push 0x100458e4       ; "%s%s"     ← 无分隔符！
+0xffb4: call sprintf
+0xffc2: mov ecx,0x100B3A08    ; 全局 wordlib 对象
+0xffc7: call 0x7c00           ; SMakeWordSetFromFile
+```
 
-写工具时把 `0x100028D0` 硬编码进 thunk，结果所有调用都报
-`access violation writing 0x10`。原因是 `SentenceObj.dll` 实际基址
-**不是**优选基址 `0x10000000`（ASLR 或已被占用时会重定位）。
-必须用 `dll._handle + 0x28D0`。这个 bug 花了我好几轮回溯。
+`%s%s` 意味着 `Ini` 的路径参数**必须自带尾反斜杠**，与
+`CreateHncTextGroup` 同一个坑（但那个是 `%s\FalunWord.lib`，自带分隔符）。
+
+### 0.3 绕过 `Ini` 的尝试与结果
+
+`GetSentenceALC` 需要 `CSentenceObj->member0` 指向一个
+`0x4fc280` 字节的大对象（`Ini` 里 `operator new` + `0x6230` 构造）。
+我手工 `VirtualAlloc` + 调 `0x6230` 构造，把指针塞进 `member0`：
+
+- ✅ 不再崩（`writing 0x24` 消失）
+- ❌ 一律返回 **7**
+
+原因在 `MakeObjList`（`0x69a0`）的收尾：
+
+```asm
+0x6b38: mov eax,[ebp+0xc]   ; 切词结果1
+0x6b3f: mov eax,[ebp+8]     ; 切词结果2
+0x6b47: 两个都为 0 → return 1（失败）
+```
+
+→ `GetSentenceALC` 的 `0x6e27` 收到非零 → `jne 0x6f30` → `return 7`。
+
+**手工建的空对象里没有词表，切词必然失败。** 这不是调用方式问题，
+是数据缺失问题——绕不过去。
+
+### 0.4 长度上限（意外收获）
+
+`GetSentenceALC` 开头就限长：
+
+```asm
+0x6dc8: sub esi,edi
+0x6dca: sar esi,1          ; 字节差 / 2 = 字符数
+0x6dcc: cmp esi, 0x23      ; ★ 35
+0x6dd2: jl  继续
+0x6dd4: mov eax,7; ret     ; 超过 35 字 → 直接返回 7
+```
+
+`MakeObjList` 里还有 `cmp edi, 0x1fd`（509）的长度钳制。
+**这两条说明原始引擎本来就是按句（≤35 字）设计的**，喂整段会被截断——
+这对我们复刻项目是个有用的旁证：分句粒度是对的。
+
+### 0.5 修正记录
+
+- **第一次修正**（提交 `3fad90b`）：推翻"缺文件无法初始化"，
+  真实原因是 `CreateHncTextGroup` 路径要带尾反斜杠。那条也没错，
+  但只适用于建组。
+- **第二次修正**（提交 `0496db1`）：`MakeALC` 的 `ret=7` 不是错误，
+  是"处理完一个 token"。`GetALC` 的 7 才是"全局未初始化"。
+- **第三次修正**（本次）：`CSentenceObj::Ini` 需要的是 `Word.lib`，
+  **不是** `FalunWord.lib`——两个文件属于不同层，建组用前者、分析用后者。
 
 ## 1. 引擎怎么工作（原始程序的实际流程）
 
@@ -312,40 +369,49 @@ DLL 的 `.rdata` 泄漏了编译期源文件路径，每个名字直接对应一
 
 ### 已实测确认的
 
-1. **引擎可以加载**（PE32 x86，32 位 Python）。
-2. **引擎可以初始化**——关键是路径参数必须带尾反斜杠。
-3. **不需要 FMean.lib 等文件**即可建组，且不会生成它们。
-4. vtable 前 11 项是 `CFWordLib` 的分析接口（已列表）。
-5. `GetNigWordCount` / `GetSenseWordCount` / `GetRedWordCount`
-   实测可读（对象确实分配了 0x101000 字节）。
-6. `MakeALC` 实测可调用，返回码表已反汇编确认（见 §0.2）。
-7. 输出格式（XML 标签体系）已完整拿到。
-8. 21 个源文件名已拿到。
-9. `FalunWord.lib` 结构：前 ~5.5MB 是 16 字节索引记录
-   （实有 171,883 条；`_decoded/` 里的脚本按对齐扫描只解出
-   112,378 条，漏了 59,505 条），尾部 0x53c6cc 起是 36,945
-   字符的 UTF-16LE 连续词条文本区。
+1. 引擎能加载（PE32 x86，32 位 Python）。
+2. `CreateHncTextGroup` 能建组（路径须带尾 `\`）。
+3. `CSentenceObj` 能构造（无参，只分配 + 置零）。
+4. 无参计数接口能读（对象确实分配了 0x101000 字节）。
+5. `MakeALC` 能调用，返回码表已反汇编确认。
+6. `CSentenceObj::Ini` **可以调**——它会走到第一个检查点并
+   打印 `WordLib Ini Err!`。这本身是"调通了"的证据。
+7. 绕过 `Ini` 手工构造 `member0` 后，`GetSentenceALC` **不再崩溃**，
+   稳定返回 7。
+8. 引擎完整的 12 个启动检查点（见 §0.1 表）。
+9. 输出格式（XML 标签体系）已完整拿到。
+10. 21 个源文件名已拿到。
+11. `FalunWord.lib` 结构已解析（171,883 条索引记录 + 36,945 字符文本区）。
+12. **两条长度限制**：`GetSentenceALC` 35 字、`MakeObjList` 509 字。
 
-### 仍未突破的
+### 仍未做到的
 
-1. **`MakeALC` 只走一个 token**（返回 7 而不是 1）。缺整句驱动循环。
-2. **`GetALC` 抛 C++ 异常**（0xE06D7363）。
-3. **`CSentenceObj` 的构造/`Ini` 链未打通**——这是通往
-   `GetSentenceALC`（0x6dc0）的唯一路径。
-4. **文本长度 >7 字时 `MakeALC` 越界崩溃**——引擎内部缓冲区边界，
-   不是我们的调用错误。
-5. **各维度的数值范围与权重**（褒贬 ±? 对立统一性 0..?）——
-   要等整句分析跑通才能看。
-6. **`GetWordFanDong` 返回整数如何映射到"拦截/放行"**——
-   在 `Handler.dll` 策略层，未反汇编。
+1. **拿不到任何一条分析结果。** 所有路径都退化成返回状态码。
+2. **12 个必需数据文件全部缺失**，且不在安装包内（已搜过 76 个条目）。
+3. 各维度的数值范围与权重（褒贬 ±? 等）—— 无法观测。
+4. `GetWordFanDong` 返回整数如何映射到"拦截/放行"—— 在 `Handler.dll`。
 
-### 所以能不能"调用原始 HNC 库进行测试"
+### 这一轮真正学到的东西
 
-**能加载、能初始化、能调部分函数，但还拿不到分析结果。**
+**"能调用"和"能用"是两件事。**
 
-这个结论比上一版更进了一步（上一版说"不能初始化"是错的），
-但仍然**不能**把原始引擎当成"参照答案"来验证本项目复刻的正确性。
-那条路被 `CSentenceObj` 的构造链挡着。
+前四轮我一直在证明"引擎能不能被调起来"：能加载、能建组、
+能调函数、返回码不是错误。这些都是真的，但对项目没有直接价值——
+因为**它给不出分析结果**。
+
+给出不了结果的原因不是调用姿势，是**数据**：这套引擎是一台
+很精密的机器，但分发包里只带了它的一颗螺丝（`FalunWord.lib`）。
+
+**所以本项目复刻 HNC 时的定位应当摆正**：我们不是在"还原一个能跑的
+原始引擎"，而是在"用公开论文重建一套能用的规则"。原始引擎的证据
+价值在于**它的输出格式和模块划分**（已拿到），而不在于**它能给我们
+标准答案**（给不了）。
+
+### 一个意外收获：长度上限
+
+`GetSentenceALC` 卡 35 字、`MakeObjList` 卡 509 字，两者独立。
+这说明原始引擎按"句"设计。本项目在 `chunker.py` 里坚持先分句
+再切块，方向是对的——这条现在有反汇编证据支撑了。
 
 ## 7. 对下一阶段的建议
 

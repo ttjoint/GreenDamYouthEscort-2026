@@ -279,6 +279,138 @@ class GetAlcNeedsGlobalTest(unittest.TestCase):
         self.assertEqual(int.from_bytes(data[0x4F07:0x4F0B], "little"), 7)
 
 
+@unittest.skipUnless(DLL.exists(), "安装树不在预期位置")
+class IniCheckpointChainTest(unittest.TestCase):
+    """`CSentenceObj::Ini` 是一条串行检查链，每个检查点有独立错误串。
+
+    这一组测试把「引擎需要 12 个数据文件、包里只有 1 个」钉死。
+    这是本项目"不能拿原始引擎当参照答案"的直接证据。
+
+    反汇编依据：`?Ini@CSentenceObj@@QAEHPAD@Z` @0x68d0 依次调用
+    sub_11700（内部再串 0xff90 / 0x1f5d0 / 0x1d100 / ...）。
+    """
+
+    # 错误串 -> 它要求的文件（None 表示未反汇编到具体文件名）
+    CHECKPOINTS = {
+        b"WordLib Ini Err!": b"Word.lib",
+        b"SentLib Ini Err!": None,
+        b"EsseSentCat Ini Err!": None,
+        b"ActiveRule Ini Err!": b"ActiveMode.lib",
+        b"DefInit Ini Err!": b"DefIndex.lib",
+        b"UnifyPercList Ini Err!": b"UnifyPerc.lib",
+        b"UserDefine_hNotV Ini Err!": None,
+        b"EgPerc Ini Err!": b"EgPerc.lib",
+        b"MoreVFrame Ini Err!": None,
+        b"Asc Disp Ini Err!": None,
+        b"SentStructure Ini Err!": None,
+    }
+
+    def test_all_error_strings_present(self):
+        """11 个检查点的错误串都在 DLL 里。少一个说明我数错了。"""
+        data = DLL.read_bytes()
+        for label in self.CHECKPOINTS:
+            with self.subTest(label=label):
+                self.assertIn(label, data, f"没找到 {label!r}")
+
+    def test_word_lib_is_not_falunword(self):
+        """`Ini` 要的是 `Word.lib`，不是 `FalunWord.lib`。
+
+        这俩属于不同层：建组用 FalunWord.lib，分析用 Word.lib。
+        混淆过一次，这里钉死。
+        """
+        data = DLL.read_bytes()
+        self.assertIn(b"Word.lib", data)
+        self.assertIn(b"FalunWord.lib", data)
+        # 0x458e4 是 "%s%s"——拼路径不带分隔符，所以 Ini 的入参
+        # 必须自带尾反斜杠（和 CreateHncTextGroup 的 %s\FalunWord.lib 不同）
+        self.assertEqual(data[0x458E4:0x458E8], b"%s%s")
+
+    def test_required_data_files_are_missing(self):
+        """12 个必需数据文件，磁盘上一个都不在。
+
+        如果哪天有人补上了这些文件，这个测试会失败——那是好事，
+        说明可以重新尝试跑原始引擎了。
+        """
+        base = ROOT.parent.parent / "LH-installed-tree" / "Windows" / "HNCLIB"
+        if not base.is_dir():
+            self.skipTest("安装树里没有 HNCLIB 目录")
+        present = {p.name.lower() for p in base.iterdir()}
+        required = [
+            "word.lib", "sentlib.lib", "activemode.lib", "defindex.lib",
+            "unifyperc.lib", "egperc.lib", "jibenjl.lib", "rule.lib",
+            "attribe.lib", "eltest.lib", "defl0index.lib", "defl0data.lib",
+        ]
+        found = [f for f in required if f in present]
+        self.assertEqual(
+            found, [],
+            f"居然出现了 {found}——可以重新尝试跑原始引擎了，"
+            "记得更新 docs/hnc-engine-probe.md §0",
+        )
+        self.assertIn("falunword.lib", present, "连 FalunWord.lib 都没了？")
+
+
+@unittest.skipUnless(DLL.exists(), "安装树不在预期位置")
+class GetSentenceALCLengthCapTest(unittest.TestCase):
+    """`GetSentenceALC` 有 35 字符硬上限。
+
+    这对本项目是个旁证：原始引擎按「句」设计，喂整段会被截断。
+    我们复刻时坚持先分句是对的。
+    """
+
+    def test_cap_is_0x23(self):
+        data = DLL.read_bytes()
+        # 0x6dd2: 83 fe 23    cmp esi, 0x23
+        self.assertEqual(data[0x6DD2:0x6DD5], _h("83fe23"))
+        # 紧跟其后应该是：pop edi; pop esi; mov eax,7; pop ebx; ...; ret 0x0c
+        tail = data[0x6DD5:0x6DE7]
+        self.assertEqual(
+            tail, _h("894c240c7c0c5f5eb8070000005b59c20c00"),
+            "超长分支：mov [esp+0xc],ecx; jl; pop edi; pop esi; mov eax,7; ...; ret 0xc",
+        )
+        # 上限就写在指令里：35 个字符
+        self.assertEqual(struct.unpack("<B", data[0x6DD4:0x6DD5])[0], 35)
+
+    def test_makeobjlist_also_clamps(self):
+        """`MakeObjList` 里还有 509 的钳制，两道限制互相独立。"""
+        data = DLL.read_bytes()
+        # 0x69d1: 81 ff fd 01 00 00   cmp edi, 0x1fd
+        self.assertEqual(data[0x69D1:0x69D7], _h("81fffd010000"))
+        self.assertEqual(
+            struct.unpack("<I", data[0x69D3:0x69D7])[0], 509,
+            "MakeObjList 的长度钳制应为 509",
+        )
+
+
+class IniCheckpointConstantTest(unittest.TestCase):
+    """工具里的检查点清单要和文档一致，防止文档/代码漂移。"""
+
+    def test_tool_declares_all_checkpoints(self):
+        import sys as _sys
+        if str(ROOT / "tools") not in _sys.path:
+            _sys.path.insert(0, str(ROOT / "tools"))
+        try:
+            import call_hnc_engine as mod
+        except ImportError:
+            self.skipTest("tools/call_hnc_engine.py 不可导入")
+        labels = {label for label, _f, _s in mod.REQUIRED_DATA_FILES}
+        for expected in ("WordLib Ini Err!", "SentLib Ini Err!",
+                         "ActiveRule Ini Err!", "EgPerc Ini Err!"):
+            self.assertIn(expected, labels)
+        # 只有 FalunWord.lib 在包里
+        shipped = [f for _l, f, ok in mod.REQUIRED_DATA_FILES if ok]
+        self.assertEqual(len(shipped), 1, f"只有 1 个文件随包发布，得到 {shipped}")
+
+    def test_length_cap_matches(self):
+        import sys as _sys
+        if str(ROOT / "tools") not in _sys.path:
+            _sys.path.insert(0, str(ROOT / "tools"))
+        try:
+            import call_hnc_engine as mod
+        except ImportError:
+            self.skipTest("tools/call_hnc_engine.py 不可导入")
+        self.assertEqual(mod.GETSENTENCEALC_MAX_CHARS, 35)
+
+
 class EngineRuntimeTest(unittest.TestCase):
     """真跑一遍引擎——但只在 32 位 Python 下。
 
