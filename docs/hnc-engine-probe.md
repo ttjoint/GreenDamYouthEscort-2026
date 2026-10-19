@@ -7,14 +7,41 @@
 
 ---
 
-## 0. 一句话结论
+## 0. 结论（已修正一次，见 §0.1）
 
-**原始 HNC 引擎可以被加载和调用，但它无法初始化**，因为安装包里
-只有 `FalunWord.lib`，而引擎需要同目录下另外四个文件
-（`FMean.lib`/`FMean.tmp`/`FWL.tmp`/`FWL.txt`），这些文件不在分发包里。
+**引擎可以完整初始化并运行。** `FMean.lib`/`FWL.tmp` 这些文件
+**不是分发包缺失的，而是运行期由引擎自己生成的中间文件**。
 
-同时，本次实测**首次拿到了原始引擎的完整输出格式**（XML 标签体系），
-以及 **21 个源文件名**，它们的名字直接对应 HNC 理论的各个模块。
+让引擎成功的关键是**传给 `CreateHncTextGroup` 的路径必须以 `\` 结尾**：
+
+```
+"D:\...\HNCLIB"      → NULL   + "Ini Error!"
+"D:\...\HNCLIB\"     → 0x3207144   ← 成功
+"HNCLIB"              → NULL
+```
+
+因为引擎内部用 `sprintf(buf, "%s\\FalunWord.lib", arg)` 拼路径，
+参数是「目录 + 尾分隔符」，不是完整文件名，也不是裸目录名。
+
+### 0.1 修正记录：我先前判断错了
+
+第一次测的时候我传的是裸目录（`"HNCLIB"`、`"./HNCLIB"`），
+全部返回 `NULL` 并打印 `Ini Error!`，于是我在上一版报告里断言
+「引擎因缺文件无法初始化」「这是数据缺失不是技术障碍」。
+
+**这个结论是错的。** 用户提出质疑（“原始项目里该引擎应当能运作”）
+后重新排查，发现：
+
+1. 反汇编 `CreateHncTextGroup` (0x50a0) → `sub_10004FA0` (0x4fa0)
+   → `LoadLib` (0x22d0)，后者用 `sprintf("%s\\FalunWord.lib", arg)`
+   拼路径，再 `fopen(..., "rb")`。拼出来的路径不对就返回 2，
+   上层 `cmp eax,1 / jne` 落到 `Ini Error!` 分支。
+2. 传**带尾反斜杠的绝对路径**后，`CreateHncTextGroup` 返回非零指针。
+3. 成功后检查目录，**没有生成任何新文件**——`FMean.lib` 等只是
+   可选缓存，不是必需前置。
+
+教训：把一个函数的错误返回当成“系统缺数据”之前，先把错误分支
+反汇编出来看清判定条件。
 
 ---
 
@@ -78,26 +105,78 @@ Handler.dll（注入 48 个进程）
 2. **中文路径**。`LoadLibraryA` 无法处理非 ANSI 路径，`GetShortPathNameW` 在该卷上也返回 FAIL。解法：先 `os.chdir()` 到目录，再用裸文件名加载。
 3. **`__thiscall`**。`CFWordLib`/`CSentenceObj` 的成员函数 `this` 走 ECX，`ctypes` 无法表达，需生成机器码 thunk（脚本里有实现）。
 
-### 2.2 但初始化失败
+### 2.2 初始化成功（关键：路径要带尾反斜杠）
 
 ```
---- 1. CreateHncTextGroup（目录参数） ---
-  返回 None
-  [FAIL] 返回 NULL（DLL 打印了 'Ini Error!'）
-
---- 2. 引擎需要的文件 ---
-  FalunWord.lib    存在       5564271 字节
-  FMean.lib        **缺失**
-  FMean.tmp        **缺失**
-  FWL.tmp          **缺失**
-  FWL.txt          **缺失**
-  UserWord.lib     **缺失**
+"D:\...\_lh_rw\HNCLIB"    -> None        Ini Error!
+"D:\...\_lh_rw\HNCLIB\\"  -> 0x3207144   ← 成功
+"HNCLIB"                     -> None        Ini Error!
 ```
 
-`CFWordLib` 成员函数路线也失败（导出名 `??0CFWordLib@@QAE@XZ` 声明
-无参，实测 0/1/2 个参数都报 `not enough arguments`——MSVC 导出修饰名
-与实际签名不符）。但**这不影响结论**：`CreateHncTextGroup` 已经证明
-引擎因缺文件无法初始化。
+反汇编确认原因（`LoadLib` @ 0x22d0）：
+
+```asm
+mov  eax, [0x10045248]     ; "FalunWord.lib"
+...
+push 0x10045244            ; "rb"
+push ecx                   ; sprintf 出来的路径
+call fopen_ish
+test eax, eax
+jz   ->  return 2          ; 打开失败
+...
+return 1                   ; 成功
+```
+
+上层（`sub_10004FA0` @ 0x4fa0）：
+
+```asm
+call LoadLib
+cmp  eax, 1
+jne  0x5051                ; → 打印 "Ini Error!"
+```
+
+拼路径用的是 `sprintf(buf, "%s\FalunWord.lib", arg)`，所以 `arg`
+必须是「目录 + 尾 `\`」。传裸目录会拼成 `HNCLIBFalunWord.lib`，
+自然打不开。
+
+### 2.3 初始化后并未生成任何新文件
+
+```
+新建文件: []
+现有: ['HNCLIB\FalunWord.lib']
+```
+
+这说明 `FMean.lib` / `FMean.tmp` / `FWL.tmp` / `FWL.txt` **都不是
+必需前置文件**，只是运行期可选的缓存/中间产物。
+
+### 2.4 已实测可调用的接口
+
+拿到 `IHncTextGroup*` 后，其 vtable 前 11 项全部是 `CFWordLib` 的分析函数：
+
+| vtable | 地址 | 符号 |
+|---|---|---|
+| [0] | 0x10002DB0 | `SetTextAbstract(int,int,int)` |
+| [1] | 0x100078E0 | `SetSentBreak(int, wchar_t*, ...)` |
+| [2] | 0x10006F70 | `AddSentBreak(wchar_t*)` |
+| [3] | 0x10002DC0 | `SetSpecificCount(int,int,int)` |
+| [4] | 0x10002E30 | `CorpGroup(char*, char*, bool, int&, int, int)` |
+| [5] | 0x10002DF0 | `CorpGroup(wchar_t*, wchar_t*, bool, int&, int, int)` |
+| [6] | 0x10002EC0 | `GetRedWordCount()` |
+| [7] | 0x10002ED0 | `GetNigWordCount()` |
+| [8] | 0x10002EE0 | `GetSenseWordCount()` |
+| [9] | 0x10002EF0 | `GetDebugInfo()` |
+| [10] | 0x10002F00 | `GetWordManagerInterface()` |
+
+实测调用成功：
+
+```
+GetNigWordCount      = 0
+GetSenseWordCount    = 0
+```
+
+`CorpGroup`（文本分析主入口）目前仍崩在读取 `0x100EB000`，说明除了
+建组还需要额外的内部初始化步骤（尚未定位）。`GetRedWordCount` 崩在
+读 `0x00000001`，推断 vtable 该项在未加载词库时为未初始化指针。
 
 ---
 
@@ -215,41 +294,48 @@ DLL 的 `.rdata` 泄漏了编译期源文件路径，每个名字直接对应一
 归因是动词表只覆盖 2.47%。
 
 **对照原始引擎，这个诊断需要修正**：原始引擎根本不用"动词表"，
-它用 `FMean.lib` 里的**词义条目**（每条带 v/g/u/z/r 五元组属性）。
-`FalunWord.lib` 只是索引，`FMean.lib` 才是语义。
+它用 `FalunWord.lib` 里的**词条索引**（每条带义项数）+ `FMean.lib`
+这类词义数据。`FalunWord.lib` 本身是索引，语义要靠义项表展开。
 
-所以本项目的退化**不是"词表太小"这个量的问题，而是"缺了词义表这一层"
+所以本项目的退化**不是"词表太小"这个量的问题，而是缺了词义层
 这个质的问题**。把动词表从 208 条扩到 3000 条能把单块率压到 4.5%，
-但那是用统计手段模拟语义属性，必然混入名词——原始引擎不会有这个问题。
+但那是用统计手段模拟语义属性，必然混入名词。
 
 ---
 
 ## 6. 诚实边界
 
-### 能确认的
+### 已实测确认的
 
-1. 引擎可加载（PE32，32 位 Python，`LoadLibrary` 成功）。
-2. 引擎**无法初始化**——缺 `FMean.lib`/`FMean.tmp`/`FWL.tmp`/`FWL.txt`。
-3. 输出格式（XML 标签体系）已完整拿到。
-4. 21 个源文件名已拿到。
-5. 判定函数名与语义（`FanDong`/`HongHei`/`团块绝对排除`）已确认。
+1. **引擎可以加载**（PE32，32 位 Python，基址 0x10000000）。
+2. **引擎可以初始化**——关键在于路径参数必须带尾反斜杠。
+3. **不需要 FMean.lib 等文件**即可建组成功，且不会生成它们。
+4. vtable 前 11 项是 `CFWordLib` 的分析接口（已列表）。
+5. `GetNigWordCount()` / `GetSenseWordCount()` 实测可调用。
+6. 输出格式（XML 标签体系）已完整拿到。
+7. 21 个源文件名已拿到。
+8. `FalunWord.lib` 的内部结构：前 ~5.5MB 是 16 字节索引记录
+   （171,883 条；`_decoded/` 里的脚本按对齐扫描只解出 112,378 条，
+   漏了 59,505 条），尾部 0x53c6cc 起是 36,945 字符的 UTF-16LE
+   连续词条文本区。
 
-### 不能确认的
+### 仍未突破的
 
-1. **各维度的具体数值范围与权重**（褒贬 ±? 对立统一性 0..?）——需要
-   运行引擎并看输出才能定，而引擎跑不起来。
-2. **`GetWordFanDong` 返回的整数如何映射到"拦截/放行"**——那是
-   `Handler.dll` 的策略层，未反汇编。
-3. **`FMean.lib` 的格式**——文件不存在，无从分析。
+1. **`CorpGroup` 调用崩溃**（读 `0x100EB000`）。这是文本分析主入口，
+   说明建组之后还需要一步内部初始化（可能是 `CSentenceObj::Ini`，
+   或需要先 `SetSentBreak`）。**这是下一步唯一值得投入的方向。**
+2. **`GetRedWordCount` 崩溃**（读 `0x00000001`），vtable 该项在未
+   加载词库时为未初始化指针，或 [6] 的索引本身有偏移。
+3. **各维度的数值范围与权重**（褒贬 ±? 对立统一性 0..?）——要等
+   `CorpGroup` 跑通才能看输出。
+4. **`GetWordFanDong` 返回的整数如何映射到"拦截/放行"**——在
+   `Handler.dll` 策略层，未反汇编。
 
 ### 所以能不能"调用原始 HNC 库进行测试"
 
-**不能得到语义分析结果。** 可以加载、可以进到初始化，但初始化需要
-的文件不在分发版里。这不是技术障碍，是**数据缺失**。
-
-若要继续，唯一可行的方向是从 `HncEng.exe`（86KB，import
-`SentenceObj.dll`）反汇编出它传给 `CreateHncTextGroup` 的完整目录
-结构和初始化序列，确认是否有我们尚不知道的文件存在路径。
+**能。** 引擎能加载、能初始化、能取出接口对象、能调用无参分析函数。
+剩下的是把一个带参数的入口（`CorpGroup`）调对。这已经**不是数据缺失
+问题，而是调用序列问题**。
 
 ---
 
@@ -261,5 +347,10 @@ DLL 的 `.rdata` 泄漏了编译期源文件路径，每个名字直接对应一
    但原始实现明确存在的东西（尤其"直接命中/间接命中"）。
 3. **`l_concepts.py` 的方向被证实正确**（引擎有 `GetlvList.cpp`），
    可以放心继续深化。
-4. 若要继续挖，优先级：`HncEng.exe` 反汇编 > `Handler.dll` 策略层
-   > `FalunWord.lib` 索引结构。
+4. **最高优先级：把 `CorpGroup` 调通。** 方法：反汇编
+   `CFWordLib::CorpGroup` (0x10002DF0 / 0x10002E30)，看它读
+   `0x100EB000` 前依赖什么初始化；或参照 `HncEng.exe` 的调用序列。
+   一旦调通，就能直接拿原始引擎跑本项目那 47M 字语料做对照实验——
+   这是验证复刻正确性最硬的证据。
+5. 若要继续挖，其余优先级：`HncEng.exe` 反汇编 > `Handler.dll` 策略层
+   > `FalunWord.lib` 索引结构（补齐漏掉的 59,505 条记录）。
