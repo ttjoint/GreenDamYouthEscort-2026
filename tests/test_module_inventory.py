@@ -29,6 +29,17 @@ def _have_tree() -> bool:
     return (LEGACY / "Windows").is_dir()
 
 
+def _read(pe, data: bytes, va: int, size: int) -> bytes:
+    """按段映射把 VA 换成文件偏移；不能直接用 VA-ImageBase 当偏移。"""
+    ib = pe.OPTIONAL_HEADER.ImageBase
+    for sec in pe.sections:
+        start = sec.VirtualAddress + ib
+        if start <= va < start + sec.Misc_VirtualSize:
+            off = sec.PointerToRawData + (va - start)
+            return data[off : off + size]
+    raise AssertionError(f"VA {va:#x} 不在任何段内")
+
+
 class VendorSplitTest(unittest.TestCase):
     """三方产品线 + 第三方库。"""
 
@@ -187,3 +198,97 @@ class DeclaredButAbsentTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MpSvcServerTest(unittest.TestCase):
+    """`MPSvcDll.dll!FilterWords` 在服务端落到的那个实现。
+
+    这一层断言的都是"能被字节推翻"的事实，不是推测。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        import pefile
+
+        cls.pe_dll = pefile.PE(str(LEGACY / "Windows" / "MPSvcDll.dll"), fast_load=True)
+        cls.pe_exe = pefile.PE(str(LEGACY / "Windows" / "MPSvcC.exe"), fast_load=True)
+        cls.dll = (LEGACY / "Windows" / "MPSvcDll.dll").read_bytes()
+        cls.exe = (LEGACY / "Windows" / "MPSvcC.exe").read_bytes()
+
+    @unittest.skipUnless(_have_tree(), "legacy install tree not present")
+    def test_forwarder_is_cdecl_not_stdcall(self):
+        """`FilterWords` 以裸 `ret` 收尾，参数由调用者清。"""
+        self.assertEqual(self.dll[0x14A0], 0xC3)
+
+    @unittest.skipUnless(_have_tree(), "legacy install tree not present")
+    def test_forwarder_calls_vtable_offset_0x34(self):
+        """`call [edx+0x34]` 的完整编码在位。"""
+        body = self.dll[0x1440:0x14A1]
+        self.assertIn(bytes([0xFF, 0x52, 0x34]), body)
+
+    @unittest.skipUnless(_have_tree(), "legacy install tree not present")
+    def test_vtable_0x40c278_entry_0x34_is_0x403a30(self):
+        """`FilterWords` 服务的虚表是 `0x40c278`，第 13 项落到 `0x403a30`。"""
+        import struct
+
+        pe = self.pe_exe
+        ib = pe.OPTIONAL_HEADER.ImageBase
+        for sec in pe.sections:
+            if sec.VirtualAddress + ib <= 0x40C278 < sec.VirtualAddress + ib + sec.Misc_VirtualSize:
+                off = sec.PointerToRawData + (0x40C278 - sec.VirtualAddress - ib)
+                break
+        else:
+            self.skipTest("段映射失败")
+        slots = struct.unpack("<16I", self.exe[off : off + 64])
+        self.assertEqual(slots[13], 0x403A30)
+        # 前三位是 COM 三件套的标准顺序：AddRef / QueryInterface / Release
+        self.assertEqual(slots[1], 0x403D50)  # QueryInterface
+        self.assertEqual(slots[2], 0x403D30)  # Release
+
+    @unittest.skipUnless(_have_tree(), "legacy install tree not present")
+    def test_the_other_vtable_has_a_different_0x34(self):
+        """`0x40c260` 是另一个对象，`+0x34` 不是 `0x403a30`。
+
+        两个虚表顺序不同，混用会让"FilterWords 做什么"整个错位。
+        """
+        import struct
+
+        pe = self.pe_exe
+        ib = pe.OPTIONAL_HEADER.ImageBase
+        for sec in pe.sections:
+            if sec.VirtualAddress + ib <= 0x40C260 < sec.VirtualAddress + ib + sec.Misc_VirtualSize:
+                off = sec.PointerToRawData + (0x40C260 - sec.VirtualAddress - ib)
+                break
+        else:
+            self.skipTest("段映射失败")
+        slots = struct.unpack("<16I", self.exe[off : off + 64])
+        self.assertEqual(slots[13], 0x403780)
+        self.assertNotEqual(slots[13], 0x403A30)
+
+    @unittest.skipUnless(_have_tree(), "legacy install tree not present")
+    def test_server_method_always_returns_s_ok(self):
+        """`0x403a30` 是 `xor eax,eax; ret 8`，返回值不含判定结果。
+
+        所以 `MPSvcDll.dll` 那层 `jl` 永远不跳，`FilterWords` 恒返回 1。
+        """
+        # 0x403a55: xor eax,eax (33 C0), then ret 8 (C2 08 00)
+        self.assertEqual(_read(self.pe_exe, self.exe, 0x403A55, 2), bytes([0x33, 0xC0]))
+        self.assertEqual(_read(self.pe_exe, self.exe, 0x403A57, 3), bytes([0xC2, 0x08, 0x00]))
+
+    @unittest.skipUnless(_have_tree(), "legacy install tree not present")
+    def test_server_method_loads_the_same_file_handler_reads(self):
+        """服务端读的是 hnclib 下那个 uFWORD 数据文件，与 Handler.dll 同源。"""
+        blob = _read(self.pe_exe, self.exe, 0x40E1F4, 0x20)
+        self.assertIn(b"uFWORD.dat", blob)
+        self.assertIn(b"hnclib", blob)
+        handler = (LEGACY / "Windows" / "Handler.dll").read_bytes()
+        self.assertIn(b"uFWORD.dat", handler)
+
+    @unittest.skipUnless(_have_tree(), "legacy install tree not present")
+    def test_row_limits_match_handler(self):
+        """400 行上限 / 50 字节单条上限，与 Handler 侧数字一致。"""
+        # 0x401f38 cmp esi,0x190  -> 400 行
+        self.assertEqual(_read(self.pe_exe, self.exe, 0x401F38, 2), bytes([0x81, 0xFE]))
+        self.assertEqual(int.from_bytes(_read(self.pe_exe, self.exe, 0x401F3A, 4), "little"), 0x190)
+        # 0x401f7a push 0x32 -> 50 字节
+        self.assertEqual(_read(self.pe_exe, self.exe, 0x401F7A, 2), bytes([0x6A, 0x32]))

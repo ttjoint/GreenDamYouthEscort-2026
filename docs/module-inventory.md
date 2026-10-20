@@ -168,9 +168,8 @@ CLSID 与 IID 就嵌在 `MPSvcDll.dll` 里：
 - IID   `{56835A03-3BAA-49F0-BA6E-8EEFD6D62960}`
 
 两者的 `BYTES_LE` 形式在 **`MPSvcC.exe`、`MPSvcDll.dll`、
-`MPSvcPS.dll`** 三个模块里都能找到。`MPSvcC.exe` 的 `.rdata`
-`0x40c250` 处，这个 CLSID 后面紧跟一串函数指针
-（`0x402cc0`、`0x403d00`、`0x402c80`…），是标准 COM 类工厂登记结构。
+`MPSvcPS.dll`** 三个模块里都能找到，别处没有。所以
+`MPSvcDll.dll` 是唯一会用这个接口的客户端。
 
 所以这条链是**活的**：
 
@@ -187,6 +186,71 @@ CLSID 与 IID 就嵌在 `MPSvcDll.dll` 里：
 **方法论教训**：`GetProcAddress` 和 COM 都不需要静态导入表。
 全树有 27 个模块导入 `LoadLibraryA` + `GetProcAddress`，
 "导入表里没有"不能推出"没有调用者"。反汇编函数体才作数。
+
+### 3.1 `vtable+0x34` 在服务端落到哪里
+
+`MPSvcDll.dll` 只说了"调 `[edx+0x34]`"，服务端在 `MPSvcC.exe`。
+那个 `+0x34` 的实现是 `0x403a30`：
+
+```
+0x403a30  push 0x40f6c8
+0x403a35  call [0x40c164]      ; EnterCriticalSection
+0x403a3b  mov  ecx, 0x40f6b8   ; this
+0x403a40  mov  eax, [esp+8]    ; push 之后读，等于入口的 [esp+4] = arg1
+0x403a44  push eax
+0x403a45  call 0x401e60
+0x403a4a  push 0x40f6c8
+0x403a4f  call [0x40c168]      ; LeaveCriticalSection
+0x403a55  xor  eax, eax        ; 恒返回 S_OK
+0x403a57  ret  8
+```
+
+两个必须点明的事实：
+
+1. **返回值恒为 `S_OK`。** `MPSvcDll.dll` 那边是
+   `test eax,eax` / `jl` → `esi=1`，所以 **`FilterWords` 恒返回 1**。
+   它不表达"匹配到没有"，只是一个"调用完成"标志。
+   拿它当过滤结果用会永远得到"命中"。
+2. **`arg2` 完全没用到。** 进 `0x401e60` 的只有 `arg1`
+   （`0x403a40` 在 `push` 之后读，等于入口的 `[esp+4]`）。
+   `ret 8` 却按两个参数清栈。
+
+`0x401e60` 做的事是**加载一张表**，不是匹配：
+
+```
+arg 为空 → GetWindowsDirectoryA(buf,0x104) 之后拼 hnclib 下的 uFWORD.dat
+        非空 → 直接用 arg 当路径
+fopen(path, "rb")          -- 失败返回 0（0x402010）
+第一遍  fscanf(fp,"%s",row) 数行，上限 0x190 = 400
+fseek(fp, 0, SEEK_SET)
+malloc(行数 * 4)           -- 指针数组
+第二遍  每行 malloc(0x32=50)、拷贝，超 50 字节截断
+fclose
+返回 1                     -- 0x401ffe
+```
+
+对照 `docs/legacy-control-files.md` §2.2 里 `Handler.dll` 的
+`0x310075d0`：同一个文件、同样 `"rb"`、同样 400 行上限、
+同样 3–50 长度区间。**两条链读的是同一份文件**，
+只是各自实现了一遍解析。出厂包里这个文件不存在，
+所以两边拿到的都是空表。
+
+### 3.2 `MPSvcC.exe` 里有两套虚表，别搞混
+
+`.rdata` 里有两个 16 项虚表，都以 `AddRef` / `Release` 收尾，
+但顺序不同：
+
+| 地址 | `[0]` | `[1]` | `[2]` | `+0x34` |
+|---|---|---|---|---|
+| `0x40c260` | `0x402cc0` | `0x403d30`(Release) | `0x402c80` | `0x403780` |
+| `0x40c278` | `0x402c60` | `0x403d50`(QI) | `0x403d30` | **`0x403a30`** |
+
+`0x403d50` 是标准 `QueryInterface`：先比 `0x40c2e8`（IID_IUnknown），
+再比 `0x40e800`，命中就 `call [edx+4]` 加引用并返回 0，
+否则返回 `0x80004002`（`E_NOINTERFACE`）。
+
+`FilterWords` 走的是 `0x40c278` 那张。`0x40c260` 是另一个对象
+（`+0x34` 落在 `0x403780`），两个表在 `.text` 里都有独立引用点。
 
 ## 3.5 `SentenceObj.dll` 里 14 个裸 `.lib` 不是加载路径
 
