@@ -252,6 +252,84 @@ fclose
 `FilterWords` 走的是 `0x40c278` 那张。`0x40c260` 是另一个对象
 （`+0x34` 落在 `0x403780`），两个表在 `.text` 里都有独立引用点。
 
+### 3.3 `FilterWords` 装表，`UpdateWords` 才是匹配
+
+名字容易让人以为 `FilterWords` 做过滤。实际分工是反的：
+
+| 导出 | 虚表槽 | 服务端 | 干什么 |
+|---|---|---|---|
+| `FilterWords` | `[+0x34]` | `0x403a30` → `0x401e60` | **加载**词表，返回 `S_OK` |
+| `UpdateWords` | `[+0x30]` | `0x403a60` → `0x402020` | **匹配**，结果写入输出参数 |
+
+两个方法共用同一个全局对象 `this = 0x40f6b8`。它的布局由构造函数
+`0x402c60` 定下来：
+
+```
+this+0  = vtable = 0x40c278
+this+4  = 指针数组（每条一个 malloc）
+this+8  = 行数
+```
+
+清零在 `0x401de0`：`[eax]=0x40c248`（另一张表）、`[eax+4]=0`、`[eax+8]=0`。
+
+### `0x401e60` 是 `__thiscall`
+
+判据是序言：只有 `mov ebp, ecx`（`0x401e69`），**没有 `push ebp` /
+`mov ebp, esp`**。所以 `ebp` 是 `this`，不是栈帧：
+
+```
+[ebp+4] = this+4  指针数组
+[ebp+8] = this+8  行数
+```
+
+唯一一个栈参数在 `[esp+0x14c]`（`0x401e7c`），算下来是入口的
+`[esp+4]`——也就是表文件路径。
+
+**这条纠正了按普通函数读时的误判**：`[ebp+4]` 不是"第一个栈参数"，
+而是对象字段。
+
+### `0x402020` 就是匹配本体
+
+```
+n   = [ebx+8]                  ; 行数
+arr = [ebx+4]                  ; 指针数组
+for i in 0 .. n-1:
+    item = arr[i]
+    if item == NULL        -> continue   ; 0x40203b
+    if strlen(item) == 0   -> continue   ; 0x402049
+    if strstr(text, item)  -> return 1   ; 0x402057 jne 0x40206a
+return 0                                 ; 0x402064 xor eax,eax
+```
+
+`0x4050e0` 是 `strstr`，和 `Handler.dll` 的 `0x310082f0` **是同一份代码**：
+前 `0x6e` 字节完全一致，差别只在 `0x6e` 处那条 `e9` 的 4 字节
+相对位移（`0x2383` vs `0x31b3`）——目标是各自模块里的 `strchr`，
+两者地址本来就不同。两个模块各自静态链接了同一份运行时。
+
+### 两条链的实质差异：没有协议排除
+
+`Handler.dll` 的 `0x31007b70` 在循环里先判 `http://` / `ftp://`，
+命中就直接返回 0。`MPSvcC.exe` 的 `0x402020` **没有这一步**——
+
+`MPSvcC.exe` 全文件里 `http://` 和 `ftp://` 都搜不到（`find` 返回 -1）。
+
+所以同一个 `uFWORD.dat`，两条链的行为不同：
+
+| 路径 | 带 URL 的文本 |
+|---|---|
+| `Handler.dll` `0x31007b70` | 直接判否，不进列表 |
+| `MPSvcC.exe` `0x402020` | 照常做子串匹配 |
+
+### 尚未对齐的两处
+
+1. **`UpdateWords` 的参数个数对不上。** 服务端 `0x403a60` 是
+   `ret 0xc`，读 `[S+4]`（文本）和 `[S+0xc]`（输出指针），
+   `[S+8]` 不用。而 `MPSvcDll.dll` 的 `0x10001419`–`0x1000141b`
+   只 `push eax` / `push ecx` 两个值再 `call [edx+0x30]`。
+   差一个参数，不硬凑，留作缺口。
+2. **`FilterWords` 的 `arg2`** 从头到尾没被读，但 `ret 8` 按两个
+   参数清栈。设计意图看不出来。
+
 ## 3.5 `SentenceObj.dll` 里 14 个裸 `.lib` 不是加载路径
 
 `SentenceObj.dll` 里出现的 `.lib` 分两种形态，差别是决定性的：
