@@ -1,22 +1,27 @@
 # -*- coding: utf-8 -*-
 """`Handler.dll` 里三个字符串例程的真实语义，用 unicorn 实测。
 
-## 为什么不能只读字节
+## 两个容易混的层次
 
-`0x310082f0` 的字节看着像 `strcmp` 的展开版：两重循环、逐字符比较。
-但它实际是 `strstr`——最关键的差别在于"匹配失败后继续往后找"。
-这种差别读字节容易看错，跑一遍就清楚了。
+看这类函数时必须分清两件事，否则会得出互相矛盾的结论：
 
-反例一眼可辨：
-- 若为 `strcmp`，`"visit http://x"` 对 needle `"http://"` 应当不命中；
-- 实测命中，所以是子串查找。
+1. **函数返回什么**：`0x310082f0` 返回的是 `haystack` 里的**匹配位置指针**
+   （找到返回指针，找不到返回 0）。这一点由空 needle 的行为定死：
+   `strstr("hello", "")` 返回 `"hello"` 的起点，实测为 `DATA` 基址本身。
+   任何整串比较函数在空 needle 时都不会返回 haystack 指针。
 
-## 栈约定
+2. **调用者怎么用它**：`Handler.dll` 里 5 个调用点**全部**只做
+   `test eax,eax` / `jne`，没有一处解引用返回值。
+   所以从调用者视角，"命中/不命中"这个描述是准确的；
+   但从函数行为看，判据是**子串包含**而不是**整串相等**。
 
-`0x310082f0` 是 `__cdecl`，入口 `[esp+4]` = haystack、`[esp+8]` = needle。
-判据是 `0x310082f0` 的 `mov ecx,[esp+8]`（取 needle）与
-`0x310082f9` 三次 `push` 后 `[esp+0x10]` 等于原 `esp+4`（取 haystack）。
-摆错顺序会读未映射内存直接崩，这本身也是一个校验。
+写成"两个列表用整串比较"是错的。写成"两个列表用比较函数判断相等"
+在调用者层面不算错、但不完整——因为决定语义的是子串而非相等。
+
+## 为什么这会影响复刻
+
+一个只有两三个字符的列表项，在子串匹配下会命中任何**包含**它的更长串。
+若按整串相等去复刻，同样的表会宽松得多。这是实质差异，不是措辞问题。
 
 依据见 `docs/legacy-control-files.md` §2.3 / §6。
 """
@@ -86,62 +91,114 @@ class StrstrSemanticsTest(unittest.TestCase):
             pass
         return mu.reg_read(UC_X86_REG_EAX)
 
+    # ---- 判定它是 strstr 而不是 strcmp 的关键证据 ----
+
+    def test_empty_needle_returns_start_of_haystack(self):
+        """空 needle 返回 haystack 起点——这是 `strstr` 的定义行为。
+
+        `strcmp` 在空 needle 时只会返回"不相等"（非零常数），
+        绝不会返回 haystack 内部指针。这条单独决定了函数类别。
+        """
+        self.assertEqual(self.call(b"hello", b""), DATA)
+
+    def test_empty_needle_and_empty_haystack(self):
+        self.assertEqual(self.call(b"", b""), DATA)
+
+    def test_result_points_inside_haystack_not_a_boolean(self):
+        """后缀匹配返回的是 `DATA+1`，不是布尔 1。"""
+        self.assertEqual(self.call(b"xab", b"ab"), DATA + 1)
+
+    def test_match_at_start_returns_haystack_base(self):
+        self.assertEqual(self.call(b"ab", b"ab"), DATA)
+
     def test_needle_in_the_middle_matches(self):
-        """子串在中间也算命中——这是排除 `strcmp` 的决定性证据。"""
-        self.assertNotEqual(self.call(b"visit http://evil.com now", b"http://"), 0)
-
-    def test_needle_at_start_matches(self):
-        self.assertNotEqual(self.call(b"http://evil.com", b"http://"), 0)
-
-    def test_needle_absent_does_not_match(self):
-        self.assertEqual(self.call(b"visit ftp://evil.com now", b"http://"), 0)
-
-    def test_string_shorter_than_needle_does_not_match(self):
-        self.assertEqual(self.call(b"abc", b"http://"), 0)
-
-    def test_two_char_needle(self):
-        self.assertNotEqual(self.call(b"plain text", b"pl"), 0)
-        self.assertEqual(self.call(b"plain text", b"zz"), 0)
+        """子串在中间也算命中——排除整串相等。"""
+        r = self.call(b"visit http://evil.com now", b"http://")
+        self.assertEqual(r, DATA + 6)
 
     def test_needle_not_anchored_to_left(self):
-        """`ZZplain` 里 `pl` 不在开头，仍然命中。"""
-        self.assertNotEqual(self.call(b"ZZplain", b"pl"), 0)
+        self.assertEqual(self.call(b"ZZplain", b"pl"), DATA + 2)
 
-    def test_match_result_points_inside_haystack(self):
-        """返回值是 haystack 内部的指针，不是布尔 1。"""
-        r = self.call(b"xxhttp://yy", b"http://")
-        self.assertGreater(r, DATA)
-        self.assertLess(r, DATA + 0x100)
+    # ---- 边界 ----
+
+    def test_needle_absent_returns_zero(self):
+        self.assertEqual(self.call(b"visit ftp://evil.com now", b"http://"), 0)
+
+    def test_haystack_shorter_than_needle_returns_zero(self):
+        self.assertEqual(self.call(b"a", b"ab"), 0)
+
+    def test_empty_haystack_returns_zero(self):
+        self.assertEqual(self.call(b"", b"ab"), 0)
+
+    def test_two_char_needle_absent(self):
+        self.assertEqual(self.call(b"plain text", b"zz"), 0)
+
+
+@unittest.skipIf(Uc is None, "unicorn 未安装")
+class CallSitesOnlyTestTruthinessTest(unittest.TestCase):
+    """调用者只用返回值判真伪，不解引用。
+
+    这一层单独锁住，是为了避免把"调用者视角"和"函数行为"混为一谈：
+    调用者是 `test eax,eax`，但这不能说函数返回布尔。
+    """
+
+    def setUp(self):
+        if not HANDLER.is_file():
+            self.skipTest("安装树不在本机")
+        self.raw = HANDLER.read_bytes()
+
+    def test_every_call_site_only_tests_truthiness(self):
+        """五个调用点之后全是"判非零"，没有一处解引用返回值。
+
+        两种写法都有：
+        - `test eax,eax`（0x31004e00 及三个内部调用点）
+        - `mov edi,eax; test edi,edi`（0x31004865，保存到局部再判）
+        """
+        expect = {
+            0x31004865: bytes([0x8B, 0xF8, 0x85, 0xFF]),  # mov edi,eax; test edi,edi
+            0x31004E00: bytes([0x85, 0xC0]),  # test eax,eax
+        }
+        # 三个内部调用点：call / add esp,8 / test eax,eax
+        for site in (0x31007BB1, 0x31007BC3, 0x31007BD7):
+            expect[site] = bytes([0x83, 0xC4, 0x08, 0x85, 0xC0])
+        for site, want in expect.items():
+            off = site - 0x31000000
+            with self.subTest(site=hex(site)):
+                self.assertEqual(self.raw[off + 5 : off + 5 + len(want)], want)
+
+    def test_returns_one_when_list_hit(self):
+        """列表命中路径返回常量 1，不是指针。"""
+        self.assertEqual(self.raw[0x7BF7:0x7BFA], bytes([0xB8, 0x01, 0x00]))
+
+    def test_whitelist_matcher_is_not_the_raw_comparator(self):
+        """`0x31007b70` 把 `strstr` 的结果折成 0/1。
+
+        所以"白名单匹配"这个说法是在这一层成立，不是在内层函数成立。
+        """
+        # 0x31007bd7 调 strstr，命中跳 0x31007bf4（mov eax,1）
+        self.assertEqual(self.raw[0x7BE1:0x7BE3], bytes([0x75, 0x11]))
+        self.assertEqual(0x31007BE1 + 2 + 0x11, 0x31007BF4)
 
 
 @unittest.skipIf(Uc is None, "unicorn 未安装")
 class ProtocolExclusionTest(unittest.TestCase):
-    """`0x31007b70` 用 `strstr` 判协议，位置在循环体内。
+    """`0x31007b70` 用 `strstr` 判协议，位置在循环体内。"""
 
-    这里只验证"协议判定走的就是 `strstr`"这个事实，
-    不验证整个函数——那需要构造 400 项的表，超出单测范围。
-    """
-
-    @classmethod
-    def setUpClass(cls):
+    def setUp(self):
         if not HANDLER.is_file():
-            raise unittest.SkipTest("安装树不在本机")
-        cls.raw = HANDLER.read_bytes()
+            self.skipTest("安装树不在本机")
+        self.raw = HANDLER.read_bytes()
 
     def test_http_and_ftp_constants_are_present(self):
-        """两个协议串在 `.data` 里相邻。"""
         d = self.raw
         self.assertEqual(d[0x15538 : 0x15538 + 7], b"http://")
         self.assertEqual(d[0x15530 : 0x15530 + 6], b"ftp://")
 
     def test_protocol_checks_come_before_list_lookup(self):
-        """`0x31007bab` / `0x31007bbd` 在 `0x31007bd7` 之前。"""
         self.assertLess(0x31007BAB, 0x31007BD7)
         self.assertLess(0x31007BBD, 0x31007BD7)
 
     def test_protocol_checks_produce_zero(self):
-        """两个协议检查命中时都跳 `0x31007beb`，那里 `xor eax,eax`。"""
-        d = self.raw
         d_ = self.raw
         # 0x31007bbb: jne short 0x31007beb  (75 2e)
         self.assertEqual(d_[0x7BBB:0x7BBD], bytes([0x75, 0x2E]))
@@ -150,34 +207,23 @@ class ProtocolExclusionTest(unittest.TestCase):
         self.assertEqual(d_[0x7BCD:0x7BCF], bytes([0x75, 0x1C]))
         self.assertEqual(0x31007BCD + 2 + 0x1C, 0x31007BEB)
 
-    def test_return_one_path_is_separate(self):
-        """列表命中跳 `0x31007bf4`，那里 `mov eax,1`。"""
-        d = self.raw
-        self.assertEqual(d[0x7BF7:0x7BFA], bytes([0xB8, 0x01, 0x00]))
-
     def test_protocol_check_inside_loop_body(self):
         """协议串的立即数引用在循环体内，不是循环前。"""
         d = self.raw
-        loop_start = 0x7B95
-        self.assertGreater(d.find((0x31015538).to_bytes(4, "little"), 0x7B95), loop_start)
-        self.assertGreater(d.find((0x31015530).to_bytes(4, "little"), 0x7B95), loop_start)
+        self.assertGreater(d.find((0x31015538).to_bytes(4, "little"), 0x7B95), 0x7B95)
+        self.assertGreater(d.find((0x31015530).to_bytes(4, "little"), 0x7B95), 0x7B95)
 
 
 class ListMatchingFunctionsTest(unittest.TestCase):
     """三个例程的分工，按调用点区分。"""
 
     def test_two_matchers_are_distinct(self):
-        """`0x31007b70` 与 `0x31007c00` 开头序言相同但函数体不同。
-
-        两者都是 `push ebx/ebp; mov ebp,[esp+0xc]; push esi`，
-        所以只能比更靠后的字节。
-        """
+        """`0x31007b70` 与 `0x31007c00` 开头序言相同但函数体不同。"""
         d = HANDLER.read_bytes()
         self.assertEqual(d[0x7B70:0x7B78], d[0x7C00:0x7C08])  # 序言相同
         self.assertNotEqual(d[0x7B85:0x7BA0], d[0x7C15:0x7C30])  # 函数体不同
 
     def test_b70_reads_single_list(self):
-        """`0x31007b70` 只读 `[+4]` / `[+8]` 一组。"""
         d = HANDLER.read_bytes()
         body = d[0x7B70:0x7BEB]
         self.assertIn(bytes([0x8B, 0x43, 0x08]), body)  # mov eax,[ebx+8]
@@ -185,7 +231,6 @@ class ListMatchingFunctionsTest(unittest.TestCase):
         self.assertNotIn(bytes([0x8B, 0x73, 0x14]), body)
 
     def test_c00_reads_two_lists(self):
-        """`0x31007c00` 读 `[+0x14]` 和 `[+0xc]` 两组。"""
         d = HANDLER.read_bytes()
         body = d[0x7C00:0x7C8A]
         self.assertIn(bytes([0x8B, 0x46, 0x18]), body)  # mov eax,[esi+0x18]
@@ -194,16 +239,13 @@ class ListMatchingFunctionsTest(unittest.TestCase):
         self.assertIn(bytes([0x8B, 0x4E, 0x0C]), body)  # mov ecx,[esi+0xc]
 
     def test_b70_is_called_before_corpgroupp(self):
-        """`0x31004e00` 在 `0x31004e20` 之前，即先问白名单再扫词库。"""
         self.assertLess(0x31004E00, 0x31004E20)
 
     def test_whitelist_hit_bypasses_corpgroupp(self):
-        """白名单命中跳到 `0x31004e37`，跳过 `0x31004e09..0x31004e20`。"""
         d = HANDLER.read_bytes()
         body = d[0x4E05:0x4E09]
         self.assertEqual(body[:2], bytes([0x85, 0xC0]))  # test eax,eax
         self.assertEqual(body[2:4], bytes([0x75, 0x2E]))  # jne short
-        # 0x31004e07 + 2 + 0x2e = 0x31004e37，即跳过 CorpGroup 那段
         self.assertEqual(0x31004E07 + 2 + 0x2E, 0x31004E37)
 
 
