@@ -75,6 +75,47 @@ python tools/disasm_urf_loader.py ../LH-installed-tree/Windows/System32/gn.exe
 （对应 UI 里的 `Auto Report New Found bad Sites To KingWay's Data Center`），
 出厂包里本来就不带。
 
+### 2.1 `Surfgd.dll` 的加载点与类型码
+
+`0x1000845a` 起是一串 `0x10007f77(name, type, flag_a, flag_b)` 调用。
+`0x10007f77` 的动作是：`GetSystemDirectoryA` → `strcat("\\")` →
+`strcat(name)` → `fopen(.., "rb")` → 分配缓冲 → 读。
+
+| 顺序 | 文件 | 类型码 | `flag_a` | `flag_b` |
+|---|---|---|---|---|
+| 1 | `TrustUrl.Dat` | `0x65` | 1 | 0 |
+| 2 | `uFWORD.dat` | `0x64` | 0 | 1 |
+| 3 | `uTUrl.Dat` | `0x65` | 0 | 1 |
+| 4 | `uFUrl.Dat` | `0x64` | — | — |
+| 5 | `filtpros.Dat` | `0x64` | — | — |
+| 6 | `xconfigs.Dat` | `0x64` | — | — |
+
+`0x64` 与 `0x65` 是**同一套加载例程的两个分支**，不是两个不同的解析器。
+`flag` 两个参数控制"读失败时是否静默"和"表为空时是否仍保留槽位"，
+但我们还没有把这两个开关的行为差异量化，所以这里只记名字不记语义。
+
+注意 `0x10008414` 处还用到格式串 `"%d %s %s"`
+（`0x1022282c`）。这是**带参数的记录行**格式，说明这些 `.dat`
+里有至少一种横式（同一行三个字段）。哪张表用它，**没查**。
+
+## 2.2 同一个文件名，两处不同的目录
+
+`Handler.dll` 找的是 `<Windows>\hnclib\`，`Surfgd.dll` 找的是
+`<Windows>\sysdir\`。两边都提到 `TrustUrl.Dat` 和 `uFWORD.dat`，
+但**不是同一个文件**：
+
+| 宿主 | 目录 | 文件 | 用途 |
+|---|---|---|---|
+| `Surfgd.dll` | `<Windows>\sysdir\` | `TrustUrl.Dat` | 网址过滤（出厂自带，28,636 B） |
+| `Handler.dll` | `<Windows>\hnclib\` | `uFWORD.dat` → 失败时退到 `TrustUrl.Dat` | 标题/窗口白名单 |
+
+`hnclib\` 目录在出厂包里只有 `FalunWord.lib`，所以
+`Handler.dll` 的这条加载**必然失败**，两个列表都是空的。
+`0x31007c00` 拿着两个空列表做匹配，恒返回 0 —— 也就是
+"没有任何标题被信任放行"。
+
+这对复现很重要：原厂这条白名单通路在默认安装下是**失效**的。
+
 ## 3. `.urf` 加载链：两个宿主，同一套调用约定
 
 以前只知道 `XNet2.exe` 有个 `EnsureUrfReady`（0x421D00）。

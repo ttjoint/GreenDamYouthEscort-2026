@@ -325,8 +325,14 @@ SentenceObj.dll
 - 三个配置项 `(3, 1, 1000)` 各自的含义。已知它们被存到
   `+0x100344` / `+0x100348` / `+0x10034c`，但谁读这些字段、
   读到之后改变什么行为，**没查**。
-- `Handler.dll` 里另外三个数据文件字符串
-  （`uTUrl.Dat`、`TrustUrl.Dat`、`uFWORD.dat`）的用途。**没查**。
+- `uFWORD.dat` / `TrustUrl.Dat` 两张表的**行内格式**。加载器
+  （`0x310075d0`）已解：`fgets` 逐行、trim 两端空格、长度
+  3-50（`uFWORD.dat`）或 3-256（`TrustUrl.Dat`）、上限
+  400 / 700 行、大小写敏感的整串比较。但两张表在出厂包里
+  都不存在（`hnclib` 目录只有 `FalunWord.lib`），没有样本可验。
+  **没查。**
+- `uTUrl.Dat` 在 `Handler.dll` 里只有字符串、没有加载点。
+  **没查。**
 - 反动度 / 红黑度数值到拦截动作的映射。**没查。**
 - `MakeFandongWordList`（0x5CC0）设计给谁用。它在 DLL 内也没有调用点，
   也不在 vtable 里——这一条维持原判断。
