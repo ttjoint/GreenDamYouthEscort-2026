@@ -109,12 +109,101 @@ python tools/disasm_urf_loader.py ../LH-installed-tree/Windows/System32/gn.exe
 | `Surfgd.dll` | `<Windows>\sysdir\` | `TrustUrl.Dat` | 网址过滤（出厂自带，28,636 B） |
 | `Handler.dll` | `<Windows>\hnclib\` | `uFWORD.dat` → 失败时退到 `TrustUrl.Dat` | 标题/窗口白名单 |
 
-`hnclib\` 目录在出厂包里只有 `FalunWord.lib`，所以
-`Handler.dll` 的这条加载**必然失败**，两个列表都是空的。
+`hnclib\` 目录在出厂包里只有 `FalunWord.lib`（`ls hnclib/` 只有一项），
+所以 `Handler.dll` 的这条加载**必然失败**，两个列表都是空的。
 `0x31007c00` 拿着两个空列表做匹配，恒返回 0 —— 也就是
 "没有任何标题被信任放行"。
 
 这对复现很重要：原厂这条白名单通路在默认安装下是**失效**的。
+
+## 2.3 两个匹配函数的真实语义
+
+`Handler.dll` 里有三个长得像字符串比较的例程，行为各不相同。
+全部用 unicorn 实测过（脚本见本文末尾），不是靠读字节猜的。
+
+### `0x310082f0` 是 `strstr`，不是相等比较
+
+```c
+char *sub_310082f0(char *haystack, char *needle);  // __cdecl
+```
+
+读法：入口 `esp+4` 是 haystack、`esp+8` 是 needle（`0x310082f0`
+的 `mov ecx,[esp+8]` 取 needle；`0x310082f9` 三次 `push` 后
+`[esp+0x10]` = `esp+4` = haystack）。返回匹配处指针，不匹配返回 0。
+
+单字符 needle 走 `strchr` 快路径（`0x3100835c mov al,dl` →
+`jmp 0x3100a6e6`）。多字符走完整的双重循环（`0x31008308` 起）。
+
+实测七例全对，含"needle 在 haystack 中间"和"needle 不出现"两种情况。
+
+**所以这两个列表做的都是子串匹配，不是整串相等。** 一个列表项
+`abc` 会命中字符串 `xxabcxx`。
+
+### `0x31007c00` — 两条列表，任一子串命中即返回 1
+
+```c
+int sub_31007c00(HandlerCtx *this, char *text);
+```
+
+- `text` 为空 → 返回 0（`0x31007c0a`）；
+- 先扫 `[this+0x14]`，计数 `[this+0x18]`（`0x31007c1c`）；
+- 再扫 `[this+0xc]`，计数 `[this+0x10]`（`0x31007c53`）；
+- 任一列表项是 `text` 的子串 → 返回 1（`0x31007c93`）。
+
+`TrustUrl.Dat` 写的是 `[+0xc]` / `[+0x10]`（`0x3100789f`），
+正好就是这里扫的第二条列表。`uFWORD.dat` 写的是 `[+4]`，
+而这里扫的第一条列表在 `[+0x14]` / `[+0x18]`，两处偏移不同名，
+**中间可能还有一次搬移，没查到**。所以只能确定
+"`TrustUrl.Dat` 就是第二条列表"，第一条列表的内容来源
+只能说是"`uFWORD.dat` 读出来的东西"，不能断言偏移对应关系。
+
+> 结构体字段：`0x310075d0` 把 `uFWORD.dat` 写进 `[ebp+4]`、
+> 计数用 `[esp+0x10]` 局部；`TrustUrl.Dat` 写进 `[ebp+0xc]`。
+> 而 `0x31007c00` 读的是 `[this+0x14]`/`[this+0x18]` 和
+> `[this+0xc]`/`[this+0x10]`。`[+4]` 到 `[+0x14]` 之间的搬移
+> **没查到**，只能说"`uFWORD.dat` 的内容最终出现在被扫描的某个列表里"，
+> 不能断言它一定在 `[+0x14]`。
+
+### `0x31007b70` — 单条列表，外加协议前缀排除
+
+```c
+int sub_31007b70(HandlerCtx *this, char *text);
+```
+
+- `text` 为空 → 返回 0（`0x31007b7c`）；
+- 读 `[this+8]` 作计数、`[this+4]` 作数组（`0x31007b8c` / `0x31007b95`）；
+- 每个非空项：
+  - `strstr(text, "http://")` 命中 → **返回 0**（`0x31007bab`）
+  - `strstr(text, "ftp://")` 命中 → **返回 0**（`0x31007bbd`）
+  - `strstr(text, 项)` 命中 → **返回 1**（`0x31007bd7`）
+- 循环结束 → 返回 0。
+
+两个协议检查写在循环体内（`0x31007b9d` 判空之后），所以
+**列表为空时整段跳过、直接返回 0**。这一点对默认安装很关键：
+`hnclib\` 没有表，这个函数恒返回 0。
+
+它唯一的数据来源是 `[this+4]`/`[this+8]`，即 `0x310075d0` 写
+`uFWORD.dat` 的那两个字段。`uFWORD.dat` 不存在，所以这个列表为空。
+
+### 两个调用点的作用不同
+
+| 调用点 | 传入 | 非 0（信任命中） | 0（不信任） |
+|---|---|---|---|
+| `0x31004865` | `[ebx+0x10]` | 跳到 `0x3100492b` | 转宽字符后问 `0x31007c00` |
+| `0x31004e00` | `[esi+0x10]` | 跳到 `0x31004e37`，**绕过 `CorpGroup`** | 调 `CorpGroup` 做词库扫描 |
+
+`0x31004e00` 这条是 §1.6 那条判定链的入口。所以完整顺序是：
+
+```
+前台进程 PID 匹配
+  -> 0x31007b70   信任标题？ 是 -> 直接进拦截流程，不查词库
+                             否 -> 0x31007340 -> CorpGroup
+                                   -> 返回 0 -> 摘链释放（放行）
+                                   -> 返回 1/2 -> 进拦截流程
+```
+
+信任列表为空时，第一步恒为"否"，所以**每次都会走到 `CorpGroup`**。
+`0x310049bc` 那处对 `0x31007c00` 的调用同理，恒返回 0。
 
 ## 3. `.urf` 加载链：两个宿主，同一套调用约定
 
@@ -253,9 +342,72 @@ loader call prologue: {"flag": {...1}, "name": {"sha1_8": "322b599b"}}
 | L3 信任表 `TrustUrl.dat` | ✅ | ✅ 完整 | ✅ 已导入 |
 | L4 端口表 `filtport.dat` | ✅ 2 条 | ✅ 明文 | ✅ 已审计 |
 | L4 进程表 `filtpros.Dat` | ❌ 缺 | — | ❌ |
-| L4 更新表 `uFWORD/uTUrl/uFUrl/FiltUrl` | ❌ 缺 | — | — |
+| L4 更新表 `uFWORD/uTUrl/uFUrl/FiltUrl` | ❌ 缺 | 部分（加载器已解，见 §2.3） | ❌ |
 
 所以过滤层里**不存在「数据在、结构不明」的黑盒**。
 剩下的缺口只有四张包内根本没带的更新表，复刻需要自行重建。
 
 `.urf` 不在这张表里，因为它不是过滤层的一部分。
+
+## 6. 复现：怎么验证 `0x310082f0` 是 `strstr`
+
+读字节只能看出"像"，要定论得实际跑。用 unicorn 装载
+`Handler.dll` 的 `.text`，按 `__cdecl` 摆好栈再模拟：
+
+```python
+import pefile
+from unicorn import Uc, UC_ARCH_X86, UC_MODE_32, UcError
+from unicorn.x86_const import UC_X86_REG_ESP, UC_X86_REG_EAX
+
+raw = open("LH-installed-tree/Windows/Handler.dll", "rb").read()
+ib = pefile.PE(data=raw).OPTIONAL_HEADER.ImageBase
+
+mu = Uc(UC_ARCH_X86, UC_MODE_32)
+mu.mem_map(ib, 0x200000)
+mu.mem_write(ib, raw[:0x200000])
+STACK, DATA = 0x33000000, 0x34000000
+mu.mem_map(STACK, 0x10000)
+mu.mem_map(DATA, 0x10000)
+
+def call(haystack: bytes, needle: bytes):
+    mu.mem_write(DATA, haystack + b"\x00")
+    mu.mem_write(DATA + 0x100, needle + b"\x00")
+    esp = STACK + 0x8000
+    # 栈布局：[esp]=ret, [esp+4]=haystack, [esp+8]=needle
+    for v in (DATA + 0x100, DATA, 0x22222222):
+        esp -= 4
+        mu.mem_write(esp, v.to_bytes(4, "little"))
+    mu.reg_write(UC_X86_REG_ESP, esp)
+    mu.emu_start(ib + 0x82F0, 0x22222222, count=50000)
+    return mu.reg_read(UC_X86_REG_EAX)
+
+# 全部应判为"命中"
+assert call(b"visit http://evil.com now", b"http://")
+assert call(b"http://evil.com", b"http://")
+assert call(b"plain text", b"pl")
+assert call(b"ZZplain", b"pl")
+# 全部应判为"不命中"
+assert not call(b"visit ftp://evil.com now", b"http://")
+assert not call(b"abc", b"http://")
+assert not call(b"plain text", b"zz")
+```
+
+七例全过，才能说它是 `strstr` 而不是 `strcmp`。
+反例很直接：若为相等比较，`"visit http://evil.com now"` 对
+needle `"http://"` 应当不命中，而实测命中。
+
+栈偏移之所以是 `[esp+4]=haystack`、`[esp+8]=needle`，
+是因为 `0x310082f0` 入口处 `mov ecx,[esp+8]`（取 needle），
+而 `0x310082f9` 三次 `push` 后的 `[esp+0x10]` 等于原 `esp+4`（取 haystack）。
+第一次摆栈时我把顺序弄反了，`ecx` 拿到的是返回地址，报
+`UC_ERR_READ_UNMAPPED`——这本身也是个有用的校验：**顺序错就跑不通**。
+
+两个容易踩的地方：
+
+1. `emu_start(begin, until)` 的 `begin` 是**绝对地址**。写成
+   `ib + 0x310082f0` 会得到 `0x620082f0`，报 `UC_ERR_FETCH_UNMAPPED`，
+   错误信息里那个 `EIP` 就是线索。
+2. `until` 设成未映射的哨兵值，函数 `ret` 撞上去会抛
+   `UC_ERR_FETCH_UNMAPPED`。这是**预期结尾**，不是失败——捕获之后
+   `EAX` 里已经是返回值。所以别在每个测试间复用同一个 `Uc` 实例：
+   撞过一次异常的实例状态不可靠，要每次重建。

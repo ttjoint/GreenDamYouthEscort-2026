@@ -127,8 +127,8 @@ class TrimHelpersTest(unittest.TestCase):
 class WhitelistMatchTest(unittest.TestCase):
     """`0x31007c00` 的匹配方式。"""
 
-    def test_match_is_exact_whole_string(self):
-        """两个列表都用 `0x310082f0` 做整串比较，不是子串包含。"""
+    def test_both_lists_use_the_same_comparator(self):
+        """两个列表共用 `0x310082f0`，它是 `strstr`（子串匹配）。"""
         d = _handler()
         body = d[0x7C1C:0x7C90]
         self.assertEqual(body.count(bytes([0xE8])), 2)
