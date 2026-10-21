@@ -13,7 +13,7 @@
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：M1 名单容器完成时（469 passed）。
+> 最后核对：M2 判定链完成时（498 passed）。
 
 ---
 
@@ -22,7 +22,7 @@
 | 模块 | 职责 | 状态 | src 文件 | SRC 测试 |
 |---|---|---|---|---|
 | M1 数据 | 载入 JSON、建索引、类别模型 | **PARTIAL** | `wordlists.py` `namelist.py` `namelists.py` | `test_wordlists` `test_namelist` `test_namelists` |
-| M2 网络 | 四段拦截 | **TODO** | — | — |
+| M2 网络 | 四段拦截 | **PARTIAL** | `intercept.py`（判定链） | `test_intercept` |
 | M3 文本 | 分词、语境判定、双后端 | **PARTIAL** | `chunker.py` `hnc.py` `semantic.py` `l_concepts.py` `chunk_tags.py` `similarity.py` | `test_chunker` 等 7 个 |
 | M4 图像 | 不良/人脸分类 | **TODO** | — | — |
 | M5 屏幕 | 屏幕文字提取 | **TODO** | — | — |
@@ -68,20 +68,39 @@
 
 ---
 
-## 2. M2 网络层 —— TODO
+## 2. M2 网络层 —— PARTIAL
 
-逆向契约已完全闭合（`analysis/probe/p17` `p18` `p19`），`src/` 无代码。
+判定链已实现（`src/green_dam/intercept.py`，29 项测试）。传输层未做。
 
-| 待做项 | 逆向依据 | 说明 |
+### 已实现
+
+| 项 | 位置 | 状态 |
 |---|---|---|
-| 出站判定链 | p17/p18 | 进程 → IP/端口 → 协议指纹 → URL → 内容 URL |
-| 入站判定链 | p19 | 进程 → IP/端口 → 二进制检测 → HTTP 端口 → 关键词 |
-| 拦截动作 | p17/p19 | 出站=断连（错误码 10054）；入站=替换响应体 |
-| HTTP 端口集 | p19 | `{80,81,8080,8081,8888,3128}` |
-| 连接跟踪表 | p18 | 原厂 32 槽 × 16B；新实现可用字典 |
-| 四段降级架构 | `docs/architecture.md` §M2 | 见该文，尚未实现 |
+| 出站判定链（进程→地址→主机→内容） | `intercept.py` | DONE |
+| 入站判定链（进程→地址→主机→关键词） | `intercept.py` | DONE |
+| 阶段顺序与 `Decision.stage` | `intercept.py` | DONE（顺序被测试钉住） |
+| 拦截 errno = 10054 | `intercept.py` | DONE |
+| HTTP 端口集 | `intercept.py` | DONE |
+| 二进制嗅探（前 10 字节） | `intercept.py` | DONE |
+| 出站 URL 提取 | `intercept.py` | DONE |
 
-**注意**：架构文档已定「不用 LSP、改代理/四段降级」，实现时以 `architecture.md` 为准，逆向契约只提供**判定顺序与动作语义**。
+### 待做
+
+| 项 | 说明 | 优先级 |
+|---|---|---|
+| 传输层第 1 段（域名/SNI + 防火墙） | 无需根 CA，最容易先做 | 高 |
+| 传输层第 2 段（明文 HTTP 透明代理） | 需要代理实现 | 中 |
+| 传输层第 3 段（HTTPS MITM） | 需要根 CA | 低 |
+| 入站"替换响应体"动作 | 判定已给 block，替换属传输层 | 中 |
+| 连接跟踪表 | 原厂 32 槽×16B；新实现用字典即可 | 低 |
+| 接入 `policy.py` 汇总 | 把 `Decision` 变成 `Verdict` 的一部分 | 高 |
+
+### 待测
+
+| 项 | 说明 |
+|---|---|
+| 端到端 | 传输层未做，无从测 |
+| 真实流量 | 同上 |
 
 ---
 
