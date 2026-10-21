@@ -13,7 +13,7 @@
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：配置持久化完成时（558 passed）。
+> 最后核对：门面层完成时（579 passed）。
 
 ---
 
@@ -30,6 +30,7 @@
 | M7 基础设施 | 服务、配置、日志、IPC | **PARTIAL** | `eventlog.py` `config.py` | `test_eventlog` `test_config` |
 | M8 策略 | 汇总成 放行/阻断/告警 | **DONE** | `policy.py` `sysdat.py` | `test_policy` `test_sysdat` |
 | — 跨层汇总 | 网络 + 文本证据合成 | **DONE** | `policy.py` (`assess`) | `test_policy::AssessTest` |
+| — 门面 | 配置+名单+判定+日志串联 | **DONE** | `filter.py` | `test_filter`（端到端） |
 | M9 控制台 | 父界面、日志、调度 | **TODO** | — | — |
 
 **没有 CLI、没有 `__main__.py`、没有打包配置** —— 目前是一个纯库。
@@ -230,7 +231,8 @@
 |---|---|---|
 | 打包（`pyproject.toml`） | TODO | 目前只能 `sys.path.insert` 使用 |
 | CLI 入口 | TODO | 无 `__main__.py` |
-| 端到端测试 | TODO | 无「输入文本/URL → 输出 Verdict」的全链测试 |
+| 端到端测试 | **DONE** | `test_filter.py` 21 项，配置→判定→日志全链 |
+| 真实流量接入 | TODO | `check_request` 就绪，无传输层 |
 | 不打印词条纪律 | DONE | 全部测试只断言结构与计数 |
 | 文档与代码同步 | DONE | 关键差异均有测试钉住（槽 17、预设值差异） |
 
