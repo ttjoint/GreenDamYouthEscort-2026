@@ -193,7 +193,7 @@
 | LB002 | 进程匹配：0x10003499 遍历Toolhelp快照，进程名小写化 strstr 名单B | DISASM | p20 | CLOSED | ME | — |
 | LB003 | 命中结果存 PID 数组 0x10218548（100×4B）+ 计数 0x10060e00 | DISASM | p20 | CLOSED | ME | — |
 | LB004 | 0x10003340 判定当前进程PID是否在命中结果中 | DISASM | p20 | CLOSED | ME | — |
-| LB005 | 三名单语义全确认：A=出站URL，B=监控进程，C=入站关键词 | DISASM | p18/p19/p20 | CLOSED | ME | — |
+| LB005 | 名单语义：A=出站URL，B=监控进程，C=入站关键词（D=动态，见 C-022） | DISASM | p18/p19/p20/p24 | CLOSED | ME | — |
 
 ## 十五、关键词记录结构（P7 成果，本轮新增）
 
@@ -204,3 +204,26 @@
 | K003 | 名单A容量1500，B容量100，C容量1000（记录数） | DISASM | p21 | CLOSED | ME | — |
 | K004 | 单条添加上限11000（命令码0x32） | DISASM | p21 | CLOSED | ME | — |
 | K005 | 匹配引擎5组嵌套，strstr 匹配，全组命中才返回1 | DISASM | p21 | CLOSED | ME | — |
+
+## 十六、图像过滤（P8 成果，本轮新增）
+
+| id | fact | method | evidence | status | src | claim_id |
+|---|---|---|---|---|---|---|
+| IMG01 | xnet2 → CImage.dll 3函数：CAPSCREEN/CHECKEX2/DES2GO | IMP | p22 | CLOSED | ME | — |
+| IMG02 | CHECKEX2 魔法数 0x7ab7(31415)，错则 Sleep(10s)+返回100 | DISASM | p22 | CLOSED | ME | — |
+| IMG03 | 核心检测 0x10004a60 有 3 种模式（不同浮点阈值） | DISASM | p22 | CLOSED | ME | — |
+| IMG04 | 颜色直方图 0x10008e70（256桶，RGB步进3） | DISASM | p22 | CLOSED | ME | — |
+| IMG05 | 宽高比检查 0x10008e20 | DISASM | p22 | CLOSED | ME | — |
+| IMG06 | FImage.dll 引用 XFimage.xml（haarcascade_frontalface_alt2） | STR | p22 | CLOSED | ME | — |
+| IMG07 | CImage.dll 用 OpenCV 轮廓/形态学/霍夫线全套 | IMP | p22 | CLOSED | ME | — |
+
+## 十七、名单D与查询命令（P10 成果，本轮新增）
+
+| id | fact | method | evidence | status | src | claim_id |
+|---|---|---|---|---|---|---|
+| LD01 | 第4名单D @0x10060e0c，容量1500，计数0x1022812c | DISASM | p24 | CLOSED | ME | — |
+| LD02 | 名单D有完整增删接口（添加@0x279b去重，删除@0x2896 memmove） | DISASM | p24 | CLOSED | ME | — |
+| LD03 | 命令码0xfa0 = 查询名单D命中（strstr，0=命中） | DISASM | p24 | CLOSED | ME | — |
+| LD04 | 命令码0xbc2 = strlen（标准优化实现0x7efefeff） | DISASM | p24 | CLOSED | ME | — |
+| LD05 | XNet2按状态码100/300查询0xfa0/0xfa1 | DISASM | p24 | CLOSED | ME | — |
+| LD06 | 完整名单体系 = 4个（A/B/C/D） | DISASM | p16/p20/p24 | CLOSED | ME | — |
