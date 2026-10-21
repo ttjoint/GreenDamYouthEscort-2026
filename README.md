@@ -121,3 +121,21 @@ cannot drift from the code.
 
 Next: M8 policy engine, then M2 network interception. Reversing is finished;
 building starts now.
+
+### M8 progress
+
+The legacy 67-slot policy array is now decoded and wired in
+(`src/green_dam/sysdat.py`, `tests/test_sysdat.py`). Slot names come from the
+GBK table in `XNet2.exe`; the `index = slot_no - 1` mapping is proven by the
+`rep movsd` at `0x40bc16`, not inferred. Only slots 1..25 are named - the rest
+are reserved, always zero, and deliberately left unnamed.
+
+The array gates behaviour only: slots 2 and 10 are attested off-switches for
+filtering and keyword filtering. It supplies no action mapping, because the
+vendor's score-to-action semantics are still unknown. A gate silences evidence
+and never manufactures an `allow`; a test pins that.
+
+One prior claim was corrected rather than carried forward: slot 17 is
+`allow_auto_screenshot`, not `allow_auto_shutdown` (the latter came from
+mixing in the log-event numbering). The import tool now takes slot names from
+the module so the data cannot drift from the evidence again.

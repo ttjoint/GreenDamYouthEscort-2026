@@ -107,6 +107,52 @@ PolicyTable(
 - 不猜 `HASrv.dll` 里 `反动度` 的含义；
 - 不把 `FalunWord.lib` 的 4,693 条打分表当通用词库。
 
+## 6b. sys.dat 策略数组（M8 已接入）
+
+`sys.dat` 的 67 个 uint32 槽位**已经解码并接入本层**，但只用于**开关门控**，
+不提供任何动作映射。实现见 `src/green_dam/sysdat.py`，测试见
+`tests/test_sysdat.py`。
+
+### 依据（`CLOSED`）
+
+- 槽位名表：`XNet2.exe` `0x68dbc`–`0x68f78`（GBK，1–25 项）；
+- 下标映射 `index = 策略号 − 1`：`0x40bc16` 的 `rep movsd` 67 dword，
+  `[esp+0x50]` 对应策略 5；
+- 数据流：`XNet2@0x46f1e0` → `SG_Control(0x262)` → SurfGd `0x10228008`。
+
+### 只有前 25 槽有名字
+
+67 个槽里只有 1–25 有名称，26–67 在每一份出厂文件里都是 0，
+**故意不命名**——给保留槽编名字就是臆造。`slot_index()` 拒绝 26 以上，
+但 `raw()` 仍可按下标读到保留槽（若它非零，`nonzero()` 会如实报出）。
+
+### 门控行为（唯一由原厂策略改变行为的地方）
+
+| 槽位 | 名称 | 对本层的影响 |
+|---|---|---|
+| 2 | `disable_filtering` | 非零 → `Verdict(action=None, reason="legacy_filtering_disabled")` |
+| 10 | `disable_keyword_filter` | 非零 → `Verdict(action=None, reason="legacy_keyword_filter_disabled")` |
+
+**门控只让证据沉默，绝不凭空产生 `allow`**（有单测钉住）。
+
+### 两个必须区分的数值来源
+
+| 来源 | 含义 |
+|---|---|
+| `sys.dat`（出厂文件） | 安装完成后的**实际状态** |
+| `PRESET_LEVEL_6` | 用户选「预设级别 6」时 `XNet2` **写入**的值 |
+
+两者在槽 11 与槽 18 上**合法地不同**（`0 → 2`、`3 → 14`），
+`test_preset_differs_from_shipped_in_two_slots` 把这个差异钉死，
+防止有人把一边「修正」成另一边。
+
+### 已推翻的旧断言
+
+`data/legacy-imported/policy.json` 曾写 `17 → allow_auto_shutdown`，
+来自**日志事件编号**与策略编号的混用。策略 17 实为
+`allow_auto_screenshot`（`analysis/03-DATA-FORMATS.md` 的 `REFUTED` 条目）。
+导入工具已改为从 `sysdat.SLOT_NAMES` 取权威名称。
+
 ## 7. 验收标准
 
 | 项 | 要求 |
@@ -118,6 +164,9 @@ PolicyTable(
 | 全部无据 | `Verdict.action is None` |
 | 可追溯 | 每个 `Finding.sources` 非空 |
 | 不打印词条 | 测试只断言结构与计数 |
+| sys.dat 门控 | 槽 2 / 槽 10 非零时不出动作，且不产生 `allow` |
+| 保留槽不命名 | `slot_index(26+)` 报错，`raw()` 可读 |
+| 预设≠出厂 | 槽 11/18 差异被测试钉住 |
 
 ## 8. 后续接入点
 

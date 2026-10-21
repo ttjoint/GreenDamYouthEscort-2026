@@ -136,5 +136,63 @@ class FindingShapeTest(unittest.TestCase):
         self.assertEqual(v.findings[0].sources, ("src-a",))
 
 
+class LegacySysdatGateTest(unittest.TestCase):
+    """The decoded sys.dat array gates verdicts (the only attested behaviour).
+
+    Slot numbers are policy numbers (1-based), not array indices.
+    """
+
+    def _engine_with(self, values):
+        from green_dam import sysdat
+        index = WordlistIndex()
+        index.add("甲词", "src-a", level=2)
+        legacy = sysdat.PolicyArray(values=tuple(values))
+        table = PolicyTable(
+            level_actions={2: "block"},
+            legacy=legacy,
+            attested=True,
+        )
+        return PolicyEngine(words=index, policies=table)
+
+    def _slots(self, **overrides):
+        from green_dam import sysdat
+        values = [0] * sysdat.SLOT_COUNT
+        for key, value in overrides.items():
+            values[sysdat.slot_index(int(key.lstrip("s")))] = value
+        return values
+
+    def test_baseline_blocks(self):
+        eng = self._engine_with(self._slots())
+        self.assertEqual(eng.verdict("甲词").action, "block")
+
+    def test_slot2_disables_filtering_entirely(self):
+        eng = self._engine_with(self._slots(s2=1))
+        v = eng.verdict("甲词")
+        self.assertIsNone(v.action)
+        self.assertEqual(v.reason, "legacy_filtering_disabled")
+
+    def test_slot10_disables_keyword_filtering(self):
+        eng = self._engine_with(self._slots(s10=1))
+        v = eng.verdict("甲词")
+        self.assertIsNone(v.action)
+        self.assertEqual(v.reason, "legacy_keyword_filter_disabled")
+
+    def test_gate_does_not_invent_an_allow(self):
+        # An off-switch silences evidence; it must never manufacture "allow".
+        eng = self._engine_with(self._slots(s2=1))
+        self.assertNotEqual(eng.verdict("甲词").action, "allow")
+
+    def test_default_table_loads_shipped_sysdat(self):
+        legacy_dir = ROOT.parent / "LH-installed-tree" / "Windows" / "System32"
+        if not (legacy_dir / "sys.dat").exists():
+            self.skipTest("legacy tree not present")
+        table = default_policy_table(legacy_dir)
+        self.assertIsNotNone(table.legacy)
+        self.assertTrue(table.legacy.attested)
+        self.assertFalse(table.legacy.filtering_disabled)
+        self.assertFalse(table.legacy.keyword_filter_disabled)
+        self.assertEqual(table.legacy.image_filter_level, 2)
+
+
 if __name__ == "__main__":
     unittest.main()

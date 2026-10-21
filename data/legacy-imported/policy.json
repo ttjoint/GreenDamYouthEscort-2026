@@ -1,6 +1,6 @@
 {
   "source": "sys.dat",
-  "note": "Legacy 67-slot policy array. Index 17 is confirmed to be 'allow auto shutdown' from a shipped log sample.",
+  "note": "Legacy 67-slot policy array. Policy numbering is 1-based: index = slot_no - 1 (proven at XNet2.exe 0x40bc16). Only slots 1..25 are named; 26..67 are reserved and always zero.",
   "slot_count": 67,
   "slots": [
     0,
@@ -72,7 +72,39 @@
     0
   ],
   "known_slots": {
-    "17": "allow_auto_shutdown"
+    "1": "block_network",
+    "2": "disable_filtering",
+    "3": "disable_logging",
+    "4": "log_retention",
+    "5": "image_filter_level",
+    "6": "image_filter_auto_blacklist",
+    "7": "trust_all_domestic",
+    "8": "block_programs_port",
+    "9": "block_programs_process",
+    "10": "disable_keyword_filter",
+    "11": "whitelist_only",
+    "12": "preset_level",
+    "13": "enable_image_filter",
+    "14": "whitelist_priority",
+    "15": "allow_whitelist",
+    "16": "allow_report",
+    "17": "allow_auto_screenshot",
+    "18": "screenshot_interval",
+    "19": "screenshot_retention",
+    "20": "auto_update",
+    "21": "auto_update_time",
+    "22": "auto_blacklist_image_count",
+    "23": "close_on_bad_image",
+    "24": "allow_time_control",
+    "25": "show_mascot"
+  },
+  "preset_level_6": {
+    "4": 2,
+    "5": 1,
+    "7": 1,
+    "8": 1,
+    "11": 2,
+    "18": 14
   },
   "sysEx": {
     "slot_count": 8,

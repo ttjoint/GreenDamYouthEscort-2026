@@ -22,9 +22,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import falunword
 import legacy_rules
+from green_dam import sysdat
 import legacy_wordlist_codec as codec
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -50,13 +52,14 @@ def import_policy(legacy: Path) -> dict:
     """
     sys.dat / xconfigs.dat: 67 little-endian uint32 policy slots.
 
-    Slot semantics are only partially known. Known anchors from the
-    original UI and from a real log sample:
+    Slot names come from :mod:`green_dam.sysdat`, which carries the name table
+    read out of ``XNet2.exe`` (``0x68dbc``-``0x68f78``) and the
+    ``index = slot_no - 1`` mapping proven by the ``rep movsd`` at ``0x40bc16``.
 
-      17 -> "allow auto shutdown"
-
-    Everything else is exported as a raw index so the new implementation
-    can map it deliberately instead of inheriting guessed meanings.
+    A previously exported anchor ``17 -> allow_auto_shutdown`` was **wrong**:
+    it came from the separate log-event numbering. Policy 17 is
+    ``allow_auto_screenshot``. Only the first 25 slots are named; the rest are
+    reserved and exported raw.
     """
     sysdir = legacy / "Windows" / "System32"
     blob = (sysdir / "sys.dat").read_bytes()
@@ -65,13 +68,16 @@ def import_policy(legacy: Path) -> dict:
     ex = (sysdir / "sysEx.dat").read_bytes()
     ex_slots = list(struct.unpack("<%dI" % (len(ex) // 4), ex))
 
+    names = {str(i + 1): name for i, name in enumerate(sysdat.SLOT_NAMES)}
     return {
         "source": "sys.dat",
-        "note": "Legacy 67-slot policy array. Index 17 is confirmed to be "
-        "'allow auto shutdown' from a shipped log sample.",
+        "note": "Legacy 67-slot policy array. Policy numbering is 1-based: "
+                "index = slot_no - 1 (proven at XNet2.exe 0x40bc16). Only "
+                "slots 1..25 are named; 26..67 are reserved and always zero.",
         "slot_count": len(slots),
         "slots": slots,
-        "known_slots": {"17": "allow_auto_shutdown"},
+        "known_slots": names,
+        "preset_level_6": {str(k): v for k, v in sysdat.PRESET_LEVEL_6.items()},
         "sysEx": {"slot_count": len(ex_slots), "slots": ex_slots},
         "sha256": sha256(sysdir / "sys.dat"),
     }

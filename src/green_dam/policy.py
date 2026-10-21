@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Iterable, Literal
 
 from .wordlists import WordHit, WordlistIndex
+from . import sysdat
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -73,6 +74,11 @@ class PolicyTable:
     Defaults are *our* choice, not the vendor's: the shipped binary's
     ``反动度`` / ``红黑度`` to action mapping is still unknown, so
     ``attested`` stays False until there is disassembly evidence.
+
+    ``legacy`` carries the decoded ``sys.dat`` policy array. It only *gates*
+    behaviour (is keyword filtering switched off? is image filtering on?) and
+    never supplies an action mapping - the slot semantics are attested, the
+    action semantics are not.
     """
 
     level_actions: dict[int, Action] = field(default_factory=dict)
@@ -80,6 +86,7 @@ class PolicyTable:
     trust_domains: frozenset[str] = frozenset()
     unknown_rule_action: Action | None = None
     attested: bool = False
+    legacy: sysdat.PolicyArray | None = None
 
     def for_level(self, levels: tuple[int, ...]) -> tuple[Action | None, str]:
         if not levels:
@@ -141,6 +148,16 @@ class PolicyEngine:
         if not items:
             return Verdict(findings=(), action=None, reason="no_evidence")
 
+        # sys.dat slot 2 / 10 are *attested* off-switches. Respecting them is
+        # the one place legacy policy changes behaviour rather than just
+        # annotating it. Note this only silences *wordlist* evidence; it does
+        # not invent an action either way.
+        if self.policies.legacy is not None:
+            if self.policies.legacy.filtering_disabled:
+                return Verdict(findings=items, action=None, reason="legacy_filtering_disabled")
+            if self.policies.legacy.keyword_filter_disabled:
+                return Verdict(findings=items, action=None, reason="legacy_keyword_filter_disabled")
+
         if self.policies.in_trust(text):
             return Verdict(findings=items, action="allow", reason="trusted_domain")
 
@@ -179,14 +196,19 @@ def default_policy_table(legacy_dir: Path | None = None) -> PolicyTable:
     """Build the default table. Every mapped value is our choice, not vendor."""
 
     trust = frozenset()
+    legacy = None
     if legacy_dir is not None:
         candidate = legacy_dir / "trust-urls.json"
         if candidate.exists():
             trust = load_trust_domains(candidate)
+        sysdir = legacy_dir / "sys.dat"
+        if sysdir.exists():
+            legacy = sysdat.decode(sysdir.read_bytes())
     return PolicyTable(
         level_actions={},
         category_actions={},
         trust_domains=trust,
         unknown_rule_action=None,
         attested=False,
+        legacy=legacy,
     )
