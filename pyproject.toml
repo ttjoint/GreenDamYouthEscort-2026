@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "green-dam-2026"
+version = "0.1.0"
+description = "A reimplementation of the Green Dam Youth Escort content filter, built from reverse-engineering evidence rather than from its source"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+authors = [{ name = "GreenDamYouthEscort-2026 contributors" }]
+keywords = ["content-filter", "reimplementation", "reverse-engineering"]
+
+# Deliberately empty. The filter core is pure standard library: no requests, no
+# numpy, no ML runtime. Image classification (M4) will add its own optional
+# extra when it lands, so the core stays installable on a bare interpreter.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+green-dam = "green_dam.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# The legacy-binary tests skip themselves when the installation tree is absent,
+# so a checkout without the original product still gets a green run.
+addopts = "-q"

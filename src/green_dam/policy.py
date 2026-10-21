@@ -284,5 +284,11 @@ def assess(
             text=text,
         )
 
-    return Assessment(action=None, source=None, reason="no_evidence",
+    # No action from either side. Keep the text verdict's reason when there is
+    # one, so callers can distinguish "no wordlists loaded" from "looked and
+    # found nothing" - collapsing both to 'no_evidence' loses that.
+    reason = "no_evidence"
+    if text is not None and text.reason:
+        reason = text.reason
+    return Assessment(action=None, source=None, reason=reason,
                       network=network, text=text)

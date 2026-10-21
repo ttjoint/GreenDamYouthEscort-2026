@@ -175,6 +175,10 @@ class Filter:
                 verdict = Verdict(findings=(), action=None, reason=reason)
             elif self._engine is not None:
                 verdict = self._engine.verdict(text)
+            else:
+                # No wordlists configured: say so rather than reporting a clean
+                # result. 'Not looking' must not look like 'nothing found'.
+                verdict = Verdict(findings=(), action=None, reason="no_wordlists")
 
         result = assess(network=network, text=verdict)
         if self.log is not None:

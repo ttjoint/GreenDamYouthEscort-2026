@@ -43,6 +43,7 @@ docs/              design and migration notes
   event-log.md         structured, redacted event logging
   config-persistence.md  atomic policy-array persistence
   facade.md            how the layers are wired together
+  cli.md               diagnostic command-line tool
 analysis/          reverse-engineering write-ups of the original product
                      (master ledger, facts, corrections, spec; see analysis/README.md)
 tools/             legacy import tooling (run once, then irrelevant)
