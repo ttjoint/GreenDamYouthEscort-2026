@@ -60,7 +60,21 @@ log.append(record_for_decision(decision))
 - 目录自动创建
 - `path=None` 时纯内存，供测试和嵌入式使用
 
-## 5. 验收（22 项）
+## 4b. 接线（已实现）
+
+`Interceptor` 有可选的 `log` 字段。接上就每条判定记一条，不接就是纯函数
+（测试默认不接，保持判定链可单独验证）。
+
+```python
+log = EventLog(path=Path("events.jsonl"))
+icpt = Interceptor(lists=lists, log=log)
+icpt.decide(Request("outbound", process="x"))
+```
+
+日志放在 `Interceptor` 里而不是调用方，因为**只有它知道是哪个阶段命中的**，
+而那正是日志要记的字段。
+
+## 5. 验收（27 项）
 
 | 组 | 覆盖 |
 |---|---|
@@ -70,6 +84,7 @@ log.append(record_for_decision(decision))
 | 由 Assessment 构造 | 网络阻断保留 stage、文本阻断无 stage、no_action、gated |
 | **不泄漏内容** | 正文、主机名、进程名**三项分别断言**不出现在日志里 |
 | sink | JSONL 往返、序号单调、补时间戳、上下文管理器、查询 |
+| 接线 | 阻断/放行都记、方向正确、每条都记、无 log 时纯函数、接线后仍不泄漏 |
 
 「不泄漏」那三项是回归测试：一旦有人给 `LogRecord` 加个 `matched` 字段并
 顺手填上，这三项会立刻失败。

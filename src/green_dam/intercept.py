@@ -137,11 +137,28 @@ def extract_outbound_url(body: str) -> str | None:
 
 @dataclass
 class Interceptor:
-    """Runs the decision chain against the four name lists."""
+    """Runs the decision chain against the four name lists.
+
+    ``log`` is optional. When supplied, every decision is appended to it; when
+    not, :meth:`decide` stays a pure function, which is what most tests want.
+    Logging lives here rather than in callers because the interceptor is the
+    only place that knows which stage fired, and that is the field the log
+    exists to record.
+    """
 
     lists: NameLists = field(default_factory=NameLists)
+    log: object | None = None
 
     def decide(self, request: Request) -> Decision:
+        decision = self._decide(request)
+        if self.log is not None:
+            from .eventlog import record_for_decision
+
+            self.log.append(record_for_decision(decision,
+                                                direction=request.direction))
+        return decision
+
+    def _decide(self, request: Request) -> Decision:
         for stage_fn in self._stages(request.direction):
             decision = stage_fn(request)
             if decision is not None:

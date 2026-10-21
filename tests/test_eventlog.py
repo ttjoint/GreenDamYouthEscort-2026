@@ -205,3 +205,49 @@ class SinkTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InterceptorWiringTest(unittest.TestCase):
+    """The interceptor records every decision when a log is attached."""
+
+    def _icpt(self, **entries):
+        lists = NameLists()
+        for key, texts in entries.items():
+            for text in texts:
+                lists[key].add(text)
+        log = EventLog()
+        return Interceptor(lists=lists, log=log), log
+
+    def test_block_is_recorded_with_direction(self):
+        icpt, log = self._icpt(B=["proc-a"])
+        icpt.decide(Request("outbound", process="proc-a"))
+        self.assertEqual(len(log), 1)
+        rec = log.records[0]
+        self.assertEqual(rec.event, Event.BLOCK)
+        self.assertEqual(rec.stage, "process")
+        self.assertEqual(rec.direction, "outbound")
+
+    def test_allow_is_recorded(self):
+        icpt, log = self._icpt()
+        icpt.decide(Request("inbound", port=80, body="clean"))
+        self.assertEqual(log.records[0].event, Event.ALLOW)
+
+    def test_every_decision_logged(self):
+        icpt, log = self._icpt(B=["proc-a"])
+        icpt.decide(Request("outbound", process="proc-a"))
+        icpt.decide(Request("outbound", process="other"))
+        self.assertEqual(len(log), 2)
+        self.assertEqual([r.event for r in log.records],
+                         [Event.BLOCK, Event.ALLOW])
+
+    def test_no_log_means_pure_function(self):
+        icpt = Interceptor(lists=NameLists())
+        d = icpt.decide(Request("outbound"))
+        self.assertEqual(d.outcome, Outcome.ALLOW)
+
+    def test_wiring_does_not_leak_content(self):
+        icpt, log = self._icpt(C=["{甲}[乙]"])
+        icpt.decide(Request("inbound", port=80, body="甲乙 private-marker"))
+        blob = log.records[0].to_json()
+        for leaked in ("甲", "乙", "private-marker"):
+            self.assertNotIn(leaked, blob)

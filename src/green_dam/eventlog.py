@@ -109,11 +109,11 @@ class LogRecord:
         )
 
 
-def record_for_decision(decision, *, when: str | None = None) -> LogRecord:
+def record_for_decision(decision, *, direction: str = "", when: str | None = None) -> LogRecord:
     """Build a record from an :class:`intercept.Decision`.
 
-    Only ``stage``/``reason``/``direction`` are read. The ``detail`` field of
-    the decision is deliberately ignored: it may hold a matched string.
+    Only ``stage``/``reason`` are read from the decision. The ``detail`` field
+    is deliberately ignored: it may hold a matched string.
     """
     event = Event.BLOCK if getattr(decision, "blocked", False) else Event.ALLOW
     stage = getattr(decision, "stage", None)
@@ -122,6 +122,7 @@ def record_for_decision(decision, *, when: str | None = None) -> LogRecord:
         source="network",
         stage=stage.value if isinstance(stage, Enum) else (str(stage) if stage else ""),
         reason=str(getattr(decision, "reason", "") or ""),
+        direction=direction,
         when=when or utc_now(),
     )
 
