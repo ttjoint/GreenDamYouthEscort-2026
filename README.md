@@ -41,6 +41,7 @@ docs/              design and migration notes
   status-checklist.md  what is implemented / todo / untested, per module
   network-layer.md     interception decision chain
   event-log.md         structured, redacted event logging
+  config-persistence.md  atomic policy-array persistence
 analysis/          reverse-engineering write-ups of the original product
                      (master ledger, facts, corrections, spec; see analysis/README.md)
 tools/             legacy import tooling (run once, then irrelevant)

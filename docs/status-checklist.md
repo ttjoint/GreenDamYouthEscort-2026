@@ -13,7 +13,7 @@
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：事件日志完成时（527 passed）。
+> 最后核对：配置持久化完成时（558 passed）。
 
 ---
 
@@ -27,7 +27,7 @@
 | M4 图像 | 不良/人脸分类 | **TODO** | — | — |
 | M5 屏幕 | 屏幕文字提取 | **TODO** | — | — |
 | M6 应用控制 | 禁止指定程序联网 | **TODO** | — | — |
-| M7 基础设施 | 服务、配置、日志、IPC | **PARTIAL** | `eventlog.py`（日志） | `test_eventlog` |
+| M7 基础设施 | 服务、配置、日志、IPC | **PARTIAL** | `eventlog.py` `config.py` | `test_eventlog` `test_config` |
 | M8 策略 | 汇总成 放行/阻断/告警 | **DONE** | `policy.py` `sysdat.py` | `test_policy` `test_sysdat` |
 | — 跨层汇总 | 网络 + 文本证据合成 | **DONE** | `policy.py` (`assess`) | `test_policy::AssessTest` |
 | M9 控制台 | 父界面、日志、调度 | **TODO** | — | — |
@@ -243,7 +243,7 @@
 3. **M2 出站/入站判定链** —— 契约最完整，可用假数据先跑通 ← **下一步**
 4. **M8 与 M3/M4 汇总接线** —— 把已有检测结果变成 `Finding`
 5. **M4 图像检测** —— 依赖 M1 名单 D（自动加黑名单）
-6. **M7 配置持久化** —— `sysdat.encode()` 已就绪，成本低
+6. ~~M7 配置持久化~~ —— **DONE**
 7. **打包 + CLI** —— 让库可用
 
 ---
