@@ -212,3 +212,77 @@ def default_policy_table(legacy_dir: Path | None = None) -> PolicyTable:
         attested=False,
         legacy=legacy,
     )
+
+
+# -- combining network decisions with wordlist evidence -------------------
+
+@dataclass(frozen=True)
+class Assessment:
+    """One place where network and text evidence meet.
+
+    ``Verdict`` answers "what does the wordlist say about this text".
+    ``Decision`` answers "what does the network chain say about this request".
+    An :class:`Assessment` holds both plus the single action a caller should
+    act on, and keeps the two provenances separate instead of flattening them -
+    a block that came from a host list is a different fact from a block that
+    came from a keyword, and merging them would lose that.
+    """
+
+    #: Action to take, or None when neither source produced one.
+    action: Action | None
+    #: Which source produced ``action``: "network", "text", or None.
+    source: str | None = None
+    #: Free-form reason, taken from the winning source.
+    reason: str = ""
+    #: The network decision, when one was made.
+    network: object | None = None
+    #: The text verdict, when one was made.
+    text: Verdict | None = None
+
+    @property
+    def blocked(self) -> bool:
+        return self.action == "block"
+
+
+def assess(
+    *,
+    network=None,
+    text: Verdict | None = None,
+) -> Assessment:
+    """Combine a network ``Decision`` and a text ``Verdict`` into one action.
+
+    Precedence rules, in order:
+
+    1. **A network block wins.** The legacy chain stopped at the first hit and
+       returned 0; a text verdict never had the chance to soften that.
+    2. **A text action wins next**, because a wordlist hit is still evidence
+       even when the network stages all passed.
+    3. Otherwise ``None`` - no action, and no invented "allow".
+
+    ``allow`` from a trusted domain is deliberately *not* promoted here: it is
+    a statement about one piece of evidence, not a licence to override a
+    network block.
+    """
+    network_blocked = bool(getattr(network, "blocked", False))
+    text_action = text.action if text is not None else None
+
+    if network_blocked:
+        return Assessment(
+            action="block",
+            source="network",
+            reason=str(getattr(network, "reason", "") or "network_block"),
+            network=network,
+            text=text,
+        )
+
+    if text_action is not None:
+        return Assessment(
+            action=text_action,
+            source="text",
+            reason=text.reason if text is not None else "",
+            network=network,
+            text=text,
+        )
+
+    return Assessment(action=None, source=None, reason="no_evidence",
+                      network=network, text=text)

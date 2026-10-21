@@ -14,6 +14,8 @@ from green_dam.policy import (  # noqa: E402
     Finding,
     PolicyEngine,
     PolicyTable,
+    Verdict,
+    assess,
     default_policy_table,
     load_trust_domains,
 )
@@ -196,3 +198,61 @@ class LegacySysdatGateTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AssessTest(unittest.TestCase):
+    """Network decisions and text verdicts combine without losing provenance."""
+
+    def _verdict(self, action, reason="r"):
+        return Verdict(findings=(), action=action, reason=reason)
+
+    def test_network_block_wins(self):
+        from green_dam.intercept import Decision, Outcome, Stage
+        net = Decision(Outcome.BLOCK, Stage.HOST, "host_listed")
+        got = assess(network=net, text=self._verdict("warn"))
+        self.assertEqual(got.action, "block")
+        self.assertEqual(got.source, "network")
+        self.assertEqual(got.reason, "host_listed")
+        self.assertTrue(got.blocked)
+
+    def test_text_action_used_when_network_allows(self):
+        from green_dam.intercept import Decision, Outcome
+        net = Decision(Outcome.ALLOW, None, "no_stage_matched")
+        got = assess(network=net, text=self._verdict("block", "keyword"))
+        self.assertEqual(got.action, "block")
+        self.assertEqual(got.source, "text")
+
+    def test_no_evidence_means_no_action(self):
+        got = assess()
+        self.assertIsNone(got.action)
+        self.assertIsNone(got.source)
+        self.assertFalse(got.blocked)
+
+    def test_trusted_allow_does_not_override_network_block(self):
+        # 'allow' is a statement about one evidence source, not a licence.
+        from green_dam.intercept import Decision, Outcome, Stage
+        net = Decision(Outcome.BLOCK, Stage.PROCESS, "watched_process")
+        got = assess(network=net, text=self._verdict("allow", "trusted_domain"))
+        self.assertEqual(got.action, "block")
+        self.assertEqual(got.source, "network")
+
+    def test_provenance_kept_on_both_sides(self):
+        from green_dam.intercept import Decision, Outcome, Stage
+        net = Decision(Outcome.BLOCK, Stage.HOST, "host_listed")
+        text = self._verdict("warn")
+        got = assess(network=net, text=text)
+        self.assertIs(got.network, net)
+        self.assertIs(got.text, text)
+
+    def test_text_only(self):
+        got = assess(text=self._verdict("log"))
+        self.assertEqual(got.action, "log")
+        self.assertEqual(got.source, "text")
+        self.assertIsNone(got.network)
+
+    def test_network_allow_only_is_not_an_action(self):
+        from green_dam.intercept import Decision, Outcome
+        net = Decision(Outcome.ALLOW, None, "no_stage_matched")
+        got = assess(network=net)
+        self.assertIsNone(got.action)
+        self.assertIsNotNone(got.network)

@@ -92,8 +92,22 @@ Decision(outcome, stage, reason, detail="")
 | 入站 | 规则命中、非 HTTP 端口跳过、**二进制不短路** |
 | 形状 | allow 无 errno、未知方向报错 |
 
-## 8. 下一步
+## 8. 与文本证据的汇总（已实现）
 
-1. 传输层四段（`architecture.md`）：第 1 段域名/SNI 最容易，先做
-2. 把 `Decision` 接入 `policy.py` 的 `Verdict` 汇总
-3. 命中日志（含"为什么"= `stage` + `reason`）
+`policy.assess(network=..., text=...)` 把 `Decision` 与 `Verdict` 合成一个
+`Assessment`，**保留两侧出处**而不合并。
+
+优先级（有测试钉住）：
+
+1. **网络阻断优先** —— 原厂链首个命中即返回 0，文本判定没有机会软化它
+2. **其次文本动作** —— 网络阶段全过时，词表命中仍是证据
+3. 都没有 → `action=None`（**不臆造 `allow`**）
+
+特别注意：`Verdict(action="allow")`（信任域）**不会**覆盖网络阻断。
+`allow` 是对单一证据的判断，不是推翻阻断的许可证。
+
+## 9. 下一步
+
+1. 传输层第 1 段（域名/SNI + 防火墙）—— 无需根 CA，先做
+2. 命中日志（含"为什么"= `stage` + `reason` + `Assessment.source`）
+3. 传输层第 2/3 段（明文 HTTP、HTTPS MITM）
