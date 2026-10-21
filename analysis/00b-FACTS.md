@@ -201,7 +201,8 @@
 |---|---|---|---|---|---|---|
 | K001 | 144B 记录 = 规则字符串(+0) + 有效标志(+0x84) | DISASM | p21 | CLOSED | ME | — |
 | K002 | 规则语法：{}组(AND)、[]字符类(OR)、,词分隔 | DISASM | p21 | CLOSED | ME | — |
-| K003 | 名单A容量1500，B容量100，C容量1000（记录数） | DISASM | p21 | CLOSED | ME | — |
+| K003 | 容量：A=100(0x64@0x2d34)、C=1000(0x3e8@0x1acd)、D=1500(0x5dc@0x27b5)、B无显式常量 | DISASM | p21 | CLOSED | ME | — |
+| K003b | **更正**：初版把 A 记作 1500（实为 D 的容量），B 记作 100 | DISASM | p21 | CLOSED | ME | — |
 | K004 | 单条添加上限11000（命令码0x32） | DISASM | p21 | CLOSED | ME | — |
 | K005 | 匹配引擎5组嵌套，strstr 匹配，全组命中才返回1 | DISASM | p21 | CLOSED | ME | — |
 
