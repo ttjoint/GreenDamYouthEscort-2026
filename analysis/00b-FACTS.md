@@ -227,3 +227,12 @@
 | LD04 | 命令码0xbc2 = strlen（标准优化实现0x7efefeff） | DISASM | p24 | CLOSED | ME | — |
 | LD05 | XNet2按状态码100/300查询0xfa0/0xfa1 | DISASM | p24 | CLOSED | ME | — |
 | LD06 | 完整名单体系 = 4个（A/B/C/D） | DISASM | p16/p20/p24 | CLOSED | ME | — |
+
+## 十八、UI照片/手册交叉验证（P11 成果，本轮新增）
+
+| id | fact | method | evidence | status | src | claim_id |
+|---|---|---|---|---|---|---|
+| UI01 | 手册16项功能点全部能映射到逆向机制路径，无缺口 | CROSSCHECK | p25 | CLOSED | ME | — |
+| UI02 | "灵敏度低/中/高"UI项 = 0x10004a60 的3种检测模式 | CROSSCHECK | p25 | CLOSED | ME | — |
+| UI03 | "自动增加黑名单"UI项 = 名单D运行时添加接口 | CROSSCHECK | p25 | CLOSED | ME | — |
+| UI04 | image.dat(HTTP200+60x100GIF) = 网页小图替换源；大提示窗=gn.exe弹窗 | CROSSCHECK | p25 | CLOSED | ME | — |
