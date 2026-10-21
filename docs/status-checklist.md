@@ -13,7 +13,7 @@
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：M8 完成时（提交 `9853166`）。
+> 最后核对：M1 规则引擎完成时（445 passed）。
 
 ---
 
@@ -21,7 +21,7 @@
 
 | 模块 | 职责 | 状态 | src 文件 | SRC 测试 |
 |---|---|---|---|---|
-| M1 数据 | 载入 JSON、建索引、类别模型 | **PARTIAL** | `wordlists.py` | `test_wordlists` |
+| M1 数据 | 载入 JSON、建索引、类别模型 | **PARTIAL** | `wordlists.py` `namelist.py` | `test_wordlists` `test_namelist` |
 | M2 网络 | 四段拦截 | **TODO** | — | — |
 | M3 文本 | 分词、语境判定、双后端 | **PARTIAL** | `chunker.py` `hnc.py` `semantic.py` `l_concepts.py` `chunk_tags.py` `similarity.py` | `test_chunker` 等 7 个 |
 | M4 图像 | 不良/人脸分类 | **TODO** | — | — |
@@ -42,6 +42,8 @@
 | 项 | 位置 | 状态 |
 |---|---|---|
 | 统一词表查询（legacy trie + 外部词库） | `src/green_dam/wordlists.py` | DONE |
+| 144B 记录编解码（text@0, flag@0x84, 其余 opaque） | `src/green_dam/namelist.py` | DONE |
+| 规则语法 `{a,b}[c,d]`（组=AND、类=OR、5 组上限） | `src/green_dam/namelist.py` | DONE |
 | 命中保留来源链（`WordHit.sources`） | 同上 | DONE |
 | 词库 JSON 导入（`.dat` 可逆混淆解码） | `tools/legacy_wordlist_codec.py` | DONE |
 | 语料库导入与回归 | `tests/test_corpus_regression.py` | DONE |
@@ -59,8 +61,8 @@
 
 | 项 | 说明 |
 |---|---|
-| 144B 记录往返 | 需与 `analysis/probe/p21` 的格式对齐 |
-| 规则语法匹配正确性 | 需构造不含敏感词的中性样本（如 `{甲,乙}[丙,丁]`） |
+| ~~144B 记录往返~~ | **DONE**：`test_namelist.py` 29 项，含 opaque 字节往返 |
+| ~~规则语法匹配正确性~~ | **DONE**：全部样本为虚构单字（甲乙丙丁），未使用任何原厂词条 |
 
 ---
 
