@@ -38,6 +38,7 @@ and deliberately drops all of the above.
 ```
 docs/              design and migration notes
   architecture.md      module map and technical decisions
+  status-checklist.md  what is implemented / todo / untested, per module
 analysis/          reverse-engineering write-ups of the original product
                      (master ledger, facts, corrections, spec; see analysis/README.md)
 tools/             legacy import tooling (run once, then irrelevant)
