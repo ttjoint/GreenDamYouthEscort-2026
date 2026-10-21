@@ -1,0 +1,62 @@
+SentenceObj.dll 句法/词条级函数 调用图实测
+ImageBase 0x10000000 exports 72
+
+function                 VA           #calls   callers / pointer-refs
+----------------------------------------------------------------------------------------------------
+CutWordMax               0x10002620   0        (无内部调用) | PTR-REF:0
+CheckVV(CFWordLib)       0x10002820   0        (无内部调用) | PTR-REF:0
+MakeALC                  0x100028d0   3        CFWordLib+0x23, CFWordLib+0x76, +0x72 | PTR-REF:0
+MakeObjFromJK            0x100051d0   1        CSentenceObj+0x1f6 | PTR-REF:0
+MakeSentSC               0x10005c80   0        (无内部调用) | PTR-REF:0
+CheckVV(CSentenceObj)    0x10005e10   0        (无内部调用) | PTR-REF:0
+MakeObjFromSri           0x10006260   4        CSentenceObj+0x134, CSentenceObj+0x46f, CSentenceObj+0x309, CSentenceObj+0x1eb | PTR-REF:0
+GetSentenceALC           0x10006dc0   0        (无内部调用) | PTR-REF:0
+GetALC(global)           0x10004e70   0        (无内部调用) | PTR-REF:0
+MakeObjList              0x100069a0   3        CSentenceObj+0xa3, CSentenceObj+0x67, CSentenceObj+0x17b | PTR-REF:0
+
+结论:
+  MakeALC 被 CorpGroup 的两个重载直接调用 → 词条级扫描链是活的
+  GetSentenceALC / MakeSentSC / CutWordMax / CheckVV → 0 调用 + 0 指针引用
+  MakeObjFromJK / MakeObjFromSri / MakeObjList 互相调用，形成闭环，但闭环无外部入口
+
+================================================================================
+决定性实验 2: CreateHncTextGroup 到底构造了什么？
+================================================================================
+
+?CreateHncTextGroup@@YAPAVIHncTextGroup@@PAD@Z  @0x100050a0
+  0x100050a0  mov  eax,[esp+4]          ; path
+  0x100050a4  push 3                    ; arg3
+  0x100050a6  push 2                    ; arg2
+  0x100050a8  push eax
+  0x100050a9  call 0x10004fa0           ; ?OutputObjListIni@@YAHPADHH@Z
+  0x100050b1  cmp  eax,1
+  0x100050b6  mov  eax,[0x100b31e8]     ; g_pWordLib（全局单例）
+  0x100050bf  add  eax,0x124            ; ← 返回 主对象+0x124（子对象指针）
+  0x100050c4  ret  4
+
+?OutputObjListIni@@YAHPADHH@Z  @0x10004fa0
+  0x10004fb6  mov  ecx,[0x100b31e8]     ; 旧全局
+  0x10004fbf  je   skip                 ; 为空则跳过
+  0x10004fc3  call 0x10001c00           ; ??1CFWordLib  ← 析构旧的 CFWordLib
+  0x10004fd1  push 0x1004a0             ; 新对象大小 = 1,052,832 B
+  0x10004fd6  call 0x10035c3f           ; operator new
+  0x10004ff0  call 0x10003e40           ; ??0CFWordLib  ← 构造 CFWordLib
+  0x10005008  mov  [0x100b31e8],eax     ; 存入全局
+  0x1000500d  call 0x100022d0           ; ?LoadLib@CFWordLib  ← 加载 FalunWord.lib
+  0x10005012  cmp  eax,1                ; 成功?
+  0x10005017  ... [edx+0x100468] = arg2 (=2)
+  0x1000502b  ... [edx+0x100470] = arg3 (=3)
+
+结论（CLOSED）:
+  1. CreateHncTextGroup 只构造 **CFWordLib**，不构造 CSentenceObj。
+  2. 全部工作 = 分配 0x1004a0 字节 + 构造 CFWordLib + LoadLib(FalunWord.lib)
+     + 把两个整数参数(2,3)存进对象字段。
+  3. 返回值 = 全局对象 + 0x124，与 GDE harness 观测到的 "g-0x124=主对象" 完全吻合。
+  4. **产品通过 IHncTextGroup 拿到的能力 = 词库查询（CFWordLib），
+     不包含任何句法分析（CSentenceObj 整条链未被实例化）。**
+
+辅助证据:
+  - 全树检索 GetSentenceALC / MakeSentSC / CutWordMax / MakeObjFromJK / MakeObjFromSri /
+    MakeALC / CorpGroup 这些名字，**只出现在 SentenceObj.dll 自身**（作导出名）。
+    Handler.dll / HncEng.exe 连 GetProcAddress 字符串都没有。
+  - 8 个句法函数的地址在任何 vtable / 指针表中出现 0 次（PTR-REF:0）。

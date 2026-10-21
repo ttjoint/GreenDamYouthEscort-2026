@@ -1,0 +1,47 @@
+# RunAfterSetup.exe .rdata string block 0x1a100-0x1a5c0
+# 这是完整自启/安装链的机器可读证据（非反汇编推断）
+
+0x01a100	ogDriverInfo
+0x01a110	DriverDialog
+0x01a120	UninstallDriver
+0x01a130	InstDriver
+0x01a13c	SoftDogSetup.dll
+0x01a150	gnsoftinstall
+0x01a184	\SurfGd.dll
+0x01a190	DBFilterUninstall
+0x01a1a4	DBFilterIsinstalled
+0x01a1b8	DBFilterInstall
+0x01a1e4	\DBFilter.dll
+0x01a1f8	SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\KingWayKillPorn
+0x01a240	SOFTWARE\KingWay
+0x01a254	SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\
+0x01a298	SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\
+0x01a2d4	SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\
+0x01a32c	UninstallString
+0x01a33c	SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\FilterDam
+0x01a37c	Xnet2
+0x01a384	SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+0x01a3b8	SOFTWARE\Microsoft\Windows\CurrentVersion
+0x01a3e4	xnet2.exe
+0x01a3fe	112233
+0x01a42c	\goldlock.exe -i
+0x01a440	\winXpspi.reg
+0x01a450	\win2kspi.reg
+0x01a460	\winvista.reg
+0x01a470	regedit.exe /s 
+0x01a480	\*.dat
+0x01a488	%s\sysdir
+0x01a494	\*.jpg
+0x01a49c	%s\snap
+0x01a4ac	\snap
+0x01a4b4	XDaemon.exe  
+0x01a4d1	  ENABLE
+0x01a4dc	netsh firewall add allowedprogram 
+0x01a500	xnet2.exe 
+0x01a516	  ENABLE
+0x01a524	regsvr32.exe /s %s\MPSvcPS.dll
+0x01a544	%s\MPSvcC.exe -installjh
+0x01a560	regsvr32.exe /s %s\hncengps.dll
+0x01a580	%s\hnceng.exe -install
+0x01a5a0	.?AVCObject@@
+0x01a5b8	.?AVCCmd

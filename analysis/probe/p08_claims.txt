@@ -1,0 +1,96 @@
+
+==================================================================
+RE#11  gn.exe @0x4d288 应为 MD5('112233')
+==================================================================
+  MD5('112233') 计算值 : D0970714757783E6CF17B26FB8E2298F
+  字面量在 gn.exe 中的偏移 : 0x4d288
+  RE 声称的偏移           : 0x4d288
+  VERDICT: CONFIRMED
+  偏移吻合: True  (实测 0x4d288)
+
+==================================================================
+RE#20/#23  '7895123' 位置与 sole-presence 核验
+==================================================================
+  XNet2.exe 文件偏移 @ 0x690ec   推算 VA 0x4690ec   (RE 称 VA 0x4690ec)
+  gn.exe    文件偏移 @ 0x4d48c
+  VERDICT RE#20 (位置)      : CONFIRMED
+  VERDICT RE#23 (只在该文件): REFUTED
+  gn.exe 邻近串: ['%s\\help\\kw.chm', '%s\\xnet2.exe', '7895123', '112233', '%s\\%s', 'kwpwf.dll', 'gn.e']
+   -> 说明: gn.exe 中也存有该串（与 '112233' 相邻、紧挨 kwpwf.dll），
+      故 '只在该文件' 不成立；但 '比较代码只在 XNet2' 需单独验证。
+
+==================================================================
+RE#25  gn.exe 版本应为 3.0.0.0
+==================================================================
+  FileVersion 实测: '3, 0, 0, 0'   (RE 称 '3, 0, 0, 0')
+  VERDICT: CONFIRMED
+
+==================================================================
+RE#34  image.dat / image1.dat 应为完整 HTTP 响应
+==================================================================
+  Windows/image.dat        305 B  starts-with-HTTP=True  含GIF=True
+      首 40 字节: b'HTTP/1.1 200 OK\r\nServer: Microsoft-IIS/5'
+  Windows/image1.dat       597 B  starts-with-HTTP=True  含GIF=True
+      首 40 字节: b'HTTP/1.1 200 OK\r\nServer: Microsoft-IIS/5'
+  VERDICT: CONFIRMED
+
+==================================================================
+RE#37  XFimage.xml 应为 OpenCV haarcascade
+==================================================================
+  b'haarcascade'               -> YES  @ 0x2a
+  b'frontalface'               -> YES  @ 0x36
+  b'<stageNum>'                -> no  @ -
+  b'<width>20</width>'         -> no  @ -
+  b'alt2'                      -> YES  @ 0x42
+  b'alt'                       -> YES  @ 0x42
+
+==================================================================
+RE#39  poppo.dll 应为 87% .rsrc，仅 SHOW/SHOW2
+==================================================================
+  .rsrc RawSize=749568 / file=856064 = 87.6%
+  导出: ['SHOW', 'SHOW2']
+
+==================================================================
+RE#43  Surfgd.dll .uinitda：VSize=0x20A758 / RawSize=0
+==================================================================
+  SizeOfUninitializedData = 0x20b000  (RE 称 0x20B000)
+  SizeOfImage             = 0x22d000
+  .uinitda VSize=0x20a758  RawSize=0x0
+  VERDICT VSize 吻合 0x20A758: True
+  VERDICT RawSize == 0      : True
+
+==================================================================
+RE#45  Handler.dll 应 import SentenceObj!CreateHncTextGroup / ReleaseHncTextGroup
+==================================================================
+  SentenceObj.dll!?ReleaseHncTextGroup@@YAXPAVIHncTextGroup@@@Z
+  SentenceObj.dll!?CreateHncTextGroup@@YAPAVIHncTextGroup@@PAD@Z
+
+==================================================================
+RE#57  CardLib.dll 应为 Jungo WinDriver PCI 枚举
+==================================================================
+  \\.\WINDRVR6             -> YES @0x431ac
+  WD_PciScanCards          -> YES @0x4320c
+  WD_CardRegister          -> YES @0x43288
+  WD_PciGetCardInfo        -> YES @0x432c4
+  PLX 9054                 -> YES @0x43272
+  no cards found           -> YES @0x431f8
+
+==================================================================
+RE#60  vnew.bmp 应为 4 字节 '3.17'
+==================================================================
+  size=4  bytes=b'3.17'
+
+==================================================================
+RE#38  xcore/Xcv/Xtool 应为 OpenCV C++ mangled 导出
+==================================================================
+  xcore.dll    exports= 377 (RE 称 377)  mangled=92  sample=['??0CvImage@@QAE@ABV0@@Z', '??0CvImage@@QAE@PAUCvFileStorage@@PBD1@Z']
+  Xcv.dll      exports= 302 (RE 称 302)  mangled=158  sample=['??0CvBaseImageFilter@@QAE@ABV0@@Z', '??0CvBaseImageFilter@@QAE@HHH_NUCvSize@@UCvPoint@@HUCvScalar@@@Z']
+  Xtool.dll    exports= 124 (RE 称 124)  mangled=92  sample=['??0CvImage@@QAE@ABV0@@Z', '??0CvImage@@QAE@PAUCvFileStorage@@PBD1@Z']
+
+==================================================================
+RE#69  全 PE 应为 PE32/i386/DllCharacteristics=0
+==================================================================
+  扫描 PE 32 个，异常 0 个
+
+
+DONE

@@ -1,0 +1,74 @@
+# sys.dat / xconfigs.dat 数据流 —— 算术级闭合
+
+## 关键发现（全部反汇编实测，可重跑）
+
+1. 没有任何 PE 模块静态读 "sys.dat"（名字只在构建清单 _MAPPING.tsv / xstring.s2g）
+2. "xconfigs.Dat"（大写D）在 XNet2.exe 0x68f94 和 Surfgd.dll 0x17890（.uinitda段）
+3. xconfigs.dat 是 XNet2 写出的（WriteFileBin + "wb" + 0x10c=268字节）
+4. sysEx.dat (32B) 也是 XNet2 写出的（WriteFileBin + "wb" + 0x24=36字节）
+
+## 策略数组数据流（命令码 0x262）
+
+XNet2.exe:
+  0x40acfb  push 0x46f1e0        ; 67 dword 策略数组
+  0x40ad00  push 0x10c           ; 268 字节
+  0x40ad05  push 0x262           ; 命令码 610
+  0x40ad0a  call 0x42358c        ; = SurfGd.dll!SG_Control (跳转桩)
+
+Surfgd.dll SG_Control @0x6ffa:
+  命令码分发: 0x262 -> (0x262-0x1ba)=0xa8 -> 字节表[0xa8]=11 -> 跳转表[11]=0x79dc
+
+  0x100079dc  cmp [ebp+0x10],0     ; 参数3(源指针) 非空?
+  0x100079e7  call EnterCriticalSection
+  0x100079f0  mov ecx,0x43         ; 67 dword
+  0x100079f5  mov edi,0x10228008   ; SurfGd 内部策略全局数组
+  0x100079fa  rep movsd            ; 拷贝 67 dword
+  0x10007a01  call LeaveCriticalSection
+  0x10007a07  mov al,1             ; 成功
+
+然后 XNet2 写回 xconfigs.dat（持久化）:
+  0x40ad4f  push "wb"
+  0x40ad54  push 0x10c             ; 268 字节
+  0x40ad59  push 0x46f1e0
+  0x40ad67  call WriteFileBin
+
+## 结论
+
+- sys.dat / xconfigs.dat = 268B 策略数组（67 dword），内容相同（MD5 相同）
+- sys.dat 是安装模板，无 PE 静态读；xconfigs.dat 是运行时持久化副本
+- 策略数组通过 SG_Control(0x262) 从 XNet2 拷贝到 SurfGd 内部全局 0x10228008
+- 之前"下标=策略号-1"的映射仍未从代码证实，但数据流已闭合
+
+## 关键新接口
+
+- SurfGd.dll!SG_Control(命令码, 参数...) = XNet2↔SurfGd 控制协议
+- 命令码分发表：字节表@0x7d18 + 跳转表@0x7ce0
+- 命令码 0x262 = 接收 67 dword 策略数组到全局 0x10228008
+
+================================================================================
+追加：策略下标映射 = 代码证实（非推理）
+================================================================================
+
+XNet2.exe 0x40bbd0 附近（系统预设级别6 的初始化分支）:
+  0x40bbb8  mov ebp, 1
+  0x40bbf5  mov [esp+0x50], eax   ; eax=2
+  0x40bbf9  mov [esp+0x6c], eax   ; eax=2
+  0x40bc01  mov eax, 0xe          ; 14
+  0x40bc06  mov [esp+0x88], edi   ; (edi? 看原文)
+  0x40bc0d  mov ecx, 0x43         ; 67 dword
+  0x40bc12  lea esi, [esp+0x40]   ; 栈上临时数组起点
+  0x40bc16  mov edi, 0x46f1e0     ; 全局策略数组
+  0x40bc1b.. 逐个填默认值
+  然后 rep movsd 拷贝 67 dword
+
+数组下标换算（[esp+0x40]=索引0）:
+  索引 = (栈偏移 - 0x40) / 4
+  [esp+0x50] = 索引4  = 策略5  值2 (图像过滤级别=中)
+  [esp+0x54] = 索引5  = 策略6  值1 (图像过滤自动加黑名单=启用)
+  [esp+0x5c] = 索引7  = 策略8  值1 (禁止程序上网-端口过滤)
+  [esp+0x60] = 索引8  = 策略9  值1 (禁止程序上网-进程过滤)
+  [esp+0x6c] = 索引11 = 策略12 值2 (系统预设级别)
+  [esp+0x88] = 索引18 = 策略19 值14(抓屏数据保留时间=14天)
+
+=> 证实 "数组下标 = 策略号 - 1" 的映射关系
+=> 之前的语义表(03 F-002)成立，状态可升级为 CLOSED

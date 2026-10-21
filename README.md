@@ -38,6 +38,8 @@ and deliberately drops all of the above.
 ```
 docs/              design and migration notes
   architecture.md      module map and technical decisions
+analysis/          reverse-engineering write-ups of the original product
+                     (master ledger, facts, corrections, spec; see analysis/README.md)
 tools/             legacy import tooling (run once, then irrelevant)
 data/              normalised filter data consumed by the new implementation
   legacy-imported/   JSON produced from the legacy data blobs

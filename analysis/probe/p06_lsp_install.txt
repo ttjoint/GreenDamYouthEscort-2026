@@ -1,0 +1,55 @@
+LSP 安装序列 (RunAfterSetup.exe, VA base 0x400000)
+IAT[0x415220] = KERNEL32!LoadLibraryA
+IAT[0x415228] = KERNEL32!GetProcAddress
+
+  0x004013a7  lea      ecx, [esp + 4]
+  0x004013ab  lea      edx, [esp + 0x10]
+  0x004013af  push     0x41a1e4
+  0x004013b4  push     ecx
+  0x004013b5  push     edx
+  0x004013b6  call     0x410608
+  0x004013bb  mov      eax, dword ptr [eax]
+  0x004013bd  push     eax
+  0x004013be  call     dword ptr [0x415220]
+  0x004013c4  lea      ecx, [esp + 0x10]
+  0x004013c8  mov      esi, eax
+  0x004013ca  call     0x4104aa
+  0x004013cf  test     esi, esi
+  0x004013d1  jne      0x401409
+  0x004013d3  push     esi
+  0x004013d4  push     esi
+  0x004013d5  push     0x41a1c8
+  0x004013da  call     0x411f61
+  0x004013df  lea      ecx, [esp + 4]
+  0x004013e3  mov      dword ptr [esp + 0x9c], 0xffffffff
+  0x004013ee  call     0x4104aa
+  0x004013f3  pop      esi
+  0x004013f4  mov      ecx, dword ptr [esp + 0x90]
+  0x004013fb  mov      dword ptr fs:[0], ecx
+  0x00401402  add      esp, 0x9c
+  0x00401408  ret      
+  0x00401409  push     ebx
+  0x0040140a  push     ebp
+  0x0040140b  push     edi
+  0x0040140c  mov      edi, dword ptr [0x415228]
+  0x00401412  push     0x41a1b8
+  0x00401417  push     esi
+  0x00401418  call     edi
+  0x0040141a  push     0x41a1a4
+  0x0040141f  push     esi
+  0x00401420  mov      ebx, eax
+  0x00401422  call     edi
+  0x00401424  push     0x41a190
+  0x00401429  push     esi
+  0x0040142a  mov      ebp, eax
+  0x0040142c  call     edi
+  0x0040142e  mov      edi, eax
+
+解读:
+  0x4013b6 call 0x410608 / 0x4013bd call [LoadLibraryA]  -> 加载 '..\DBFilter.dll'
+  0x40140c mov edi,[GetProcAddress]
+  0x401412/418 GetProcAddress(h, 'DBFilterInstall')      -> ebx
+  0x40141a/420 GetProcAddress(h, 'DBFilterIsinstalled')   -> ebp
+  0x401424/42c GetProcAddress(h, 'DBFilterUninstall')     -> edi
+  然后拼 '..\SurfGd.dll' 作为参数传给 DBFilterInstall
+  => LSP 本体 = dbfilter.dll ; dbServ.dll 不在主链

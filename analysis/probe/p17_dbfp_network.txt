@@ -1,0 +1,92 @@
+# SurfGd DBFP_* 网络过滤层接口契约（P3 成果）
+
+## 导出函数签名（8 个 DBFP_* + SG_Control）
+
+| 函数 | RVA | 签名推断 | 行为 |
+|---|---|---|---|
+| DBFP_Socket | 0x5458 | int DBFP_Socket(af, type, proto, ..., int* err) | 核心过滤入口 |
+| DBFP_CloseSocket | 0x55c5 | int DBFP_CloseSocket(s) | **纯返回1（空操作）** |
+| DBFP_Connect | 0x55cc | int DBFP_Connect(s, name, namelen) | 基本空操作（返回1） |
+| DBFP_Accept | 0x55e0 | int DBFP_Accept(...) | **纯返回1（空操作）** |
+| DBFP_Send | 0x5919 | int DBFP_Send(s, buf, len, flags) | 数据过滤（大栈帧0xc50） |
+| DBFP_Recv | 0x6184 | int DBFP_Recv(s, buf, len, flags) | 数据过滤（栈帧0x3c） |
+| DBFP_SendTo | 0x6480 | int DBFP_SendTo(s, buf, len, flags, to, tolen) | 数据过滤 |
+| DBFP_RecvFrom | 0x6606 | int DBFP_RecvFrom(...) | 数据过滤 |
+| SG_Control | 0x6ffa | 控制协议 | 见 p16 |
+
+## 统一过滤开关
+
+所有函数开头统一检查：
+```
+cmp [0x1022800c], 2    ; 全局开关 == 2 ？
+jne <继续过滤>
+mov al, 1; ret          ; ==2 直接放行（返回1=允许）
+```
+- 0x1022800c = 过滤开关（2=关闭过滤）
+- 0x10228148 = 初始化标志（DBFP_Socket 置1，SendTo/RecvFrom 检查）
+
+## 被过滤时的错误码
+
+`DBFP_Socket` 过滤命中时：
+```
+mov eax, [ebp+0x24]
+mov [eax], 0x2746     ; 0x2746 = 10054 = WSAECONNRESET
+xor al, al; ret       ; 返回 0（失败）
+```
+→ 让程序以为"连接被重置"，实际是过滤拦截。
+
+## 过滤逻辑链（DBFP_Socket 完整）
+
+1. 置初始化标志 0x10228148 = 1
+2. 检查过滤开关 0x1022800c == 2 → 放行
+3. 检查策略数组[0] 0x10228008（策略1"禁止访问网络"）：
+   - 非零 → 调 0x1000367a（进程名判定）
+   - 判定不通过 → 设置错误码 0x2746，返回 0
+4. 检查标志 0x10228028（URL过滤开关）：
+   - 非零 → 调 0x100053c0（遍历 TCP 表取远端地址/主机名）
+   - 主机名小写化 → strcmp 匹配名单 0x102221f0
+   - 命中 → 调 0x10006872（记录/处理）→ 0x10009f30（比较）
+   - 命中黑名单 → 错误码 0x2746，返回 0
+5. 检查标志 0x10228064（IP过滤开关）：
+   - 非零 → 查 IP 表 0x1022806c（每项 7 字节：ip(4)+port(2)+flag(1)）
+   - 命中 → 错误码 0x2746，返回 0
+6. 全部通过 → 返回 1（放行）
+
+## 核心判定函数 0x1000367a（进程名过滤）
+
+```
+call [0x1022004c]     ; GetCurrentProcessId（动态导入）
+call 0x10009960(0xf,0); CreateToolhelp32Snapshot 包装
+call 0x1000995a      ; Process32First/Next 遍历
+拿到进程名 → 0x10014076 小写化 → 0x1000a8a0 匹配名单 0x102221f0
+```
+
+## 动态导入 API（.uinitda 运行时填充）
+
+| 槽 | API | 用途 |
+|---|---|---|
+| 0x1022004c | GetCurrentProcessId | 进程判定 |
+| 0x10220060 | (TCP表遍历) | 远端地址获取 |
+| 0x10220044 | (创建表) | 0x10009960 跳转目标 |
+| 0x10220048 | (关闭表) | 0x100053c0 末尾调用 |
+| 0x10220088 | (表遍历next) | 0x1000995a 跳转目标 |
+
+动态 API 名（KERNEL32）：GetCurrentProcessId, Process32First, Process32Next,
+CreateToolhelp32Snapshot, GetModuleFileNameA, GetModuleHandleA 等。
+
+## 名单/表地址
+
+| 地址 | 内容 |
+|---|---|
+| 0x102221f0 | 进程名名单（URL/进程黑名单，小写化匹配） |
+| 0x1022806c | IP 表（每项7字节） |
+| 0x10228064 | IP 过滤开关 |
+| 0x10228028 | URL/域名过滤开关 |
+| 0x10228008 | 策略数组[0]（策略1：禁止访问网络） |
+
+## 关键结论（复刻接口契约）
+
+1. LSP 层 = dbfilter.dll（WSPStartup）→ SurfGd.dll（DBFP_* 实际过滤）
+2. 过滤层次：进程名 → IP/端口 → 协议指纹 → URL/域名 → 内容URL提取（详见 p18）
+3. 拦截方式：返回 0 + 设置错误码 10054（连接重置）
+4. 开关：0x1022800c（总开关）+ 策略数组 + 各功能标志

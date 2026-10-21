@@ -1,0 +1,8 @@
+=== 本次会话所有关键 RVA 的函数归属（严格 .text 限定） ===
+  CFWordLib ctor 内 call CSentenceObj     rva=0x3ecf -> ??0CFWordLib@@QAE@XZ
+  LoadLib 用 FalunWord.lib                rva=0x233a -> ?LoadLib@CFWordLib@@QAEHPAD@Z
+  BuildWordIndex 用 %s\...                rva=0x4cdb -> ?BuildWordIndexFromFile@CFWordLib@@QAEHPAD@Z
+  SetSentBreak 用 Word.lib                rva=0x96ad -> ?SetSentBreak@CFWordLib@@UAAXHPAGZZ
+  GetALC 内 call MakeALC                  rva=0x4ee2 -> ?GetALC@@YAHPAG0_N@Z
+  CorpGroup 内 call MakeALC               rva=0x2e13 -> ?CorpGroup@CFWordLib@@UAEHPAG0_NAAH@Z
+  CorpGroup 内 call MakeALC               rva=0x2ea6 -> ?CorpGroup@CFWordLib@@UAEHPAD0_NAAHH@Z

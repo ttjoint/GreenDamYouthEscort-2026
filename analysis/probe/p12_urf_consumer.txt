@@ -1,0 +1,51 @@
+=== .urf 消费方追踪：阶段性铁证 ===
+
+1. .urf 文件魔数（7 个文件一致）:
+   前 6 字节 = a1a0aeabbca8aaa8a0a8 (a1a0 aeab bca8 aaa8 a0a8)
+   -> 7 个 .urf 全部以此开头，第 7-10 字节各不同
+
+2. 谁引用 urf 路径格式串 '%s\%d.urf':
+   gn.exe / kwdata.exe / looklog.exe / lookpic.exe / XNet2.exe
+   其中 gn.exe 在 0x40b545 处:
+     sprintf(buf, '%s\%d.urf', dir, index)  index 范围 1..8
+     然后 call [esi+0xc8](buf, '1PPRNFQ5YPKZI0UYV4U5GB5RKHDYNEKJ', 1, 0, 0)
+
+3. gn.exe 从 AppFace.dll 只导入 ord3 = SkinWindowSet
+   appface.dll 导出(全部):
+     ord1 SkinStart  ord2 SkinRemove  ord3 SkinWindowSet  ord4 SkinThread
+     ord5 SkinStartW  ord6 BkCreate   ord7 BkDraw  ord8 BkDelete
+     ord9 SkinWindowSetEx  ord10 SkinWindowSetExW
+
+4. appface.dll 是 UPX 加壳（全树唯一）:
+   UPX! @ 0x3e0  版本 0x0c.0x09  格式 PE  段: UPX0(VSize>0,RawSize=0) + UPX1 + .rsrc
+   -> 导出全部指向 UPX0 空区，静态反汇编是 00 00，无法直接分析
+
+5. 结论:
+   .urf 的消费方 = appface.dll (皮肤库)，而非 SurfGd.dll
+   旧文档「Surfgd.dll 解析 .urf」的判断被推翻
+   旧文档「.urf 解析器不在静态文件里」的判断被推翻（在 appface 里，被 UPX 藏住了）
+
+6. 待办: 脱 UPX 壳 → 静态分析 SkinStart/SkinWindowSet 里对 .urf 魔数/格式的处理
+
+================================================================================
+追加：UPX 脱壳阶段性成果（Unicorn 模拟执行）
+================================================================================
+
+7. appface.dll 脱壳成功（UPX0 已解压）:
+   - 用 Unicorn 模拟 UPX stub 执行，UPX0 (0x10001000-0x1006f000, 0x6e000 字节) 已被解压
+   - 解压后末尾 2048 字节 92% 非零，头部是正常 MSVC C++ 代码
+     (0x10001010: push esi / mov esi,ecx / push 0 / call 0x10072e1f / mov [esi],0x90a50700)
+   - 解压完成后的 IAT 修复阶段需调用真实 Windows API (LoadLibrary/GetProcAddress)，
+     Unicorn 无法模拟，故卡在 0xada7c（.rsrc 区域 IAT 重建）
+   - dump: /tmp/appface_upx0.bin (450,560 字节)
+
+8. 解压后的关键观察:
+   - .urf 魔数 a1a0aeabbca8aaa8a0a8 在解压代码里 NOT FOUND
+     => appface 不硬编码这个魔数做匹配，可能是按偏移直接读，或魔数是加密产物
+   - uRFGHt 字符串在 rva 0x530c6（与 gn/Surfgd/XNet2 同一段内联 strnicmp 代码）
+   - 无 "skin" 明文字符串（皮肤功能可能用其他内部名）
+
+9. 待续:
+   - 定位 OEP（stub 通过 IAT 间接跳转，非直接 jmp）
+   - 修复 IAT 后完整静态分析 SkinStart/SkinWindowSet 如何读 .urf
+   - 或直接用 dump 反汇编 SkinWindowSet(ord3) 的调用链

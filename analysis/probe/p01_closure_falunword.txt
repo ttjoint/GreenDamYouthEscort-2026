@@ -1,0 +1,6 @@
+file size                : 5564271
+n1 (chain node count)    : 272920
+HNCIT at EOF             : True
+GDE layout arithmetic    : 5564266
+residual (must be 5)     : 5
+RE layout sentinel hits  : 0   (RE doc claims 171883)

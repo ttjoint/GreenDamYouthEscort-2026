@@ -1,0 +1,33 @@
+path	machine	subsystem	is_dll	entry_rva	image_base	sections	export_count	import_dlls	import_funcs	image_size	company	product	description
+LH-installed-tree/Windows/CImage.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0xa3da	0x10000000	6	107	11	168	135168	金惠科技	CImage Dynamic Link Library	CImage DLL
+LH-installed-tree/Windows/CardLib.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x6c26	0x10000000	6	2	9	356	368640		CardLib Dynamic Link Library	CardLib DLL
+LH-installed-tree/Windows/HASrv.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x2a39	0x37000000	5	4	1	64	69632	hnc	hnc HaSrv	InjLib32
+LH-installed-tree/Windows/Handler.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x94cb	0x31000000	6	9	7	118	692224	hnc	hnc Handler	Handler
+LH-installed-tree/Windows/HncEng.exe	IMAGE_FILE_MACHINE_I386	GUI	no	0x6e1e	0x400000	4	0	6	110	94208	 	HncEngServer	HncEngServer
+LH-installed-tree/Windows/HncEngPS.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x442d	0x10000000	6	4	3	96	73728	 	HncEngPS	HncEngPS
+LH-installed-tree/Windows/InjLib32.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x2487	0x10000000	6	1	2	76	61440	hnc	hnc InjLib32	InjLib32
+LH-installed-tree/Windows/MPSvcC.exe	IMAGE_FILE_MACHINE_I386	GUI	no	0x55d2	0x400000	4	0	6	139	73728	绿坝花季护航	MPSvcC	MPSvcC
+LH-installed-tree/Windows/MPSvcDll.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x18c9	0x10000000	4	19	2	46	32768			
+LH-installed-tree/Windows/MPSvcPS.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x1415	0x10000000	5	4	2	82	49152			
+LH-installed-tree/Windows/SentenceObj.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x37c94	0x10000000	4	72	1	76	962560			
+LH-installed-tree/Windows/Surfgd.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0xb62e	0x10000000	7	9	7	99	2281472	KingWay Corporation	  Surfgd	Surfgd
+LH-installed-tree/Windows/System32/FImage.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x15c9	0x10000000	6	4	4	63	49152	金惠科技	  FImage	FImage
+LH-installed-tree/Windows/System32/IPGate.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x36f6	0x10000000	6	3	5	77	98304			
+LH-installed-tree/Windows/System32/RunAfterSetup.exe	IMAGE_FILE_MACHINE_I386	GUI	no	0x3245	0x400000	4	0	6	230	147456	Microsoft	RunAfterSetup 应用程序	Microsoft 基础类应用程序
+LH-installed-tree/Windows/System32/Update.exe	IMAGE_FILE_MACHINE_I386	GUI	no	0x92d6	0x400000	4	0	11	314	225280		Update.EXE	Update.EXE
+LH-installed-tree/Windows/System32/XDaemon.exe	IMAGE_FILE_MACHINE_I386	GUI	no	0xaa80	0x400000	4	0	12	340	237568	金惠科技--大正科技	\应用程序	绿坝.花季护航应用程序
+LH-installed-tree/Windows/System32/XNet2.exe	IMAGE_FILE_MACHINE_I386	GUI	no	0x2db45	0x400000	4	0	21	439	688128	金惠科技----大正科技	XNet2 应用程序	绿坝.花季护航控制台
+LH-installed-tree/Windows/System32/Xcv.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x7b2e7	0x10000000	5	302	3	164	626688	KingWay Tec.	KingWay Tec.	
+LH-installed-tree/Windows/System32/Xtool.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x4b4e1	0x10000000	5	124	10	171	385024	KingWay Tec.	KingWay Tec.	
+LH-installed-tree/Windows/System32/appface.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0xacdb0	0x10000000	3	10	9	10	712704	Matinsoft Inc.	AppFace UI Development Kits	AppFace User Interface Development Kits
+LH-installed-tree/Windows/System32/gn.exe	IMAGE_FILE_MACHINE_I386	GUI	no	0x19d33	0x400000	4	0	16	415	2138112	金惠科技---大正科技	启动界面	绿坝·花季护航总控界面
+LH-installed-tree/Windows/System32/goldlock.exe	IMAGE_FILE_MACHINE_I386	GUI	no	0x38b2	0x400000	4	0	4	88	196608	APPFACE	Client 应用程序	appface
+LH-installed-tree/Windows/System32/kwdata.exe	IMAGE_FILE_MACHINE_I386	GUI	no	0xa6ff	0x400000	4	0	12	333	225280		greennet	绿坝.花季护航更新程序
+LH-installed-tree/Windows/System32/looklog.exe	IMAGE_FILE_MACHINE_I386	GUI	no	0xb70c	0x400000	4	0	12	341	258048	金惠科技 ---大正科技	日志查看	绿坝·花季护航应用程序
+LH-installed-tree/Windows/System32/lookpic.exe	IMAGE_FILE_MACHINE_I386	GUI	no	0xae72	0x400000	4	0	11	339	249856	金惠科技----大正科技	绿坝·花季护航日志查看器	绿坝·花季护航应用程序
+LH-installed-tree/Windows/System32/poppo.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x22be	0x10000000	6	2	6	221	868352		poppo Dynamic Link Library	poppo DLL
+LH-installed-tree/Windows/System32/xcore.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0xa2c8d	0x10000000	5	377	4	47	913408	KingWay Tec.	KingWay Tec.	
+LH-installed-tree/Windows/cximage.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x86f8f	0x10000000	5	366	4	130	802816	Pizzolato Davide - www.xdp.it	cximage	cximage
+LH-installed-tree/Windows/dbServ.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x2d17	0x10000000	5	92	4	78	61440	金惠科技	微软中国 dbServ	dbServ
+LH-installed-tree/Windows/dbfilter.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x2139	0x10000000	5	4	3	69	65536	金惠科技	微软中国 dbfilter	dbfilter
+LH-installed-tree/Windows/kwimage.dll	IMAGE_FILE_MACHINE_I386	GUI	yes	0x86f8f	0x10000000	5	366	4	130	802816	Pizzolato Davide - www.xdp.it	cximage	cximage

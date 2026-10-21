@@ -1,0 +1,106 @@
+claim_id	source	summary	status	verification	evidence	note
+L-001	RE#12	.urf 是加密规则库，熵 7.96，编码未破解	REFUTED	已推翻 by #26 系列	07 K-05 / 03 F-008	后续 6 次修改
+L-002	RE#26b-31b	.urf 为 AppFace 皮肤包（含 6 次修订）	CLOSED	方向正确，已拆分为 RE#26b-31b 六条独立裁定（见其行）	—	本轮实锤：appface.dll + 明文GIF
+L-005	RE#49	FalunWord.lib = 16B 定长记录 + 哨兵 0xFFFFFFFE ×171883	REFUTED	哨兵实测命中 0 次	C-001	见 C-001
+L-007	GDE-falunword	FalunWord.lib 六段 fread + 16B 链节点 + HNCIT	CLOSED	算术闭合差 5 = len(HNCIT)	C-001	正确布局
+L-009	GDE-control	sys.dat = 67 dword 策略数组	CLOSED	实测相符	03 F-002	
+L-011	RE#58	kwselectinfopp 记录 84 字节 × 8	CLOSED	672/84=8.0	03 F-003	
+L-012	GDE-module-inv	33 个 PE 模块	PARTIAL	安装树内实测 32 PE；全范围 38	C-002	
+L-014	GDE-module-inv	主控端归 kingsoft-hnc（金惠单方）	REFUTED	CompanyName=金惠+大正联合署名	C-004 / 02 A	UTF-8 解码问题
+L-015	GDE-module-inv	dbServ.dll = LSP 安装/配置	PARTIAL	主体 CxImage + 3 DBFilter*；确写 Protocol_Catalog9	K-02	非主链
+L-016	RE#3	Handler.dll 提供 InstallApiHook 等三函数	REFUTED	三者在 HASrv.dll	K-03	
+L-017	本账初稿	dbServ.dll 不写协议目录/不在网络路径	REFUTED	自身实验推翻：含 Protocol_Catalog9 + RegQueryValueExA	K-02	自身幻觉留档
+L-018	RE#54	IPGate 导入 TextOut/ExtTextOut 但零调用	CLOSED	IAT 槽只被 thunk 读取	04 A-B	机制已精确化
+L-019	RE#54	IPGate 钩子过程为空，仅 CallNextHookEx	CLOSED	0x100010c0 纯透传	04 A	
+L-020	RE#32	filtport.dat 明文端口黑名单	CLOSED	33 字节纯 ASCII	03 F-005	
+L-021	RE#33	sys.dat ≡ xconfigs.dat	CLOSED	MD5 相同	03 F-002	
+L-022	RE#10	.dat 词库可逆 2:1 位重排 + 反相，零密钥	CLOSED	往返 5/5 通过	03 F-004	
+L-024	GDE-commit	名为 FilterWords 的导出不做过滤	CLOSED	全树零导入者、零字符串引用	C-007	
+L-025	RE#injlist	InjLib32 硬编码 48 个注入目标	CLOSED	48/48 字节命中	probe/p05_iocs.txt	
+L-026	RE#killlist	Handler 终止 22 个进程	CLOSED	22/22 字节命中（含混合大小写）	probe/p05_iocs.txt	含产品自身进程
+L-027	RE#iocurl	XNet2 10 条硬编码 URL	CLOSED	9/9 命中（清单实为9条）	probe/p05_iocs.txt	
+L-028	RE#iocip	XNet2 硬编码 IP 清单	CLOSED	12/12 命中	probe/p05_iocs.txt	
+L-029	RE#iocreg	硬编码注册表路径（声称属 XNet2）	PARTIAL	10/12 在 XNet2；另 2 条实属 RunAfterSetup.exe	probe/p05_iocs.txt	归属错误
+L-030	RE#6	自启链：MPSvcC -installjh / hnceng -install / regsvr32 / DBFilterInstall / Run键	CLOSED	RunAfterSetup.exe 字符串块 0x1a100-0x1a5c0 全部命中	06b A	含新发现 netsh 放行
+RE#1	REVERSE-ENGINEERING/README.md	**跨进程数据读取**：`InjLib32.dll` 用 `SetWindowsHookExA` 安装 `WH_KEYBOARD(2)` / `WH_GETMESSAGE(3)` / `WH_MOUSE(7)` 三个全局钩子， 把自身映射进 48 个目标进程（浏览器、邮件客户端、IM、Office、	CLAIM	未复验	—	
+RE#10	REVERSE-ENGINEERING/README.md	**词库只做了混淆**：`.dat` 词库是可逆的 2:1 位重排 + 反相，**零密钥**， 解码算法已完全还原（见 `03-词库文件编解码算法.md`）。	CLAIM	未复验	—	
+RE#11	REVERSE-ENGINEERING/README.md	**默认口令 `112233` 已静态证实**：`gn.exe` @ `0x4d288` 硬编码 `D0970714757783E6CF17B26FB8E2298F` = `MD5("112233")`，无盐、可清空注册表回落默认。	CLAIM	未复验	—	
+RE#12	REVERSE-ENGINEERING/README.md	**`.urf` 不是 `.dat` 同族格式**：无明文头、熵 7.96、256 值全出现， 全树 78 文件里找不到解析器（只有 `"%s\\%d.urf"` 路径拼接），编码仍未破解。	CLAIM	未复验	—	
+RE#13	REVERSE-ENGINEERING/README.md	**`goldlock.exe -i` 与 `.urf` 无关**（早期误判已更正）：它装的是内核驱动 `mgtaki.sys`（`CreateServiceA` + `StartServiceA`），由 `RunAfterSetup.exe` 无条件调用。	CLAIM	未复验	—	
+RE#14	REVERSE-ENGINEERING/README.md	**`gn.exe` 只是外壳，不做拦截**：它是 MFC 自绘界面（无对话框资源、无字符串表）， `.rsrc` 占 1.78 MB / 84% 全部是皮肤图片（自定义资源类型 135–170，BGRA 像素）。 职能仅四项：承载界面、口令门禁、用户信息上报、在线更新。	CLAIM	未复验	—	
+RE#15	REVERSE-ENGINEERING/README.md	**`gn.exe` 采集七项个人信息**：姓名 `name` / **身份证号 `num`** / 邮箱 `mail` / 住址 `addr` / 电话 `tel` / QQ `qq` / 生日 `SHENGDAY==`， 以**明文 HTTP** POST 至 `zzjinhui.com/sof	CLAIM	未复验	—	
+RE#16	REVERSE-ENGINEERING/README.md	**`AppFace.dll` 可被劫持**：`gn.exe` 用 `LoadLibraryA("AppFace.dll")` 以**相对路径**从 `%WinDir%` 加载，可被同名 DLL 替换 → 获得代码执行。	CLAIM	未复验	—	
+RE#17	REVERSE-ENGINEERING/README.md	**`.urf` 解析器不在安装包的静态文件里**：`Surfgd.dll` 的 `.uinitda` 节 （2,093,400 字节）`SizeOfRawData=0`，磁盘上不存在；且该 DLL 静态部分只是一个 socket 转发桩（无任何加密/解压 API）。真正的过滤与 `.urf` 解码	CLAIM	未复验	—	
+RE#18	REVERSE-ENGINEERING/README.md	**`gn.exe` 的真实界面文本在 `.rsrc` 的 UTF-16LE 段**（`VA 0x58AEC`–`0x59700`）， 内含完整表单：`免费注册` / `个人信息`（姓名/`身份证号`/地址）/ `联系方式`（邮箱/手机固话）/ `密码清空` / `定时抓屏日志` / `查看文字日志	CLAIM	未复验	—	
+RE#19	REVERSE-ENGINEERING/README.md	**`&num=` 是身份证号，不是学号**：由 `0x053CB2` `身份证号:` 证实。 采集七项：姓名 / **身份证号** / 地址 / 邮箱 / 手机固话 / QQ / 生日。	CLAIM	未复验	—	
+RE#2	REVERSE-ENGINEERING/README.md	**界面文字截取**：在目标进程内 Hook `ExtTextOutA/W` + `GetCaretPos` + `GetFocus`， 直接获取任意窗口将要渲染的文字——即输入框中的明文。	CLAIM	未复验	—	
+RE#20	REVERSE-ENGINEERING/README.md	**`7895123` 是明码后门口令（反汇编控制流已证实）**：`XNet2.exe` `0x421286` 处 `push 0x4690ec` → `call 0x42cff3`（=`CString::Compare`）→ `test eax,eax` → `je 0x4214a2`。 三关：长	CLAIM	未复验	—	
+RE#21	REVERSE-ENGINEERING/README.md	**`PQHKQZ` / `FDSVRV` = 注册项键名，`000000` / `QWERTY` = 占位默认值**， 周围均为 `已经注册 %d 次` / `IP地址` / `首次注册` / `注册时间` / `CRegMonThd`。	CLAIM	未复验	—	
+RE#22	REVERSE-ENGINEERING/README.md	**`rb` / `a+` 是 `fopen` 模式串**：`rb` 用于读取 `%WinDir%\winet.dll` （`0x412663` `GetSystemDirectoryA` + 拼接 + `fread` 10,240 字节）； `a+` 是 `MPSvcDll!WriteFileBi	CLAIM	未复验	—	
+RE#23	REVERSE-ENGINEERING/README.md	**`XNet2.exe` 是真正的口令主控端**：`7895123` 比较路径只在该文件，`gn.exe` 中无。	CLAIM	未复验	—	
+RE#24	REVERSE-ENGINEERING/README.md	**第二个厂商域名 `www.hncit.com`**；客服 `400-811-9930`、监督 `010-88559251` / `lssw@cstc.org.cn`（中国软件评测中心）、论坛 `lssw365.net`。	CLAIM	未复验	—	
+RE#25	REVERSE-ENGINEERING/README.md	**`gn.exe` 自身版本为 `3.0.0.0`、`(C) 2008`、内部名 `启动界面`**， 与安装包标称 `3.17` 不一致（后者为产品/安装包版本）。	CLAIM	未复验	—	
+RE#26	REVERSE-ENGINEERING/README.md	**`dbfilter.dll` 是真正的 LSP（第三轮反证）**：`%WinDir%\dbfilter.dll`（57,344 字节） 导出 `WSPStartup`(0x13b0) / `DBFilterInstall`(0x1bb0) / `DBFilterIsinstalled`(0x1d	CLAIM	未复验	—	
+RE#27	REVERSE-ENGINEERING/README.md	**完整网络拦截链**：应用 `socket()` → Winsock 协议目录（DBFilter 已插入）→ `dbfilter.dll!WSPStartup` → `SurfGd.dll!DBFP_Socket/Connect/Send/Recv` → `Surfgd.dll` 运行时填充的 `	CLAIM	未复验	—	
+RE#28	REVERSE-ENGINEERING/README.md	**`[ebx+0xc8]` 与 `.urf` 无关（第二轮结论被推翻）**：`XNet2.exe` `0x4261de` `mov [esi+0xc8], 0x45a54c` 写入的是 **COM 虚表**，槽位 0 (`0x427e47`) 为 `QueryInterface`，比对 `IUnk	CLAIM	未复验	—	
+RE#29	REVERSE-ENGINEERING/README.md	**`xstring.s2g` 精确差异**：112 条带源路径 + 15 条无源路径（运行时下载）。 带源但未打包 **42 项**（含 `8.urf`/`9.urf`/`systemactivex.exe`/`SoftDogSetup.dll` + 35 个分类词库）；无源 15 项（`kwpw	CLAIM	未复验	—	
+RE#3	REVERSE-ENGINEERING/README.md	**API 内联 Hook 引擎**：`Handler.dll` 提供 `InstallApiHook` / `SetApiHookList` / `UninstallApiHook`，并导入 `GetFileVersionInfo` 校验目标模块身份。	CLAIM	未复验	—	
+RE#30	REVERSE-ENGINEERING/README.md	**`xnet2_lang.ini` 是 `XNet2.exe` 的完整 UI 表**（外部参照，7,748 字节 GBK）： 给出 16 项策略面板中英对照（`Control Panel`=系统设置 … `Custom Blocked KeyWords`=自定义关键字）， 以及 **`Engine	CLAIM	未复验	—	
+RE#31	REVERSE-ENGINEERING/README.md	**`sys.dat` 是策略状态数组**：268 字节 = 50 个 LE dword，值域仅 `{0,1,2,3,5,14}`， 与 `xnet2_lang.ini` 的选项（启用/禁用、低/中/高、天数、分钟）完全吻合。 --- ## 关键地址速查 | 模块 | RVA | 内容 | |---	CLAIM	实测 268/4=67 dword（RE 自己在 #33 已更正为 67）	—	
+RE#32	REVERSE-ENGINEERING/README.md	**`filtport.dat` 是明文端口黑名单，唯一内容是封锁两个境外翻墙工具**：`FreeGate/8567/tcp`（自由门）、`Urf/9666/tcp`（无界浏览 UltraSurf）。这使 25 条策略中的「禁止程序上网（端口过滤）」定性为**反翻墙功能**，而非通用端口管理。	CLAIM	未复验	—	
+RE#33	REVERSE-ENGINEERING/README.md	**`sys.dat` ≡ `xconfigs.dat`（MD5 `b935aad6e250fd44fed3c76e965793ea`，逐字节相同）**，结构为 **67 个 dword**（修正此前"50 dword"），索引 3–22 有值、23–66 全零，与 1–25 号策略项按序对齐（索引	CLAIM	MD5 相同、67 dword 均符；但「3-22 有值」边界略偏：实测下标 24 亦非零	—	K-08
+RE#34	REVERSE-ENGINEERING/README.md	**`image.dat` / `image1.dat` 是伪装成 `.dat` 的完整 HTTP 响应**：`HTTP/1.1 200 OK` + IIS 头 + 完整 GIF89a/GIF87a（54×100 / 58×98）。用途是图像过滤命中时**静默替换图片而不破坏页面布局**，解释了 `	CLAIM	未复验	—	
+RE#35	REVERSE-ENGINEERING/README.md	**`x100.dat`–`x400.dat` / `xabout.dat` 是「关于/资质」页的 GBK 纯文本**（`|` 分隔字段、` ` 换行），内容为公安部/发改委/科技部/信产部资质编号、获奖记录、公司联系方式与项目人员名单。	CLAIM	未复验	—	
+RE#36	REVERSE-ENGINEERING/README.md	**原产品名与版本由 `xabout.dat` 自证：「金惠堵截黄色图像和不良信息专家系统 V2.51」，版权 (c) 2005**。绿坝 3.17（2008/2009 贴牌）是在此产品上二次包装。	CLAIM	未复验	—	
+RE#37	REVERSE-ENGINEERING/README.md	**`xFimage.xml` 是标准 OpenCV `haarcascade_frontalface_alt2` 模型**（20×20 窗口，20 stage，7,696 节点），`FImage.dll` 的 `FaceDectect`×4 为薄封装。	CLAIM	未复验	—	
+RE#38	REVERSE-ENGINEERING/README.md	**`xcore.dll` / `Xcv.dll` / `Xtool.dll` 是未经修改的 OpenCV 1.x**（导出为原版 C++ mangled name，377/302/124 个），图像处理层可直接替换为现代 OpenCV。	CLAIM	未复验	—	
+RE#39	REVERSE-ENGINEERING/README.md	**`poppo.dll` 是纯弹窗 UI 库**（856KB 中 87% 为 `.rsrc`，仅 `SHOW`/`SHOW2` 两个导出，无中文串），与过滤逻辑无关。	CLAIM	未复验	—	
+RE#4	REVERSE-ENGINEERING/README.md	**网络层（第三轮已修正）**：`win*xSpi.reg` 确实只是把 Winsock 目录 **还原为微软原厂值**（"网络修复"，其 `LibraryPath` 全为微软 DLL）； 但安装包**另有 `Windows/dbfilter.dll` 是真正的 Winsock 2 LSP**（导出	CLAIM	未复验	—	
+RE#40	REVERSE-ENGINEERING/README.md	**`FalunWord.lib`（5.5MB）不是 COFF 静态库**：magic `18 2a 04 00`，熵 3.077、55.1% 零字节，为 16 字节/条稀疏索引表（`索引|偏移|0xFFFFFFFE|长度`）+ 23,596 个 GBK 双字节词条 ID；文件名直指法轮功相关词库。	CLAIM	未复验	—	
+RE#41	REVERSE-ENGINEERING/README.md	**复刻可行性定论**：安装链路 / 数据格式 / 自启链 / LSP 接口契约 **100% 可 1:1 复刻**；过滤判定逻辑（`SurfGd.dll .uinitda` 2MB BSS 为空）、中文分词算法、图像「不良」判据**静态不可得，必须自研**。定位应为「复刻架构 + 自研判定」。详见	CLAIM	未复验	—	
+RE#42	REVERSE-ENGINEERING/README.md	**⚠️ 更正结论 41**：第六轮判定「过滤算法不存在」**是错的**。算法完整存在于 `SentenceObj.dll`（544,768 B，`.text` 实占 275,398 B）与独立服务进程 `HncEng.exe`（86,016 B）中。	PARTIAL	代码确在 SentenceObj.dll，且 CSentenceObj 对象每随 CFWordLib 构造被实例化（+0x10013c）；但其句法方法零调用，产品只走 CorpGroup→MakeALC 词条级	probe/p09 + 00c	K-07 修正：RE 把「代码存在」当「被使用」
+RE#43	REVERSE-ENGINEERING/README.md	**`.uinitda` 的 `RawSize=0` 是正常 PE 设计**：`SizeOfUninitializedData=0x20B000`，即 2MB **BSS 工作缓冲**（缓存语义分析中间结果），不是"被抹掉的算法"。	CLAIM	未复验	—	
+RE#44	REVERSE-ENGINEERING/README.md	**HNC 组件完整存在于安装树**：`Windows/HNCLIB/FalunWord.lib`（5,564,271 B 词库）、`Windows/SentenceObj.dll`（语义引擎）、`Windows/HncEng.exe`（分析服务）、`Windows/HncEngPS.dll`（CO	CLAIM	未复验	—	
+RE#45	REVERSE-ENGINEERING/README.md	**`Handler.dll` 直接 import `SentenceObj.dll` 的 2 个函数**：`CreateHncTextGroup(char*)` / `ReleaseHncTextGroup(IHncTextGroup*)`，`.data` 含 `"\hnclib\FalunWor	CLAIM	未复验	—	
+RE#46	REVERSE-ENGINEERING/README.md	**`XBnet2.exe .data` 含 `"\HNCLIB\"` / `"\hnclib\"`**；`HncEng.exe` 含 `"hnclib\"` + `"SentenceObj.dll"` + 日志串「HncEngNet2 开始/结束调试日志」。	CLAIM	未复验	—	
+RE#47	REVERSE-ENGINEERING/README.md	**`SentenceObj.dll` 72 个导出确认这是「HNC（概念层次网络）理论」的 C++ 实现**：`MakeALC`（抽象逻辑链）/ `CutWordMax`（分词）/ `CheckVV`（动宾搭配）/ `MakeObjFromJK`（句类）/ `MakeObjFromSri`（语义角	CLOSED	72 导出实测确认；vtable@0x45180 的 23-45 槽全为 CFWordLib 成员，句法函数不在任何 vtable	p09_hnc_syntax_dead.txt	
+RE#48	REVERSE-ENGINEERING/README.md	**`HncEng.exe` 初始化流程完整还原（`0x4046F0`）**：`GetModuleFileNameA` → `strrchr('')` → 拼接 `"…\hnclib\"` → `CreateHncTextGroup` → `vtable[+0x10](1000, 1, 3)`。vt	CLAIM	未复验	—	
+RE#49	REVERSE-ENGINEERING/README.md	**`FalunWord.lib` 格式完全破解**：非 COFF 库！`16 字节定长记录 = [id][sense_count][0xFFFFFFFE][UCS-2 字符]`，头部 `[0]=272920`（总条数）`[1]=54`（分表数）。哨兵 `0xFFFFFFFE` 出现 171,883	CLAIM	未复验	—	
+RE#5	REVERSE-ENGINEERING/README.md	**明文封锁目标**：`filtport.dat` 直接写明 `FreeGate/8567/tcp`、`Urf/9666/tcp`； 随包 5.5 MB 的 `FalunWord.lib` 关键词库。	CLAIM	未复验	—	
+RE#50	REVERSE-ENGINEERING/README.md	**`FalunWord.lib` 解码出 112,378 个有效词条**（另有 59,505 空槽供运行期 `NewWord()` 扩容），86.6% 为 CJK 汉字。产物 `_decoded/FalunWord.txt` + `_decoded/FalunWord_continuous.txt	CLAIM	未复验	—	
+RE#51	REVERSE-ENGINEERING/README.md	**词库内容定性**：通用中文词典 + 法轮功领域增强（法轮功/法輪功/李洪志/九评/九評/大纪元/大紀元/三退/退党/迫害/上访/洗脑班/帮教人员/周恩來）+ **简繁港三套写法**（腐败/腐敗、网站/網站、不要奥会/不要奧會、輪/U+F9D7 兼容区）+ 体育（自由泳/蛙泳/蝶泳/乔丹/米兰）+	CLAIM	未复验	—	
+RE#52	REVERSE-ENGINEERING/README.md	**复刻可行性更正**：语义层**可完整复刻或等价替代**——接口契约（72 导出 + 2 导入点 + vtable）与数据格式（16 字节记录）全部掌握，术语体系明确（HNC）。可用 jieba/HanLP 分词 + 依存句法 + 自定义权重实现等价功能。详见 `08-HNC语义引擎剖析.md`、	CLAIM	未复验	—	
+RE#53	REVERSE-ENGINEERING/README.md	**覆盖度审计发现重大遗漏**：76 文件中 `IPGate.dll` 此前从未分析，而它是**屏幕文字截获器**。已补查 6 个模块，覆盖度由约 60% 升至约 92%。详见 `10-覆盖度审计与遗漏补查.md`。	CLAIM	未复验	—	
+RE#54	REVERSE-ENGINEERING/README.md	**`IPGate.dll` = GDI 文本输出 inline hook**（65,536 B，导出 `Start`/`SetParam`/`GetLogBuf`）。手段：`VirtualProtect`+`FlushInstructionCache` patch `GDI32!TextOutA/	CLAIM	未复验	—	
+RE#55	REVERSE-ENGINEERING/README.md	**`IPGate.dll` 目标窗口类白名单（`.data` 原文）**：`Edit` `ComboBox` `ComboBoxEx32` `ReBarWindow32` `WorkerW` `IEFrame` `Internet Explorer_Hidden` `WordPadClass` `	CLAIM	未复验	—	
+RE#56	REVERSE-ENGINEERING/README.md	**三条独立文本截获路径已完整**：A 键盘/输入（`Handler.dll`+`InjLib32` 注入 48 进程 + HNC 语义分析）；B 网络（`dbfilter.dll` LSP → `Surfgd.dll`）；C **屏幕（`IPGate.dll` GDI hook）**。C 不需要读	CLAIM	未复验	—	
+RE#57	REVERSE-ENGINEERING/README.md	**`CardLib.dll` 不是读卡器**（352,313 B，导出 `ReadCard`/`ReadCardEx` 属伪装）。`.rdata` 实证为 Jungo **WinDriver** PCI 枚举：`\\.\WINDRVR6`、`WD_PciScanCards`、`WD_CardReg	CLAIM	未复验	—	
+RE#58	REVERSE-ENGINEERING/README.md	**`kwselectinfopp.dll` 完全破解（推翻先前的 32 字节假设）**：记录为 **84 (0x54) 字节**，依据 `XNet2.exe` `0x4179BB` 的 `mov ecx,0x54 / div ecx` 与 `0x417BBE push 0x54` 逐条读取。字段：	CLAIM	未复验	—	
+RE#59	REVERSE-ENGINEERING/README.md	**`kwselectinfopp.dll` 是「监控目标名单」不是「拦截白名单」**：反汇编证明它只被读一次、数据经 `LVM_INSERTITEM(0x1007)`+`LVM_SETITEMTEXTW(0x102E)` 写入 `SysListView32`，文件缺失/长度非 84 倍数时回落到 	CLAIM	未复验	—	
+RE#6	REVERSE-ENGINEERING/README.md	**服务/驱动常驻**：`MPSvcC.exe -installjh`、`hnceng.exe -install`、 `regsvr32 /s` 注册 COM、`DBFilterInstall` 装驱动、写 `CurrentVersion\Run`。	CLAIM	未复验	—	
+RE#60	REVERSE-ENGINEERING/README.md	**其余补查**：`dbServ.dll`(53,248 B, 92 导出)**全为 CxImage 类成员**，是 `kwimage.dll`(774,144 B, 366 导出) 的极简裁剪版，名实不符；`vnew.bmp` 仅 4 字节 = `"3.17"` 纯版本标记；图像链路 `CImag	CLAIM	未复验	—	
+RE#61	REVERSE-ENGINEERING/README.md	**官方手册 + 郑州金惠谈判响应书（投标文件）与本案十轮静态逆向逐项核对，模块/功能/界面全部闭环**。详见 `11-官方手册与投标文件对照.md`。76 文件中 72 个已彻底分析，其余 4 个为运行期下载项（`XWORDH/M/L.DAT`）与构建期缺失文件，静态不可达。	CLAIM	未复验	—	
+RE#62	REVERSE-ENGINEERING/README.md	**双公司分工官宣**：手册安装页原文「向**郑州金惠计算机系统工程有限公司**、**北京大正语言知识处理科技有限公司**两家公司采购…」。代码归属——金惠=图像链（`kwimage/cximage/CImage/FImage.dll`+OpenCV+`XFimage.xml`），大正=HNC 语义	CLAIM	未复验	—	
+RE#63	REVERSE-ENGINEERING/README.md	**HNC 语义分析是官方公开卖点**：手册原文「通过 **HNC 语义分析技术**，软件会自动对打开的网页或文档实时检查」。UI 仅为单复选「开启语义分析」，语义页措辞「对**网页及本地文字**实时检查」——「本地文字」正是 `IPGate.dll` GDI hook（屏幕截获）与 `Handle	CLAIM	未复验	—	
+RE#64	REVERSE-ENGINEERING/README.md	**图像判决算法官方完整披露**（投标书）：图像规一化→区域肤色分割→干扰区域去除→区域特征提取→特征分类判决→人脸检测；细分含 Canny→开运算/腐蚀→R-G 平面投影→Hough 变换→二次肤色分割→区域合成。量化模型为 **HSV-256 肤色/非肤色直方图 + 归一化熵 `ep=-ΣP·l	CLAIM	未复验	—	
+RE#65	REVERSE-ENGINEERING/README.md	**「HTTP 数据重组→图像检测」流程图证实 `image.dat`/`image1.dat` 预置替换响应是标书设计**，非逆向推测。系统流程：分析网络数据→HTTP 解析→（HTTP 头→可靠/不良 URL 检测）+（HTTP 体→关键字检测）→数据重组→图像检测→判决输出。	CLAIM	未复验	—	
+RE#66	REVERSE-ENGINEERING/README.md	**日志自动上传是标书设计功能，官方架构图原文**：「绿坝终端软件会按照定义的配置自动上传日志」「二级管理服务器可以查看任意一级管理终端上的日志」。网吧/校园网均为三级管理架构（终端→管理终端→二级管理服务器→更高级，后两级选配）。`XNet2.exe` 明文 HTTP 上报即此设计的实现。	CLAIM	未复验	—	
+RE#67	REVERSE-ENGINEERING/README.md	**界面截图补齐了多个 UI 语义**：`sys.dat` 策略数组 GUI 落点=总控开关页（白名单三模式复选框）；日志实证 `[1. 配置信息原文] 17.允许自动关机. 0` 把策略下标 17 语义钉死为「允许自动关机」；**`.urf` 主题下拉框显示「秋之恋曲」**（7 套皮肤之一的 UI	REFUTED	'17.允许自动关机' 在 XNet2.exe 中不存在；实测第17项 = '17.允许自动抓屏'	probe/p10_policy_table.txt	K-08：三套编号体系混用导致误判
+RE#68	REVERSE-ENGINEERING/README.md	**`kwselectinfopp.dll` 的编辑界面=「个人定制→禁止上网的程序」页**（手册示例 `qq.exe`/`wow.exe`，文件内存进程名不带 `.exe`，完全一致）；「内容选择」页 5 类过滤库（成人/色情(严格)/暴力游戏/同性恋/非法活动毒品）与 `wfile.dat` 分	CLAIM	未复验	—	
+RE#69	REVERSE-ENGINEERING/README.md	**原二进制在 Win11 上零可用**：76 个 PE 全为 PE32/i386/子系统 4.0/`DllCharacteristics=0x0000`（无 ASLR/DEP/CFG）。六项致命不兼容：①LSP 自 Server 2012 起被弃用，`WSCInstallProvider` 注册第	CLAIM	未复验	—	
+RE#7	REVERSE-ENGINEERING/README.md	**进程终止 / 反分析**：`Handler.dll` 会终止 `dbgview` / `filemon` / `regmon` / `tcpview` / `procexp` 等监控与逆向工具。	CLAIM	未复验	—	
+RE#70	REVERSE-ENGINEERING/README.md	**实际状态判定**：能装、能开界面，但**网络/语义/屏幕三大过滤全部失效**。强行移植等于逐条关闭 Win11 安全机制换一个 2008 年残废产品——技术上不成立、安全上不可接受。	CLAIM	未复验	—	
+RE#71	REVERSE-ENGINEERING/README.md	**网络层必须换 LSP**（唯一无兼容方案的项）。推荐三路组合：**WFP + `WinDivert`（正规签名驱动）做域名/端口拦截与 SNI 提取** → **本地 MITM 代理做正文深检** → **`New-NetFirewallRule` 做进程级硬断网**。附带收益：原包 2008 	CLAIM	未复验	—	
+RE#72	REVERSE-ENGINEERING/README.md	**语义层是唯一「真迁移」而非重写**：`SentenceObj.dll` 32 位 + 72 个 name-mangled C++ 导出 + 私有 `CFWordPosRec` 结构 + HNC（黄曾阳）私有理论体系，无开源对应实现。首选 **H1 方案**：64 位主程序经 Named Pipe	CLAIM	未复验	—	
+RE#73	REVERSE-ENGINEERING/README.md	**屏幕截获从 hook 换 UIA + OCR，覆盖率反而提升**：①`IUIAutomation` 的 `TextPattern`/`ValuePattern` 取结构化真文本（覆盖 Win32/WPF/UWP/WinUI3，Chromium 需 `--force-renderer-access	CLAIM	未复验	—	
+RE#74	REVERSE-ENGINEERING/README.md	**图像层可用现代模型大幅升级**：原算法（Canny→区域肤色分割→R-G 投影→Hough→HSV-256 熵+人脸比率）可保留兜底，但准确率已被现代模型碾压（加菲猫/泳装误判是当年最大公众批评）。目标栈：解码换 `stb_image`/WIC，人脸换 **YuNet(ONNX<100KB)**	CLAIM	未复验	—	
+RE#75	REVERSE-ENGINEERING/README.md	**必须删除的安全债**（否则重蹈覆辙）：明文 HTTP 下载并执行 exe（`Update.exe` 无签名校验=远程代码执行后门）；硬编码口令 `112233`(MD5 `D097...98F`)/`7895123`/`jinhui521`；`handler-kill-list.txt` 中终止	CLAIM	未复验	—	
+RE#76	REVERSE-ENGINEERING/README.md	**可直接复用的资产**：`FalunWord.lib` 112,378 词条（解码器就绪）、`wfile.dat`+4 个 `*fil.dat` 分类词库、`sys.dat` 67 dword 策略语义（下标已钉死，如 17=允许自动关机）、`kwselectinfopp.dll` 8 条 IM 	CLAIM	未复验	—	
+RE#8	REVERSE-ENGINEERING/README.md	**明文外传**：所有上报与更新走 HTTP，URL 中硬编码口令 `caray12` / `jinhui521`， 并通过 `softpatch/datapth08.exe` 下发可执行文件，无签名校验。	CLAIM	未复验	—	
+RE#9	REVERSE-ENGINEERING/README.md	**构建清单泄漏**：`xstring.s2g` 泄露开发机路径（`F:\北京\金惠集成\`、 `E:\xxxnet2\`、`G:\vista_svc集成\`），并显示 47 个文件未随包发布。	CLAIM	未复验	—	
+RE#26b	RE/README#26b	.urf = Matinsoft AppFace 2.9.2.3 皮肤资源包（非规则库/非加密）	CLOSED	本轮独立证实：consum方=appface.dll，gn.exe导入SkinWindowSet(ord3)，含明文GIF	p12+p13	与 C-012 一致
+RE#27b	RE/README#27b	[this+0xc8] = AppFace.dll!SkinStart（构造函数 LoadLibraryA+GetProcAddress）	CLOSED	本轮独立证实：gn.exe 0x40b56e call [esi+0xc8] 传 urf路径+口令串1PPRNFQ5...	p12	调用链吻合
+RE#28b	RE/README#28b	从 7 个 .urf 提取 12 张有效 GIF（_urf_images/），a8 为容器分隔符，高熵=加密是误判	CLOSED	本轮独立验证：6 个偏移全部真实GIF头；a8 在元数据区279个；熵7.962=GIF LZW	p13	有实物证据，可复现
+RE#29b	RE/README#29b	appface.dll = UPX 3.x 加壳的 Matinsoft AppFace SDK 2.9.2.3（10导出）	CLOSED	本轮独立证实：UPX!@0x3e0，UPX0+UPX1+.rsrc，10个Skin*导出，Unicorn脱壳成功	p12	全树唯一加壳
+RE#30b	RE/README#30b	MgTaki 驱动=注册表防护驱动，与.urf无关；goldlock.exe -i 在皮肤失败分支启动	CLOSED	本轮独立证实：IDR_DRIVER_SYS/NT4 导入完整 Zw* 注册表系列(OpenKey/CreateKey/Query/Enumerate/Set/DeleteValue/DeleteKey) + IoCreateDevice + IoRegisterShutdownNotification；驱动名=mgtaki(PDB: emp\Taki\Free\mgtaki.pdb)，无 urf/skin 字符串	_drivers/ 导入表 + 字符串	驱动与 .urf 无关，证实
+RE#31b	RE/README#31b	.urf 伪加密成因=GIF LZW高熵+a8分隔符+容器元数据固定块；kwdata.exe硬编码只载5.urf	PARTIAL	伪加密成因已独立证实(熵7.962=GIF)；kwdata只载5.urf待验	p13	成因正确

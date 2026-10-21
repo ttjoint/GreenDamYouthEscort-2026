@@ -1,0 +1,15 @@
+=== SentenceObj.dll 数据文件名 → 引用它们的函数 ===
+  FalunWord.lib(裸)     rva=0x45248  引用函数: ['?LoadLib@CFWordLib@@QAEHPAD@Z']
+  %s\FalunWord.lib     rva=0x452b8  引用函数: ['?BuildWordIndexFromFile@CFWordLib@@QAEHPAD@Z']
+  %s\FMean.tmp         rva=0x452cc  引用函数: ['?BuildWordIndexFromFile@CFWordLib@@QAEHPAD@Z']
+  %s\FMean.lib         rva=0x452dc  引用函数: ['?BuildWordIndexFromFile@CFWordLib@@QAEHPAD@Z']
+  %s\FWL.tmp           rva=0x452ec  引用函数: ['?BuildWordIndexFromFile@CFWordLib@@QAEHPAD@Z']
+  %s\FWL.txt           rva=0x452f8  引用函数: ['?BuildWordIndexFromFile@CFWordLib@@QAEHPAD@Z']
+  Word.lib             rva=0x45778  引用函数: ['?SetSentBreak@CFWordLib@@UAAXHPAGZZ']
+  rule.lib             rva=0x45d00  引用函数: ['?SetSentBreak@CFWordLib@@UAAXHPAGZZ']
+  UserWord.lib         rva=0x4528c  引用函数: ['?BuildWordMeanFromFile@CFWordLib@@QAEHPAD@Z']
+
+结论:
+  词条级: LoadLib(0x22d0) 硬编码 FalunWord.lib（裸名，靠目录前缀拼接）
+  文本索引: BuildWordIndexFromFile(0x49c0) 用 %s\FalunWord.lib/FMean.lib/FMean.tmp/FWL.tmp/FWL.txt
+  句法级: SetSentBreak(0x78e0) 用 Word.lib + rule.lib  ← 这两个文件缺失
