@@ -13,7 +13,7 @@
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：M1 规则引擎完成时（445 passed）。
+> 最后核对：M1 名单容器完成时（469 passed）。
 
 ---
 
@@ -21,7 +21,7 @@
 
 | 模块 | 职责 | 状态 | src 文件 | SRC 测试 |
 |---|---|---|---|---|
-| M1 数据 | 载入 JSON、建索引、类别模型 | **PARTIAL** | `wordlists.py` `namelist.py` | `test_wordlists` `test_namelist` |
+| M1 数据 | 载入 JSON、建索引、类别模型 | **PARTIAL** | `wordlists.py` `namelist.py` `namelists.py` | `test_wordlists` `test_namelist` `test_namelists` |
 | M2 网络 | 四段拦截 | **TODO** | — | — |
 | M3 文本 | 分词、语境判定、双后端 | **PARTIAL** | `chunker.py` `hnc.py` `semantic.py` `l_concepts.py` `chunk_tags.py` `similarity.py` | `test_chunker` 等 7 个 |
 | M4 图像 | 不良/人脸分类 | **TODO** | — | — |
@@ -44,6 +44,7 @@
 | 统一词表查询（legacy trie + 外部词库） | `src/green_dam/wordlists.py` | DONE |
 | 144B 记录编解码（text@0, flag@0x84, 其余 opaque） | `src/green_dam/namelist.py` | DONE |
 | 规则语法 `{a,b}[c,d]`（组=AND、类=OR、5 组上限） | `src/green_dam/namelist.py` | DONE |
+| 四名单容器（容量/匹配/增删/序列化） | `src/green_dam/namelists.py` | DONE |
 | 命中保留来源链（`WordHit.sources`） | 同上 | DONE |
 | 词库 JSON 导入（`.dat` 可逆混淆解码） | `tools/legacy_wordlist_codec.py` | DONE |
 | 语料库导入与回归 | `tests/test_corpus_regression.py` | DONE |
@@ -63,6 +64,7 @@
 |---|---|
 | ~~144B 记录往返~~ | **DONE**：`test_namelist.py` 29 项，含 opaque 字节往返 |
 | ~~规则语法匹配正确性~~ | **DONE**：全部样本为虚构单字（甲乙丙丁），未使用任何原厂词条 |
+| ~~名单容器增删/容量~~ | **DONE**：`test_namelists.py` 24 项 |
 
 ---
 
@@ -216,9 +218,9 @@
 
 ## 11. 下一步（按依赖排序）
 
-1. **M1 规则语法引擎 + 144B 记录** —— M2/M4/M6 都依赖它，且逆向最完整
-2. **M1 四名单模型** —— 与 1 同批
-3. **M2 出站/入站判定链** —— 契约最完整，可用假数据先跑通
+1. ~~M1 规则语法引擎 + 144B 记录~~ —— **DONE**（提交 `f4b780a`）
+2. ~~M1 四名单模型~~ —— **DONE**
+3. **M2 出站/入站判定链** —— 契约最完整，可用假数据先跑通 ← **下一步**
 4. **M8 与 M3/M4 汇总接线** —— 把已有检测结果变成 `Finding`
 5. **M4 图像检测** —— 依赖 M1 名单 D（自动加黑名单）
 6. **M7 配置持久化** —— `sysdat.encode()` 已就绪，成本低
