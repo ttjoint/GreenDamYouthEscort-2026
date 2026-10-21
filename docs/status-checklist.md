@@ -13,7 +13,7 @@
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：M2 判定链 + 汇总完成时（505 passed）。
+> 最后核对：事件日志完成时（527 passed）。
 
 ---
 
@@ -27,7 +27,7 @@
 | M4 图像 | 不良/人脸分类 | **TODO** | — | — |
 | M5 屏幕 | 屏幕文字提取 | **TODO** | — | — |
 | M6 应用控制 | 禁止指定程序联网 | **TODO** | — | — |
-| M7 基础设施 | 服务、配置、日志、IPC | **TODO** | — | — |
+| M7 基础设施 | 服务、配置、日志、IPC | **PARTIAL** | `eventlog.py`（日志） | `test_eventlog` |
 | M8 策略 | 汇总成 放行/阻断/告警 | **DONE** | `policy.py` `sysdat.py` | `test_policy` `test_sysdat` |
 | — 跨层汇总 | 网络 + 文本证据合成 | **DONE** | `policy.py` (`assess`) | `test_policy::AssessTest` |
 | M9 控制台 | 父界面、日志、调度 | **TODO** | — | — |
