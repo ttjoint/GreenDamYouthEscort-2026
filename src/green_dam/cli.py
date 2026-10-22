@@ -150,6 +150,41 @@ def _cmd_screen(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_replay(args: argparse.Namespace) -> int:
+    """Replay a flow file through the planner and the filter."""
+    from .replay import FlowFileError, replay_file
+    from .transport import describe
+
+    log = EventLog()
+    f = Filter.from_config_dir(Path(args.config), log=log)
+    try:
+        results = replay_file(Path(args.path), filter_obj=f,
+                              ca_installed=args.ca_installed,
+                              image_supported=not args.no_images)
+    except FlowFileError as exc:
+        print(f"invalid flow file: {exc}", file=sys.stderr)
+        return 2
+
+    rows = [{
+        "stage": int(r.plan.stage),
+        "limits": list(r.plan.limits),
+        "action": r.assessment.action if r.assessment else None,
+        "source": r.assessment.source if r.assessment else None,
+        "reason": r.assessment.reason if r.assessment else None,
+    } for r in results]
+
+    if args.json:
+        print(json.dumps(rows, ensure_ascii=False, indent=2, sort_keys=True))
+    else:
+        print(f"{'stage':>5}  {'action':<8}  {'source':<8}  limits")
+        for row in rows:
+            print(f"{row['stage']:>5}  {str(row['action']):<8}  "
+                  f"{str(row['source']):<8}  {','.join(row['limits']) or '-'}")
+        gated = sum(1 for rec in log.records if rec.event.value == "gated")
+        print(f"\n{len(rows)} flows, {gated} gated")
+    return 0
+
+
 def _cmd_validate(args: argparse.Namespace) -> int:
     path = Path(args.path)
     try:
@@ -229,6 +264,17 @@ def build_parser() -> argparse.ArgumentParser:
                         "skip the high-tone check")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=_cmd_screen)
+
+    p = sub.add_parser("replay", help="replay a JSON flow file through the "
+                                      "four-stage planner (no network)")
+    p.add_argument("path", help="JSON array of flow objects")
+    p.add_argument("--config", default=".", help="config directory")
+    p.add_argument("--ca-installed", action="store_true",
+                   help="assume the local CA is trusted, enabling stage 3")
+    p.add_argument("--no-images", action="store_true",
+                   help="treat image judging as unsupported")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=_cmd_replay)
 
     p = sub.add_parser("validate", help="validate a policy blob")
     p.add_argument("path")

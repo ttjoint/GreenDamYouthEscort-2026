@@ -308,12 +308,18 @@ class Filter:
         network: Decision | None = None
         verdict: Verdict | None = None
         screen_result: ScreenResult | None = image
+        #: Gates encountered on any path. Recorded once, at the end, so a call
+        #: that trips several gates still produces exactly one log record.
+        gated: list[str] = []
 
         # -- network and process both come from the same chain, so run the
         #    interceptor once with whatever the caller supplied.
         if request is not None or process is not None:
             reason = self._gate()
             if reason is not None:
+                gated.append(reason)
+                # Nothing else on this call can produce evidence either: slot 2
+                # gates every path, so stop here.
                 self._record_gate(reason)
                 return Assessment(action=None, source="policy", reason=reason)
 
@@ -332,7 +338,7 @@ class Filter:
         if text is not None:
             reason = self._gate(keyword=True)
             if reason is not None:
-                self._record_gate(reason)
+                gated.append(reason)
                 verdict = Verdict(findings=(), action=None, reason=reason)
             else:
                 verdict = self._text_verdict(text)
@@ -342,8 +348,20 @@ class Filter:
         if screen_result is not None and image_action is not None:
             reason = self._gate(image=True)
             if reason is not None:
-                self._record_gate(reason)
+                gated.append(reason)
                 image_action = None
+
+        # A gate on every supplied path means nothing was actually judged. Say
+        # so in the reason rather than reporting a clean run. Only short-circuit
+        # when *every* supplied path was gated; if any path ran and found
+        # evidence, that evidence must survive.
+        supplied = sum(x is not None for x in (request, process, text, image))
+        all_gated = (gated and len(gated) >= supplied
+                     and not network and image_action is None
+                     and (verdict is None or verdict.action is None))
+        if all_gated:
+            self._record_gate(gated[0])
+            return Assessment(action=None, source="policy", reason=gated[0])
 
         result = assess(network=network, text=verdict, image=screen_result,
                         image_action=image_action)

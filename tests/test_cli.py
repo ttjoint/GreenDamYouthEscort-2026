@@ -257,3 +257,58 @@ class ProcessPathTest(unittest.TestCase):
             payload = json.loads(out)
             self.assertIn("events", payload)
             self.assertEqual(len(payload["events"]), 1)
+
+
+class ReplayTest(unittest.TestCase):
+    def _write(self, td, payload):
+        path = Path(td) / "flows.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        return path
+
+    def test_replays_and_reports_stage(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = self._write(td, [
+                {"host": "example.com", "port": 80, "protocol": "http"},
+            ])
+            code, out, _ = run(["replay", str(path), "--config", td])
+            self.assertEqual(code, 0)
+            self.assertIn("stage", out)
+
+    def test_pinned_certificate_shows_limit(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = self._write(td, [
+                {"host": "a.example", "port": 443, "protocol": "https",
+                 "pinned": True},
+            ])
+            code, out, _ = run(["replay", str(path), "--config", td,
+                                "--ca-installed"])
+            self.assertEqual(code, 0)
+            self.assertIn("certificate_pinned", out)
+
+    def test_json_output(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = self._write(td, [
+                {"host": "a.example", "port": 80},
+                {"host": "b.example", "port": 443, "protocol": "quic"},
+            ])
+            code, out, _ = run(["replay", str(path), "--config", td, "--json"])
+            rows = json.loads(out)
+            self.assertEqual(len(rows), 2)
+            self.assertIn("quic_not_proxied", rows[1]["limits"])
+
+    def test_invalid_flow_file_errors(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "bad.json"
+            path.write_text('[{"host": "a"}]', encoding="utf-8")
+            code, _, err = run(["replay", str(path), "--config", td])
+            self.assertEqual(code, 2)
+            self.assertIn("invalid flow file", err)
+
+    def test_hosts_not_echoed(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = self._write(td, [
+                {"host": "secret.example", "port": 80},
+            ])
+            code, out, _ = run(["replay", str(path), "--config", td, "--json"])
+            self.assertEqual(code, 0)
+            self.assertNotIn("secret.example", out)
