@@ -126,9 +126,10 @@
 | I6 | 密码 PBKDF2-HMAC-SHA256 + 随机盐，绝不存明文 | architecture §M7 | `test_secret.py` 33 项 | COVERED |
 | I7 | 服务以 LocalSystem 运行，ACL 拒绝非管理员停止 | architecture §M7 | — | **MISSING**（需真机） |
 | I8 | 崩溃后恢复动作重启服务 | architecture §M7 | — | **MISSING**（需真机） |
-| I9 | 卸载是安装的严格逆操作，有 manifest | architecture §M7 | — | **MISSING** |
-| I10 | 卸载 `--dry-run` 列出将删除内容 | architecture §M7 | — | **MISSING** |
-| I11 | 卸载不强制重启 | architecture §M7 | — | **MISSING** |
+| I9 | 卸载是安装的严格逆操作，有 manifest | architecture §M7 | `test_journal.py` 37 项 | COVERED |
+| I10 | 卸载 `--dry-run` 列出将删除内容 | architecture §M7 | `test_journal.py::RenderTest` | COVERED |
+| I11 | 卸载不强制重启 | architecture §M7 | `test_journal.py::PlanSafetyTest` | COVERED |
+| I12 | 执行撤销动作（防火墙/证书/服务） | architecture §M7 | — | **MISSING**（需真机） |
 
 ## J. M8 策略层
 
@@ -169,9 +170,9 @@
 
 | 状态 | 数量 |
 |---|---|
-| COVERED | 52 |
+| COVERED | 55 |
 | PARTIAL | 1 |
-| **MISSING** | **13** |
+| **MISSING** | **11** |
 | MANUAL | 0（合并进 MISSING 的说明里） |
 
 ### MISSING 的 20 项，按"能否脱离真机实现"分组
@@ -179,7 +180,6 @@
 **纯逻辑，不需要权限**（建议优先）：
 
 - E6 分块层接入
-- I9 / I10 卸载清单（manifest 生成与逆序回滚的纯数据部分）
 - J7 时间调度
 
 **需要平台 API / 真机**：

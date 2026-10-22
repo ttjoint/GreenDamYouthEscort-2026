@@ -406,3 +406,86 @@ class PasswordCliTest(unittest.TestCase):
             self.assertNotIn(secret_value, out)
             code, out, _ = run(["password", "show", "--path", path, "--json"])
             self.assertNotIn(secret_value, out)
+
+
+class UninstallCliTest(unittest.TestCase):
+    def _journal(self, td):
+        from green_dam import journal
+        path = Path(td) / "journal.json"
+        m = journal.Manifest(version="0.1.0")
+        m.record(journal.ChangeKind.FIREWALL_RULE, "rule-1", "remove-rule")
+        m.record(journal.ChangeKind.CERTIFICATE, "thumb-1", "revoke-cert")
+        m.record(journal.ChangeKind.FILE, "C:/GD/x.exe", "delete-file")
+        m.save(path)
+        return path
+
+    def test_plan_lists_reverse_order(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = self._journal(td)
+            code, out, _ = run(["uninstall", "plan", "--manifest", str(path)])
+            self.assertEqual(code, 0)
+            self.assertIn("would perform 3 step", out)
+            # Reverse of install: file, cert, rule.
+            self.assertLess(out.index("x.exe"), out.index("thumb-1"))
+            self.assertLess(out.index("thumb-1"), out.index("rule-1"))
+
+    def test_plan_says_no_reboot(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = self._journal(td)
+            code, out, _ = run(["uninstall", "plan", "--manifest", str(path)])
+            self.assertIn("no reboot", out.lower())
+
+    def test_json_summary_is_counts_only(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = self._journal(td)
+            code, out, _ = run(["uninstall", "plan", "--manifest", str(path),
+                                "--json"])
+            payload = json.loads(out)
+            self.assertEqual(payload["steps"], 3)
+            self.assertTrue(payload["complete"])
+            self.assertNotIn("x.exe", out)
+
+    def test_verify_ok(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = self._journal(td)
+            code, out, _ = run(["uninstall", "verify", "--manifest", str(path)])
+            self.assertEqual(code, 0)
+            self.assertIn("all reversible", out)
+
+    def test_missing_manifest(self):
+        with tempfile.TemporaryDirectory() as td:
+            code, _, err = run(["uninstall", "plan", "--manifest",
+                                str(Path(td) / "absent.json")])
+            self.assertEqual(code, 2)
+
+    def test_rollback_requires_password(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = self._journal(td)
+            code, _, err = run(["uninstall", "rollback", "--manifest", str(path),
+                                "--password", "x",
+                                "--password-file", str(Path(td) / "absent.pw")])
+            self.assertEqual(code, 2)
+            self.assertIn("no password record", err)
+
+    def test_rollback_with_wrong_password_refuses(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = self._journal(td)
+            pw = Path(td) / "pw"
+            run(["password", "set", "--path", str(pw), "--password", "right"])
+            code, _, err = run(["uninstall", "rollback", "--manifest", str(path),
+                                "--password", "wrong",
+                                "--password-file", str(pw)])
+            self.assertEqual(code, 1)
+            self.assertIn("wrong password", err)
+
+    def test_rollback_with_correct_password_marks(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = self._journal(td)
+            pw = Path(td) / "pw"
+            run(["password", "set", "--path", str(pw), "--password", "right"])
+            code, out, _ = run(["uninstall", "rollback", "--manifest", str(path),
+                                "--password", "right",
+                                "--password-file", str(pw)])
+            self.assertEqual(code, 0)
+            from green_dam import journal
+            self.assertTrue(journal.Manifest.load(path).rolled_back)

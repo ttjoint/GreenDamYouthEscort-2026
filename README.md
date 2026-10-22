@@ -50,6 +50,7 @@ docs/              design and migration notes
   requirements-traceability.md  every requirement mapped to a test
   structure-audit.md   one-off structure review and its outcome
   password.md          M7: parent-password storage
+  uninstall.md         M7: install journal and reverse-order rollback
 analysis/          reverse-engineering write-ups of the original product
                      (master ledger, facts, corrections, spec; see analysis/README.md)
 tools/             legacy import tooling (run once, then irrelevant)

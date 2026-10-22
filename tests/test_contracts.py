@@ -75,6 +75,7 @@ class LayeringTest(unittest.TestCase):
         "config": {"sysdat"},
         "gate": {"sysdat"},
         "secret": set(),
+        "journal": set(),
         "namelists": {"namelist"},
         "chunker": {"chunk_tags"},
         "policy": {"sysdat", "wordlists"},
@@ -88,8 +89,11 @@ class LayeringTest(unittest.TestCase):
                    "intercept", "namelists", "policy", "semantic", "sysdat",
                    "textpath", "wordlists"},
         "replay": {"filter", "transport"},
-        "cli": {"backends", "config", "eventlog", "filter", "imaging",
-                "intercept", "replay", "secret", "sysdat", "transport"},
+        "cli_admin": {"config", "eventlog", "filter", "sysdat"},
+        "cli_filter": {"backends", "eventlog", "filter", "imaging",
+                       "intercept", "replay"},
+        "cli_lifecycle": {"journal", "secret"},
+        "cli": {"cli_admin", "cli_filter", "cli_lifecycle"},
     }
 
     def test_every_module_is_declared(self):
