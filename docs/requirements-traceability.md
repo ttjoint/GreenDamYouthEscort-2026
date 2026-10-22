@@ -98,6 +98,7 @@
 | F2 | 高亮度检查，R≥210 占比 ≥ 0.9 | 逆向 p22 | `test_imaging.py` | COVERED |
 | F3 | 部分筛选可辨识（不得把"没查全"报成"干净"） | 本项目修正 | `test_imaging.py::ScreenTest` | COVERED |
 | F4 | NSFW / 人脸分类 | architecture §M4 | — | **MISSING**（训练模型） |
+| F6 | 轮廓/形态学主判定（`CHECKEX8x`/`13x`/`CAPSCREEN`） | 逆向 p26 | — | **MISSING**（语义未逆向） |
 | F5 | 图像过滤受 sys.dat 槽 13 + 5 双重门控 | 逆向 | `test_filter.py::ImagePathTest` | COVERED |
 
 ## G. M5 屏幕文字
@@ -174,7 +175,7 @@
 |---|---|
 | COVERED | 58 |
 | PARTIAL | 1 |
-| **MISSING** | **10** |
+| **MISSING** | **11** |
 | MANUAL | 0（合并进 MISSING 的说明里） |
 
 ### MISSING 的 20 项，按"能否脱离真机实现"分组

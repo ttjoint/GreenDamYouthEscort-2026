@@ -216,7 +216,11 @@
 | IMG04 | 颜色直方图 0x10008e70（256桶，RGB步进3） | DISASM | p22 | CLOSED | ME | — |
 | IMG05 | 宽高比检查 0x10008e20 | DISASM | p22 | CLOSED | ME | — |
 | IMG06 | FImage.dll 引用 XFimage.xml（haarcascade_frontalface_alt2） | STR | p22 | CLOSED | ME | — |
-| IMG07 | CImage.dll 用 OpenCV 轮廓/形态学/霍夫线全套 | IMP | p22 | CLOSED | ME | — |
+| IMG07 | CImage.dll 用 OpenCV 轮廓/形态学/霍夫线全套 | IMP | p22 + **p26** | CLOSED | ME | p26 补证：非死导入，17 个 CHECK* 经 2-3 层调用可达 |
+| IMG08 | CImage.dll 有 17 个 CHECK* 导出（非仅 CHECKEX2） | PE-HDR | **p26** | CLOSED | ME | 导出表实测，编号 1–8、10–13，无 9 |
+| IMG09 | 15 个 CHECK* 函数 3 层内可达 OpenCV 桩 | DISASM | **p26** | CLOSED | ME | capstone 精确反汇编 + BFS |
+| IMG10 | 主图像判定在 CHECKEX8x / CHECKEX13x / CAPSCREEN | DISASM | **p26** | **OPEN** | ME | 规模 845/1363/1353 条指令，语义未逆向 |
+| IMG11 | 其余 16 个 CHECKEX 的参数契约与返回码 | — | — | **OPEN** | — | 仅 CHECKEX2 已逆向（首参 0x7ab7） |
 
 ## 十七、名单D与查询命令（P10 成果，本轮新增）
 

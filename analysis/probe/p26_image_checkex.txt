@@ -1,0 +1,156 @@
+# CImage.dll：CHECKEX 家族与 OpenCV 调用链（查证，非新逆向）
+
+方法：PE-HDR（导出表 + 导入表）+ DISASM（capstone 精确反汇编 .text，
+收集真实 call 指令，做 3 层 BFS）
+
+## 1. 起因
+
+账本 `IMG07`（`00b-FACTS.md`）记「CImage.dll 用 OpenCV 轮廓/形态学/霍夫线全套」，
+状态 `CLOSED`。但该条证据只到**导入表**层面——「导入了」不等于「调用了」。
+本轮查证这两者的差别。
+
+## 2. 导入表（14 个 OpenCV 函数，全部来自 Xcv.dll）
+
+| 函数 | IAT 地址 |
+|---|---|
+| cvMoments | 0x1000c1e4 |
+| cvHoughLines2 | 0x1000c1e8 |
+| cvBoundingRect | 0x1000c1ec |
+| cvArcLength | 0x1000c1f0 |
+| cvContourArea | 0x1000c1f4 |
+| cvApproxPoly | 0x1000c1f8 |
+| cvFindContours | 0x1000c1fc |
+| cvGetQuadrangleSubPix | 0x1000c200 |
+| cvMorphologyEx | 0x1000c204 |
+| cvDilate | 0x1000c208 |
+| cvCanny | 0x1000c20c |
+| cvCvtColor | 0x1000c210 |
+| cvResize | 0x1000c214 |
+| cvErode | 0x1000c218 |
+
+另有 cvLoadImage(0x1000c220)、cvCopy(0x1000c294)、cvCreateMemStorage(0x1000c298)
+三个也走同一套跳转桩。
+
+## 3. 跳转桩区 RVA 0x9dd0–0x9e3c
+
+每个 OpenCV 函数在代码里都有对应的 `jmp dword ptr [IAT]` 桩：
+
+```
+0x10009dd0  jmp [0x1000c298]   cvCreateMemStorage
+0x10009dd6  jmp [0x1000c294]   cvCopy
+0x10009ddc  jmp [0x1000c200]   cvGetQuadrangleSubPix
+0x10009de2  jmp [0x1000c1e4]   cvMoments
+0x10009de8  jmp [0x1000c1e8]   cvHoughLines2
+0x10009dee  jmp [0x1000c1ec]   cvBoundingRect
+0x10009df4  jmp [0x1000c1f0]   cvArcLength
+0x10009dfa  jmp [0x1000c1f4]   cvContourArea
+0x10009e00  jmp [0x1000c1f8]   cvApproxPoly
+0x10009e06  jmp [0x1000c1fc]   cvFindContours
+0x10009e0c  jmp [0x1000c218]   cvErode
+0x10009e12  jmp [0x1000c204]   cvMorphologyEx
+0x10009e18  jmp [0x1000c208]   cvDilate
+0x10009e1e  jmp [0x1000c20c]   cvCanny
+0x10009e24  jmp [0x1000c210]   cvCvtColor
+0x10009e2a  jmp [0x1000c214]   cvResize
+0x10009e30  jmp [0x1000c220]   cvLoadImage
+```
+
+## 4. 每个桩的 call 数（.text 内 E8 rel32 精确统计）
+
+| 函数 | 桩 VA | call 数 |
+|---|---|---|
+| cvFindContours | 0x10009e06 | 3 |
+| cvContourArea | 0x10009dfa | 3 |
+| cvBoundingRect | 0x10009dee | 3 |
+| cvArcLength | 0x10009df4 | 3 |
+| cvDilate | 0x10009e18 | 3 |
+| cvApproxPoly | 0x10009e00 | 2 |
+| cvCanny | 0x10009e1e | 2 |
+| cvMoments | 0x10009de2 | 2 |
+| cvCreateMemStorage | 0x10009dd0 | 2 |
+| cvErode | 0x10009e0c | 5 |
+| cvMorphologyEx | 0x10009e12 | 1 |
+| cvHoughLines2 | 0x10009de8 | 1 |
+| cvGetQuadrangleSubPix | 0x10009ddc | 1 |
+| cvCvtColor | 0x10009e24 | 8 |
+| cvResize | 0x10009e2a | 7 |
+| cvLoadImage | 0x10009e30 | 9 |
+| cvCopy | 0x10009dd6 | 13 |
+
+**结论：没有一个死导入。** 全部有真实调用。
+
+## 5. 调用点归属
+
+| 函数 | 调用点 VA |
+|---|---|
+| cvFindContours | 0x100031ec, 0x100039d2, 0x100041e6 |
+| cvMoments | 0x10003669, 0x10003a52 |
+| cvHoughLines2 | 0x1000352d |
+
+这些落在 `0x100027xx`–`0x100041xx` 区段，即 CxImage 内部实现区
+（`??_OCxImage` 系列之后、`CHECK` @0x10004880 之前）。
+
+## 6. 关键更正：CHECKEX 不是只有 2 个
+
+账本此前只记 `CHECKEX2`。导出表实际有 **17 个** CHECK* 函数：
+
+| 函数 | VA | 字节 | 指令数 |
+|---|---|---|---|
+| CHECK | 0x10004880 | 48 | 13 |
+| CHECKEX | 0x100048b0 | 192 | 84 |
+| **CAPSCREEN** | 0x10004970 | 4224 | 1353 |
+| **CHECKEX2** | 0x100059f0 | 240 | 65 |
+| DES2GO | 0x10005ae0 | 192 | 71 |
+| CHECKEX3 | 0x10005ba0 | 1632 | 449 |
+| CHECKEX4 | 0x10006200 | 400 | 123 |
+| CHECKEX4DIR | 0x10006390 | 352 | 108 |
+| CHECKEX5 | 0x100064f0 | 528 | 161 |
+| CHECKEX6 | 0x10006700 | 400 | 128 |
+| CHECKEX6x | 0x10006890 | 400 | 122 |
+| CHECKEX7 | 0x10006a20 | 400 | 128 |
+| CHECKEX7x | 0x10006bb0 | 1024 | 317 |
+| **CHECKEX8x** | 0x10006fb0 | 2704 | 845 |
+| CHECKEX10x | 0x10007a40 | 320 | 105 |
+| CHECKEX11x | 0x10007b80 | 416 | 130 |
+| CHECKEX12x | 0x10007d20 | 384 | 122 |
+| **CHECKEX13x** | 0x10007ea0 | 4096 | 1363 |
+
+注意没有 `CHECKEX9x`，编号不连续。
+
+## 7. 3 层 BFS：15 个 CHECK* 都能到达 OpenCV
+
+| 函数 | 可达的 OpenCV |
+|---|---|
+| CAPSCREEN | 15 个（含 cvLoadImage 之外的全部） |
+| CHECKEX2 | 15 个 |
+| CHECKEX3/4/4DIR/5 | 15 个 |
+| CHECKEX6/6x/7/7x/8x/11x/13x | **17 个**（多 cvLoadImage + cvResize） |
+| CHECKEX10x/12x | 16 个 |
+
+**因此 `IMG07` 的 `CLOSED` 成立**，但证据链应补上"调用可达"这一层，
+而不是停在导入表。
+
+## 8. 新发现的问题（未解决）
+
+1. **17 个 CHECKEX 各自的语义未知**。账本只描述了 `CHECKEX2`
+   （首参必须 0x7ab7、否则 Sleep(10000)+返回 100）。
+   其余 16 个的参数契约、返回码、判定逻辑**完全未逆向**。
+
+2. **CAPSCREEN 1353 条指令**（4,224 字节）——它内部直接或间接用到了
+   15 个 OpenCV 函数，但抓屏→OpenCV 的完整数据流未追踪。
+
+3. **CHECKEX8x / CHECKEX13x 各 1,363 / 845 条指令**，规模与 CAPSCREEN
+   同量级，说明图像判定逻辑的**主体在这两个函数里**，而非 CHECKEX2。
+
+## 9. 对 M4 实现的影响
+
+现有 `src/green_dam/imaging.py` 只复刻了 `0x10008e20`（宽高比）与
+`0x10008e70`（高亮度直方图）两个**算术函数**。这两个函数确实存在，
+但**不是 CHECKEX 家族的主判定路径**。
+
+真正的主判定在 `CHECKEX8x` / `CHECKEX13x` / `CAPSCREEN` 里，走 OpenCV
+轮廓分析。**未逆向，不可复刻。**
+
+因此 M4 的状态应明确为：**两个辅助判据已复刻，主判定路径未复刻**。
+`docs/image-layer.md` §5 已说明 Haar 未做，但未说明**轮廓路径也未做**——
+本轮查证补上这一点。
