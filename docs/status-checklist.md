@@ -13,7 +13,7 @@
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：M4 图像（两项实测检查）完成时（644 passed）。
+> 最后核对：M3 HNC 接线完成时（653 passed）。
 
 ---
 
@@ -23,7 +23,7 @@
 |---|---|---|---|---|
 | M1 数据 | 载入 JSON、建索引、类别模型 | **PARTIAL** | `wordlists.py` `namelist.py` `namelists.py` | `test_wordlists` `test_namelist` `test_namelists` |
 | M2 网络 | 四段拦截 | **PARTIAL** | `intercept.py`（判定链） | `test_intercept` |
-| M3 文本 | 分词、语境判定、双后端 | **PARTIAL** | `chunker.py` `hnc.py` `semantic.py` `l_concepts.py` `chunk_tags.py` `similarity.py` | `test_chunker` 等 7 个 |
+| M3 文本 | 分词、语境判定、双后端 | **PARTIAL** | `chunker.py` `hnc.py` `semantic.py` 等 | `test_chunker` 等 7 个 |
 | M4 图像 | 不良/人脸分类 | **PARTIAL** | `imaging.py`（2 项实测检查） | `test_imaging` |
 | M5 屏幕 | 屏幕文字提取 | **TODO** | — | — |
 | M6 应用控制 | 禁止指定程序联网 | **TODO** | — | — |
@@ -122,12 +122,13 @@
 | 项 | 说明 | 优先级 |
 |---|---|---|
 | 第二后端（规则式） | 架构要求「两个可互换后端」，目前只有 HNC 后端 | 中 |
-| 与 M8 的接线 | `semantic.py` 产出尚未作为 `Finding` 进 `policy.py` | 高 |
+| ~~与 M8 的接线~~ | **DONE**：`semantic.analyse_findings` → `Filter.check_text` |
 
 ### 待测
 
 | 项 | 说明 |
 |---|---|
+| ~~HNC 接线~~ | **DONE**：9 项测试，含等级 0 误命中回归 |
 | 分块层端到端 | 目前测的是分块器本身，未测「文本 → 分块 → 判定 → Verdict」全链 |
 | 双后端等价性 | 第二后端未存在，无从对比 |
 

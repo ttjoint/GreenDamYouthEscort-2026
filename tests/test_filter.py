@@ -270,3 +270,49 @@ class ImagePathTest(unittest.TestCase):
         got = f.check(image=result, image_action="block")
         self.assertEqual(got.action, "block")
         self.assertEqual(got.source, "image")
+
+
+class HncPathTest(unittest.TestCase):
+    """The HNC score table is a second, independent evidence source."""
+
+    @classmethod
+    def setUpClass(cls):
+        from green_dam import semantic
+        cls.matcher = semantic.load_default()
+
+    def test_clean_text_yields_nothing(self):
+        f = Filter(hnc=self.matcher, log=EventLog())
+        got = f.check_text("hello world, a normal sentence")
+        self.assertIsNone(got.action)
+        self.assertEqual(len(got.findings), 0)
+        self.assertEqual(got.reason, "no_evidence")
+
+    def test_hnc_only_hit_produces_evidence_not_action(self):
+        levels = self.matcher._levels
+        term = next(t for t, v in levels.items() if max(v) >= 1)
+        f = Filter(hnc=self.matcher, log=EventLog())
+        got = f.check_text(term)
+        self.assertTrue(got.findings)
+        self.assertIsNone(got.action)      # no mapping by default
+
+    def test_status_reports_hnc(self):
+        f = Filter(hnc=self.matcher)
+        self.assertTrue(f.status()["hnc_loaded"])
+        self.assertFalse(Filter().status()["hnc_loaded"])
+
+    def test_hnc_and_wordlists_both_contribute(self):
+        index = WordlistIndex()
+        index.add("甲词", "src-a", level=2)
+        f = _filter(words=index)
+        f.hnc = self.matcher
+        got = f.check_text("甲词")
+        # Wordlist finding is present; HNC contributes only if it also matches.
+        self.assertTrue(any("src-a" in finding.sources for finding in got.findings))
+
+    def test_gate_still_wins_over_hnc(self):
+        values = [0] * sysdat.SLOT_COUNT
+        values[sysdat.slot_index(10)] = 1
+        legacy = sysdat.PolicyArray(values=tuple(values))
+        f = Filter(legacy=legacy, hnc=self.matcher, log=EventLog())
+        got = f.check_text("anything")
+        self.assertEqual(got.reason, "legacy_keyword_filter_disabled")

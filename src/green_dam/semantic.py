@@ -154,3 +154,62 @@ def load_default() -> LegacySemanticMatcher:
     return LegacySemanticMatcher.from_json(
         root / "data" / "legacy-imported" / "falun-terms.json"
     )
+
+
+# -- bridging into the policy layer --------------------------------------
+#
+# This module's Verdict is a *measurement* ("these terms matched, at these
+# levels"). policy.Verdict is a *decision* ("here is an action"). They share a
+# name but not a meaning, so the bridge is explicit rather than implicit: a
+# caller that wants an action converts findings first.
+#
+# Why this module is not folded into wordlists.WordlistIndex: the two read
+# different data for different purposes. WordlistIndex is a general multi-source
+# lexicon over the external .lib files; this matcher is specific to the HNC
+# score table (falun-terms.json), where a term's level comes from the chain
+# entry that references it, not from the pool slice. Merging them would force
+# one of the two level-attribution rules onto the other's data, which is exactly
+# the bug this module's docstring warns about.
+
+
+def to_findings(verdict: "Verdict", surface: str) -> list:
+    """Convert semantic hits into :class:`green_dam.policy.Finding` objects.
+
+    Only hits whose level is at least 1 are converted. Level 0 means "not
+    graded as harmful" in the HNC table, and 89% of its entries are level 0 -
+    most of them short substrings of harmless text (pool slices such as a
+    four-letter ASCII fragment). Emitting those as evidence made ordinary
+    sentences look suspicious, which is the same false-positive trap the
+    original product fell into.
+
+    ``kind`` is ``KIND_SCORED``: the level came from the HNC score table, which
+    is a grading, not a category rule. ``attested`` is True because the levels
+    are read from the shipped data rather than guessed.
+
+    ``action`` stays None. Whether a level means block or warn is policy, and the
+    vendor's mapping is still unknown - the same split used everywhere else.
+    """
+    from .policy import KIND_SCORED, Finding
+
+    out = []
+    for hit in verdict.hits:
+        levels = hit.all_levels or (hit.level,)
+        if max(levels) < 1:
+            # Level 0 is "not harmful", not "harmless evidence".
+            continue
+        out.append(Finding(
+            span=(hit.start, hit.start + len(hit.term)),
+            surface=surface,
+            kind=KIND_SCORED,
+            sources=("falun-terms",),
+            levels=levels,
+            attested=True,
+            action=None,
+            reason="hnc_score",
+        ))
+    return out
+
+
+def analyse_findings(matcher: "LegacySemanticMatcher", text: str) -> list:
+    """Convenience: analyse ``text`` and return policy findings directly."""
+    return to_findings(matcher.analyse(text), text)

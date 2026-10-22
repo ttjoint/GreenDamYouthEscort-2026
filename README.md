@@ -45,6 +45,7 @@ docs/              design and migration notes
   facade.md            how the layers are wired together
   cli.md               diagnostic command-line tool
   image-layer.md       M4: the two image checks that were decodable
+  text-layer.md        M3: how the HNC score table feeds the policy layer
 analysis/          reverse-engineering write-ups of the original product
                      (master ledger, facts, corrections, spec; see analysis/README.md)
 tools/             legacy import tooling (run once, then irrelevant)

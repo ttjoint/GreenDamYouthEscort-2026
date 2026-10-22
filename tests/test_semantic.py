@@ -124,3 +124,50 @@ class HonestLimitsTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BridgeTest(unittest.TestCase):
+    """Converting HNC hits into policy findings, without inventing actions."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.matcher = semantic.load_default()
+
+    def test_level_zero_hits_are_not_evidence(self):
+        # 89% of the score table is level 0, much of it short ASCII fragments
+        # that occur inside ordinary words. Emitting them made normal sentences
+        # look suspicious.
+        for text in ("clean text here", "hello world", "this is normal"):
+            self.assertEqual(
+                semantic.analyse_findings(self.matcher, text), [],
+                msg=f"false positive on {text!r}")
+
+    def test_finding_shape(self):
+        from green_dam.policy import KIND_SCORED
+        # Find any level>=1 term to exercise the converter without assuming
+        # specific content: take one from the table itself.
+        levels = self.matcher._levels
+        term = next(t for t, v in levels.items() if max(v) >= 1)
+        findings = semantic.analyse_findings(self.matcher, f"x{term}y")
+        self.assertTrue(findings)
+        got = findings[0]
+        self.assertEqual(got.kind, KIND_SCORED)
+        self.assertTrue(got.attested)
+        self.assertIsNone(got.action)
+        self.assertEqual(got.sources, ("falun-terms",))
+
+    def test_span_points_at_the_hit(self):
+        levels = self.matcher._levels
+        term = next(t for t, v in levels.items() if max(v) >= 1)
+        text = f"prefix{term}suffix"
+        findings = semantic.analyse_findings(self.matcher, text)
+        start, end = findings[0].span
+        self.assertEqual(text[start:end], findings[0].matched)
+
+    def test_no_action_even_for_high_levels(self):
+        # The score-to-action mapping is unknown; a high level is still just a
+        # level.
+        levels = self.matcher._levels
+        term = next(t for t, v in levels.items() if max(v) >= 7)
+        findings = semantic.analyse_findings(self.matcher, term)
+        self.assertTrue(all(f.action is None for f in findings))

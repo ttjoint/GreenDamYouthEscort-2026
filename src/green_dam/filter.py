@@ -40,7 +40,15 @@ from .eventlog import EventLog, record_for_assessment, record_for_decision, reco
 from .imaging import ScreenResult, screen
 from .intercept import Decision, Interceptor, Outcome, Request
 from .namelists import NameLists
-from .policy import Assessment, PolicyEngine, PolicyTable, Verdict, assess, default_policy_table
+from .policy import (
+    ACTION_STRENGTH,
+    Assessment,
+    PolicyEngine,
+    PolicyTable,
+    Verdict,
+    assess,
+    default_policy_table,
+)
 from .wordlists import WordlistIndex
 
 
@@ -51,6 +59,10 @@ class Filter:
     legacy: sysdat.PolicyArray | None = None
     lists: NameLists = field(default_factory=NameLists)
     words: WordlistIndex | None = None
+    #: Optional HNC score-table matcher (see green_dam.semantic). A second,
+    #: independent evidence source: wordlists come from the external .lib
+    #: files, this one from the HNC score table.
+    hnc: object | None = None
     log: EventLog | None = None
     policies: PolicyTable | None = None
 
@@ -136,15 +148,42 @@ class Filter:
                 self.log.append(record_for_gate(reason))
             return Verdict(findings=(), action=None, reason=reason)
 
-        if self._engine is None:
-            verdict = Verdict(findings=(), action=None, reason="no_wordlists")
+        findings = []
+        if self._engine is not None:
+            findings.extend(self._engine._word_findings(text))
+        if self.hnc is not None:
+            findings.extend(self._hnc_findings(text))
+
+        if not findings:
+            reason = ("no_wordlists" if self._engine is None and self.hnc is None
+                      else "no_evidence")
+            verdict = Verdict(findings=(), action=None, reason=reason)
         else:
-            verdict = self._engine.verdict(text)
+            verdict = self._engine.verdict(text, findings=findings)                 if self._engine is not None else self._verdict_from(findings)
 
         if self.log is not None:
             self.log.append(record_for_assessment(
                 assess(text=verdict), direction="text"))
         return verdict
+
+    def _hnc_findings(self, text: str) -> list:
+        """HNC score-table findings for ``text``, levels >= 1 only."""
+        from .semantic import analyse_findings
+
+        return analyse_findings(self.hnc, text)
+
+    def _verdict_from(self, findings) -> Verdict:
+        """Build a Verdict from findings when no wordlist engine exists."""
+        best = None
+        for finding in findings:
+            action = finding.action
+            if action is None:
+                continue
+            if best is None or ACTION_STRENGTH.index(action) >                     ACTION_STRENGTH.index(best):
+                best = action
+        return Verdict(findings=tuple(findings), action=best,
+                       reason="strongest_finding" if best else "no_action",
+                       attested=False)
 
     # -- image path -------------------------------------------------------
 
@@ -235,5 +274,6 @@ class Filter:
                 self.legacy.image_filter_level if self.legacy else None),
             "lists": self.lists.summary(),
             "wordlists_loaded": self.words is not None,
+            "hnc_loaded": self.hnc is not None,
             "log_records": len(self.log) if self.log is not None else 0,
         }
