@@ -177,7 +177,7 @@
 |---|---|
 | COVERED | 58 |
 | PARTIAL | 1 |
-| **MISSING** | **11** |
+| **MISSING** | **10** |
 | MANUAL | 0（合并进 MISSING 的说明里） |
 
 ### MISSING 的 20 项，按"能否脱离真机实现"分组

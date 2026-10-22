@@ -89,6 +89,45 @@ def cmd_validate(args) -> int:
     return 0
 
 
+def cmd_schedule(args) -> int:
+    """Answer "is this moment allowed" against a weekly grid file.
+
+    Prints the verdict and the next transition, never more: the grid itself is
+    not sensitive, but the point of the command is the decision, not the dump.
+    """
+    from datetime import datetime
+
+    from .schedule import WeeklyGrid
+
+    grid_path = Path(args.grid)
+    if not grid_path.exists():
+        print(f"no such grid file: {grid_path}", file=sys.stderr)
+        return 2
+    grid = WeeklyGrid.from_json(grid_path.read_text(encoding="utf-8"))
+    when = (datetime.fromisoformat(args.at) if args.at
+            else datetime.now().replace(microsecond=0))
+    enabled = args.enabled
+
+    payload = {
+        "when": when.isoformat(),
+        "allowed": grid.is_allowed_at(when, enabled=enabled),
+        "allowed_hours": grid.count(),
+        "next_change": (grid.next_change(when).isoformat()
+                        if grid.next_change(when) else None),
+        "warn_at": (grid.warn_at(when, enabled=enabled).isoformat()
+                    if grid.warn_at(when, enabled=enabled) else None),
+    }
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+    print(f"when        : {payload['when']}")
+    print(f"allowed     : {payload['allowed']} (switch {'on' if enabled else 'off'})")
+    print(f"grid hours  : {payload['allowed_hours']}/168 allowed")
+    print(f"next change : {payload['next_change'] or '-'}")
+    print(f"warn at     : {payload['warn_at'] or '-'}")
+    return 0
+
+
 def cmd_log(args) -> int:
     """Read back a JSON-lines event log."""
     path = Path(args.path)

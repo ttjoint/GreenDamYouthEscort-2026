@@ -13,7 +13,7 @@
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：M4 `CHECKEX8x` 逆向（P28）完成时（1105 passed）。
+> 最后核对：时间调度 J7 完成时（1159 passed）。
 > **本次核对已清理全部过时条目**（见文末「修订记录」）。
 
 ---
@@ -29,7 +29,7 @@
 | M5 屏幕 | 屏幕文字提取 | **TODO** | — | — |
 | M6 应用控制 | 禁止指定程序联网 | **PARTIAL** | `namelists.py`（名单 B 匹配） | `test_evidence_paths` |
 | M7 基础设施 | 服务、配置、日志、IPC | **PARTIAL** | `eventlog.py` `config.py` `secret.py` `journal.py` | 4 个测试文件 |
-| M8 策略 | 汇总成 放行/阻断/告警 | **DONE** | `policy.py` `sysdat.py` | `test_policy` `test_sysdat` |
+| M8 策略 | 汇总成 放行/阻断/告警 | **DONE** | `policy.py` `sysdat.py` `schedule.py` | `test_policy` `test_sysdat` `test_schedule` |
 | — 跨层汇总 | 网络 + 文本证据合成 | **DONE** | `policy.py` (`assess`) | `test_policy::AssessTest` |
 | — 门面 | 配置+名单+判定+日志串联 | **DONE** | `filter.py` `gate.py` | `test_filter`（端到端） |
 | — 四路一致 | 网络/文本/图像/进程统一 | **DONE** | `filter.py` | `test_evidence_paths`（19 项） |
@@ -275,7 +275,7 @@ Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` �
 | 项 | 说明 | 优先级 |
 |---|---|---|
 | 原厂分 → 动作映射 | 语义未知（`HASrv.dll` 未查），**保持 `attested=False`** | 阻塞于逆向 |
-| 时间控制（槽 24 / 槽 21） | 槽位可读，调度逻辑未做 | 中（J7） |
+| ~~时间控制（J7）~~ | **DONE**：`schedule.py` 7×24 网格 + 槽 24 接线 + 5 分钟预警 | — |
 | 白名单优先（槽 14 / 槽 15） | 槽位可读，优先级逻辑未做 | 中 |
 
 ### 待测
@@ -333,7 +333,7 @@ Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` �
 | M6 进程终止 | 进程权限 |
 | M7 服务宿主 / 卸载执行 | 服务权限 |
 | M9 产品 UI | GUI |
-| M8 时间调度 | 槽位可读，逻辑未做（**纯逻辑，可做**） |
+| ~~M8 时间调度~~ | **DONE**（J7，`schedule.py`） |
 
 **唯一还属纯逻辑的是 M8 时间调度（J7）与白名单优先。**
 

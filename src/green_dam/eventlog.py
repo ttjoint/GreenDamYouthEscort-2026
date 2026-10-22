@@ -153,9 +153,16 @@ def record_for_assessment(assessment, *, direction: str = "", when: str | None =
     )
 
 
-def record_for_gate(reason: str, *, when: str | None = None) -> LogRecord:
-    """Build a record for a sys.dat off-switch silencing evidence."""
-    return LogRecord(event=Event.GATED, source="policy", reason=reason,
+def record_for_gate(reason: str, *, when: str | None = None,
+                    source: str = "policy") -> LogRecord:
+    """Build a record for an off-switch silencing evidence.
+
+    ``source`` distinguishes the two gates this project has: the sys.dat
+    switches ("policy") and the weekly schedule ("schedule"). A log reader must
+    be able to tell "the administrator turned filtering off" from "it is not
+    the allowed hour", which are different facts with different remedies.
+    """
+    return LogRecord(event=Event.GATED, source=source, reason=reason,
                      when=when or utc_now())
 
 

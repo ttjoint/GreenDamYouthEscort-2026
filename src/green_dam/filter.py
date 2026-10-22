@@ -42,6 +42,7 @@ two records before this was fixed.
 """
 from __future__ import annotations
 
+from datetime import datetime
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -82,6 +83,10 @@ class Filter:
     #: chunking contributes structure summaries, and (if the source was built
     #: with ``emit_findings=True``) findings for unstructured text.
     chunker: object | None = None
+    #: Optional :class:`green_dam.schedule.WeeklyGrid`. When set together with
+    #: policy slot 24, network access outside allowed hours is refused. The
+    #: clock is injected per call; this object never reads the system time.
+    schedule: object | None = None
     log: EventLog | None = None
     policies: PolicyTable | None = None
 
@@ -141,9 +146,9 @@ class Filter:
     def image_filter_enabled(self) -> bool:
         return self.gate.image_filter_enabled
 
-    def _record_gate(self, reason: str) -> None:
+    def _record_gate(self, reason: str, *, source: str = "policy") -> None:
         if self.log is not None:
-            self.log.append(record_for_gate(reason))
+            self.log.append(record_for_gate(reason, source=source))
 
     # -- text sources ------------------------------------------------------
 
@@ -164,12 +169,29 @@ class Filter:
 
     # -- path: network -----------------------------------------------------
 
-    def check_request(self, request: Request) -> Assessment:
-        """Decide a network request, honouring off-switches, and log it."""
+    def check_request(self, request: Request, *,
+                      when: datetime | None = None) -> Assessment:
+        """Decide a network request, honouring off-switches, and log it.
+
+        When a schedule is configured and policy slot 24 enables it, a request
+        outside the allowed hours is refused before any other stage runs: the
+        schedule is about *when*, so it short-circuits the *what* stages. The
+        clock comes from ``when``; passing None means "not scheduled" and skips
+        the check, because a caller that cannot supply a time must not silently
+        inherit the wall clock in a library whose tests need determinism.
+        """
         reason = self.gate.reason()
         if reason is not None:
             self._record_gate(reason)
             return Assessment(action=None, source="policy", reason=reason)
+
+        if (self.schedule is not None and when is not None
+                and self.legacy is not None):
+            enabled = self.legacy.get(24) != 0
+            if not self.schedule.is_allowed_at(when, enabled=enabled):
+                self._record_gate("outside_allowed_hours", source="schedule")
+                return Assessment(action=None, source="schedule",
+                                  reason="outside_allowed_hours")
 
         decision = self._interceptor.decide(request)
         if self.log is not None:

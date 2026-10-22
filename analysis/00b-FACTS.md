@@ -262,3 +262,10 @@
 | UI02 | "灵敏度低/中/高"UI项 = 0x10004a60 的3种检测模式 | CROSSCHECK | p25 | CLOSED | ME | — |
 | UI03 | "自动增加黑名单"UI项 = 名单D运行时添加接口 | CROSSCHECK | p25 | CLOSED | ME | — |
 | UI04 | image.dat(HTTP200+60x100GIF) = 网页小图替换源；大提示窗=gn.exe弹窗 | CROSSCHECK | p25 | CLOSED | ME | — |
+
+| SCH01 | 时间控制 = 7×24 允许/拒绝网格（手册图 18/19） | **MANUAL** | **p29** | CLOSED | ME | 手册截图与二进制表头字符串互相印证 |
+| SCH02 | 总开关 = sys.dat 槽 24「允许上网时间控制」 | DISASM | **p29** | CLOSED | ME | 名称表 `0x68dcb` |
+| SCH03 | 切换提前 5 分钟预警、NTP 同步间隔（秒）=10 | MANUAL | **p29** | CLOSED | ME | 手册图 18/19 底部 |
+| SCH04 | 原厂硬编码 10 个 NTP 服务器（防改时钟绕过） | DISASM | **p29** | CLOSED | ME | `0x68228..0x682b4` |
+| SCH05 | 168 位网格的存储位置**未找到** | — | **p29** | **OPEN** | ME | sys.dat 装不下；树内无文件；需动态调试 |
+| SCH06 | 槽 21 =「自动更新时间」，**不是**时段数据 | DISASM | **p29** | CLOSED | ME | 校正早期猜测 |

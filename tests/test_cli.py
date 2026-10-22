@@ -623,3 +623,53 @@ class SkinCliTest(unittest.TestCase):
     def test_no_input_errors(self):
         code, _, err = run(["skin"])
         self.assertEqual(code, 2)
+
+
+class ScheduleCliTest(unittest.TestCase):
+    def _grid(self, td):
+        from green_dam.schedule import WeeklyGrid
+        path = Path(td) / "grid.json"
+        WeeklyGrid.from_ranges({3: [(14, 17)]}).to_json()
+        path.write_text(WeeklyGrid.from_ranges({3: [(14, 17)]}).to_json(),
+                        encoding="utf-8")
+        return str(path)
+
+    def test_allowed_inside_hours(self):
+        with tempfile.TemporaryDirectory() as td:
+            code, out, _ = run(["schedule", self._grid(td),
+                                "--at", "2026-01-07T14:30:00"])
+            self.assertEqual(code, 0)
+            self.assertIn("allowed     : True", out)
+
+    def test_denied_outside_hours(self):
+        with tempfile.TemporaryDirectory() as td:
+            code, out, _ = run(["schedule", self._grid(td),
+                                "--at", "2026-01-07T18:00:00"])
+            self.assertIn("allowed     : False", out)
+
+    def test_switch_off_allows(self):
+        with tempfile.TemporaryDirectory() as td:
+            code, out, _ = run(["schedule", self._grid(td),
+                                "--at", "2026-01-07T18:00:00", "--switch-off"])
+            self.assertIn("allowed     : True (switch off)", out)
+
+    def test_next_change_and_warning(self):
+        with tempfile.TemporaryDirectory() as td:
+            code, out, _ = run(["schedule", self._grid(td),
+                                "--at", "2026-01-07T14:30:00"])
+            self.assertIn("next change : 2026-01-07T17:00:00", out)
+            self.assertIn("warn at     : 2026-01-07T16:55:00", out)
+
+    def test_json(self):
+        with tempfile.TemporaryDirectory() as td:
+            code, out, _ = run(["schedule", self._grid(td),
+                                "--at", "2026-01-07T14:30:00", "--json"])
+            payload = json.loads(out)
+            self.assertTrue(payload["allowed"])
+            self.assertEqual(payload["allowed_hours"], 3)
+
+    def test_missing_grid_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            code, _, err = run(["schedule", str(Path(td) / "absent.json"),
+                                "--at", "2026-01-07T14:30:00"])
+            self.assertNotEqual(code, 0)

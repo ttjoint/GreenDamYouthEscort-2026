@@ -35,6 +35,7 @@ import argparse
 
 from .cli_admin import (
     cmd_log,
+    cmd_schedule,
     cmd_policy,
     cmd_save_defaults,
     cmd_status,
@@ -151,6 +152,15 @@ def _add_admin_commands(sub) -> None:
     p.add_argument("--strict", action="store_true",
                    help="also enforce the value domain")
     p.set_defaults(func=cmd_validate)
+
+    p = sub.add_parser("schedule", help="ask the weekly grid whether a moment "
+                                        "is allowed")
+    p.add_argument("grid", help="weekly grid JSON file")
+    p.add_argument("--at", help="ISO datetime to test (default: now)")
+    p.add_argument("--switch-off", dest="enabled", action="store_false",
+                   default=True, help="treat policy slot 24 as off")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_schedule)
 
     p = sub.add_parser("log", help="read back a JSON-lines event log")
     p.add_argument("path")
