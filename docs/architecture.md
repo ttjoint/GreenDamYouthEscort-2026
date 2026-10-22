@@ -134,9 +134,17 @@ hardware dongle checks.
 | Phase | Content | State |
 |---|---|---|
 | P0 | data migration | done |
-| P1 | M1 + M8 skeleton: can answer "should this be blocked" | next |
-| P2 | M2 stages 1–2 (proxy + firewall) | |
-| P3 | M3 both backends | |
-| P4 | M4 ONNX image classification | |
-| P5 | M5 UIA + OCR | |
-| P6 | service packaging, M9 console, hardening | |
+| P1 | M1 + M8 skeleton: can answer "should this be blocked" | **done** |
+| P2 | M2 stages 1–2 (proxy + firewall) | planning done, execution needs admin |
+| P3 | M3 both backends | **done** |
+| P4 | M4 ONNX image classification | **not started** (see note) |
+| P5 | M5 UIA + OCR | not started |
+| P6 | service packaging, M9 console, hardening | not started |
+
+Note on P4: the reverse-engineering work recovered the original's image
+judgement (``analysis/probe/p27``, ``p28``) and two of those paths are ported in
+``imaging_checkex``/``imaging_skin``. That is archaeology, not the deliverable.
+This document's M4 target is an ONNX NSFW classifier, and it has not begun. The
+ported code is useful for understanding what the original did; it is not a
+substitute for the model, and no part of the project claims it detects NSFW
+content as well as the original did.

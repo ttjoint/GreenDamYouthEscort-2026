@@ -9,11 +9,12 @@
 > - `TODO` = 只有逆向结论（`analysis/`），`src/` 无代码
 > - `N/A` = 明确决定不做
 >
-> 测试口径（`python -m pytest tests/ -q`，当前 416 passed / 9 skipped / 137 subtests）：
+> 测试口径（`python -m pytest tests/ -q`，当前 **1105 passed / 10 skipped / 137 subtests**）：
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
 > 最后核对：M4 `CHECKEX8x` 逆向（P28）完成时（1105 passed）。
+> **本次核对已清理全部过时条目**（见文末「修订记录」）。
 
 ---
 
@@ -21,20 +22,32 @@
 
 | 模块 | 职责 | 状态 | src 文件 | SRC 测试 |
 |---|---|---|---|---|
-| M1 数据 | 载入 JSON、建索引、类别模型 | **PARTIAL** | `wordlists.py` `namelist.py` `namelists.py` `simpath.py` | `test_wordlists` `test_simpath` 等 4 个 |
-| M2 网络 | 四段拦截 | **PARTIAL** | `intercept.py`（判定链） | `test_intercept` |
-| M3 文本 | 分词、语境判定、双后端 | **DONE** | `chunker.py` `semantic.py` `backends.py` `chunkpath.py` | 9 个测试文件 |
-| M4 图像 | 不良/人脸分类 | **PARTIAL** | `imaging.py`（2 项实测检查） | `test_imaging` |
+| M1 数据 | 载入 JSON、建索引、类别模型 | **PARTIAL** | `wordlists.py` `namelist.py` `namelists.py` `simpath.py` | 4 个测试文件 |
+| M2 网络 | 四段拦截 | **PARTIAL** | `intercept.py` `transport.py` `replay.py` | `test_intercept` `test_transport` |
+| M3 文本 | 分词、语境判定、双后端 | **DONE** | `chunker.py` `semantic.py` `backends.py` `chunkpath.py` `textpath.py` | 9 个测试文件 |
+| M4 图像 | 不良/人脸分类 | **PARTIAL** | `imaging.py` `imaging_checkex.py` `imaging_skin.py` `imaging_skin_hsv.py` | 3 个测试文件 |
 | M5 屏幕 | 屏幕文字提取 | **TODO** | — | — |
-| M6 应用控制 | 禁止指定程序联网 | **TODO** | — | — |
-| M7 基础设施 | 服务、配置、日志、IPC | **PARTIAL** | `eventlog.py` `config.py` | `test_eventlog` `test_config` |
+| M6 应用控制 | 禁止指定程序联网 | **PARTIAL** | `namelists.py`（名单 B 匹配） | `test_evidence_paths` |
+| M7 基础设施 | 服务、配置、日志、IPC | **PARTIAL** | `eventlog.py` `config.py` `secret.py` `journal.py` | 4 个测试文件 |
 | M8 策略 | 汇总成 放行/阻断/告警 | **DONE** | `policy.py` `sysdat.py` | `test_policy` `test_sysdat` |
 | — 跨层汇总 | 网络 + 文本证据合成 | **DONE** | `policy.py` (`assess`) | `test_policy::AssessTest` |
-| — 门面 | 配置+名单+判定+日志串联 | **DONE** | `filter.py` | `test_filter`（端到端） |
-| — 四路一致 | 网络/文本/图像/进程统一 | **DONE** | `filter.py` | `test_evidence_paths`（19 项交叉验证） |
-| M9 控制台 | 父界面、日志、调度 | **TODO** | `cli.py`（仅诊断 CLI） | `test_cli` |
+| — 门面 | 配置+名单+判定+日志串联 | **DONE** | `filter.py` `gate.py` | `test_filter`（端到端） |
+| — 四路一致 | 网络/文本/图像/进程统一 | **DONE** | `filter.py` | `test_evidence_paths`（19 项） |
+| M9 控制台 | 父界面、日志、调度 | **TODO** | `cli*.py`（诊断 CLI，非产品 UI） | `test_cli` |
 
-**没有 CLI、没有 `__main__.py`、没有打包配置** —— 目前是一个纯库。
+**有 CLI（`green-dam`）、有打包（`pyproject.toml`，零运行时依赖）、无 `__main__.py`。**
+CLI 是**诊断工具**，不是架构里的 M9 产品界面。
+
+### 测试分层（1,105 项）
+
+| 层 | 文件 | 项数 | 作用 |
+|---|---|---|---|
+| 单元 | 各模块 | ~690 | 单个函数/类的行为 |
+| **结构** | `test_structure.py` | 15 | 模块/类/函数规模、嵌套深度 |
+| **契约** | `test_contracts.py` | 14 | 分层、零依赖、无 IO、不做清单 |
+| **不变量** | `test_invariants.py` | 23 | 门控语义、单条日志、脱敏 |
+| 端到端 | `transport` `evidence_paths` `backends` | 75 | 子系统串起来 |
+| 逆向取证 | `test_hnc_engine` 等（LEGACY） | 若干 | 断言原厂二进制结构 |
 
 ---
 
@@ -56,10 +69,18 @@
 
 | 项 | 说明 | 优先级 |
 |---|---|---|
-| 四名单（A/B/C/D）运行时模型 | 逆向已闭合（`analysis/probe/p20`、`p24`），`src/` 无对应结构 | 高 |
-| 144B 记录编解码 | 格式已闭合（`p21`），无 `src` 实现 | 高 |
-| 规则语法引擎 `{组}[类]` | 语法已闭合（`p21`：`{}`=AND、`[]`=OR、`,`=分隔），无 `src` 实现 | 高 |
-| 名单容量约束（1500/100/1000/1500，单条上限 11000） | 已闭合，未编码 | 中 |
+| 词库 JSON 加载器接真实 `.dat` | `tools/legacy_wordlist_codec.py` 有解码，`src/` 无加载入口 | 中 |
+| 类别模型（`WordHit.category`）填充 | 字段存在，未从语料映射 | 低 |
+
+**已完成（曾列为待做）**：
+
+| 项 | 位置 | 测试 |
+|---|---|---|
+| 四名单（A/B/C/D）运行时模型 | `namelists.py` | `test_namelists.py` 24 项 |
+| 144B 记录编解码 | `namelist.py` | `test_namelist.py` 29 项 |
+| 规则语法引擎 `{组}[类]` | `namelist.py` | 同上 |
+| 名单容量约束（A=100/C=1000/D=1500，单条上限 11000） | `namelists.py` | 同上 |
+| 句子相似度 | `simpath.py` | `test_simpath.py` 35 项 |
 
 ### 待测
 
@@ -92,11 +113,16 @@
 
 | 项 | 说明 | 优先级 |
 |---|---|---|
-| 传输层第 1 段（域名/SNI + 防火墙） | 无需根 CA，最容易先做 | 高 |
-| 传输层第 2 段（明文 HTTP 透明代理） | 需要代理实现 | 中 |
-| 传输层第 3 段（HTTPS MITM） | 需要根 CA | 低 |
+| 真实代理实现（第 1–3 段） | `transport.py` 只做**规划**（`Plan`），不做 I/O；执行需平台 API | 高 |
 | 入站"替换响应体"动作 | 判定已给 block，替换属传输层 | 中 |
 | 连接跟踪表 | 原厂 32 槽×16B；新实现用字典即可 | 低 |
+
+**已完成（曾列为待做）**：
+
+| 项 | 位置 | 说明 |
+|---|---|---|
+| 四段降级骨架（`Stage`/`Flow`/`Plan`） | `transport.py` | 30 项测试，零网络零权限 |
+| 流文件重放 | `replay.py` | `test_transport.py` |
 
 ### 待测
 
@@ -122,8 +148,16 @@
 
 | 项 | 说明 | 优先级 |
 |---|---|---|
-| 第二后端（规则式） | 架构要求「两个可互换后端」，目前只有 HNC 后端 | 中 |
-| ~~与 M8 的接线~~ | **DONE**：`semantic.analyse_findings` → `Filter.check_text` |
+| 真正的分词后端 | 架构文档写的是 `JiebaBackend`；本项目用**纯标准库正向最大匹配**（零依赖契约），已按实际命名 `SegmentationBackend` | — |
+| 语义相似度参与判定 | `simpath.py` 已实现，未接进 `Filter`（因原厂 分→动作 映射未知） | 中 |
+
+**已完成（曾列为待做）**：
+
+| 项 | 位置 | 测试 |
+|---|---|---|
+| 第二后端 + A/B 对比 | `backends.py` | `test_backends.py` 43 项 |
+| 分块层接入 | `chunkpath.py` | `test_chunkpath.py` 27 项 |
+| 句子相似度 | `simpath.py` | `test_simpath.py` 35 项 |
 
 ### 待测
 
@@ -148,21 +182,23 @@ Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` �
 
 | 项 | 位置 | 状态 |
 |---|---|---|
-| 宽高比检查（`0x10008e20`，阈值 10.0） | `imaging.py` | DONE |
+| 宽高比检查（`0x10008e20`，浮点 10.0） | `imaging.py` | DONE |
 | 高亮度检查（`0x10008e70`，阈值 0.9） | `imaging.py` | DONE |
 | BGR 平面提取 | `imaging.py` | DONE |
 | 部分筛选可辨识（`checks_run`/`fully_screened`） | `imaging.py` | DONE |
 | 接入 `assess` + `Filter.check_image` | `policy.py` `filter.py` | DONE |
+| **`CHECKEX13x`**：整数宽高比 8、灰度 0.11/0.30/0.59、中心 8×8 标准差 1.4、8 档纹理分级、`9*g1+3*g2+g3` 打包 | `imaging_checkex.py` | DONE（41 项） |
+| **`CHECKEX8x`**：门槛 160、ratio 0.08/0.15/0.6、特殊门控返回 10 | `imaging_skin.py` | DONE（24 项） |
+| **`CHECKEX8x` 肤色**：`R>G>B` + 饱和度 >0.09 + 10 个色相桶，HSV | `imaging_skin_hsv.py` | DONE（26 项） |
 
 ### 待做
 
 | 项 | 说明 | 优先级 |
 |---|---|---|
 | Haar 人脸检测 | 需 OpenCV 或等价级联求值器 + 模型 | 低（非逻辑） |
-| **`CHECKEX13x` 主判定** | **P27 已还原**：门控/灰度/标准差/纹理分级/打包全部实测 | — |
-| **`CHECKEX8x` 主判定** | **P28 已还原**：门槛/ratio 分支/肤色三条件/10 色相桶 | — |
-| 矩形分析（`0x10006ee6`） | 0.54/252 语义未明，**代码里抛异常不复刻** | 低 |
-| 其余 16 个 `CHECKEX*` 语义 | 只逆向过 `CHECKEX2` | 低 |
+| ONNX NSFW 分类器 | 架构 §M4 的**目标**；原厂轮廓算法不是目标 | 高（P4） |
+| 矩形分析（`0x10006ee6`） | 0.54/252 语义未明，**代码里抛 `NotReversed`** | 低 |
+| 其余 15 个 `CHECKEX*` 语义 | 已还原 `CHECKEX13x`/`CHECKEX8x`，剩余多为阈值变体 | 低（对目标无益） |
 | 抓屏（`CAPSCREEN`） | 平台 API，属 M5 | 中 |
 | 自动加黑名单（写名单 D） | 依赖 M1 运行时容器接线 | 中 |
 
@@ -199,15 +235,28 @@ Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` �
 
 ---
 
-## 7. M7 基础设施 —— TODO
+## 7. M7 基础设施 —— PARTIAL
+
+### 已实现
+
+| 项 | 位置 | 状态 | 测试 |
+|---|---|---|---|
+| 配置持久化（原子写 + 往返自检 + 旁挂元信息） | `config.py` | DONE | 26 项 |
+| 事件日志（JSONL，每条 flush，内容摘要） | `eventlog.py` | DONE | 22 项 |
+| 日志接线（判定 → 单条记录） | `filter.py` | DONE | `test_invariants` 钉住 |
+| 家长密码（PBKDF2 600k + 随机盐 + 常量时序） | `secret.py` | DONE | 33 项 |
+| 安装日志与卸载计划（逆序 + 可逆性契约） | `journal.py` | DONE | 37 项 |
+
+### 待做
 
 | 待做项 | 说明 | 优先级 |
 |---|---|---|
-| 配置持久化 | 读写 `sys.dat` 形状（`sysdat.encode()` 已备） | 高 |
-| 日志（含变更日志） | 架构要求 | 中 |
-| 服务宿主 | 架构要求 | 低（先做库） |
+| 服务宿主 | 架构要求 `LocalSystem` + ACL + 恢复动作 | 低（需真机） |
 | IPC | 架构要求 | 低 |
-| 加固/防卸载 | **N/A** —— 架构明确不做 | N/A |
+| 执行卸载动作 | `journal.plan_uninstall` 只出计划，执行需平台 API | 中（I12） |
+| 日志轮转 / 保留期 | 槽 4 可读，策略未定 | 中 |
+| 密码失败锁定 / 强度策略 | 未定；原厂无此机制 | 低 |
+| 加固/防卸载（rootkit 式） | **N/A** —— 架构明确不做 | N/A |
 
 ---
 
@@ -226,7 +275,7 @@ Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` �
 | 项 | 说明 | 优先级 |
 |---|---|---|
 | 原厂分 → 动作映射 | 语义未知（`HASrv.dll` 未查），**保持 `attested=False`** | 阻塞于逆向 |
-| 时间控制（槽 24 / 槽 21） | 槽位可读，调度逻辑未做 | 中 |
+| 时间控制（槽 24 / 槽 21） | 槽位可读，调度逻辑未做 | 中（J7） |
 | 白名单优先（槽 14 / 槽 15） | 槽位可读，优先级逻辑未做 | 中 |
 
 ### 待测
@@ -240,7 +289,8 @@ Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` �
 
 ## 9. M9 控制台 —— TODO
 
-架构要求：单机、无服务器、托盘 + 日志 + 调度。`src/` 无代码，无 CLI。
+架构要求：单机、无服务器、托盘 + 日志 + 调度。`src/` 无产品 UI；
+`cli*.py` 是**诊断工具**（`green-dam`），不是 M9。
 
 ---
 
@@ -250,7 +300,7 @@ Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` �
 |---|---|---|
 | 打包（`pyproject.toml`） | **DONE** | 零运行时依赖，`>=3.10` |
 | 结构约束（模块/类/函数规模、嵌套深度） | **DONE** | `test_structure.py` 15 项 |
-| CLI 入口（`green-dam`） | **DONE** | 6 个子命令，全支持 `--json` |
+| CLI 入口（`green-dam`） | **DONE** | 12 个子命令，全支持 `--json`；按权限等级分 3 个模块 |
 | 端到端测试 | **DONE** | `test_filter.py` 21 项，配置→判定→日志全链 |
 | 真实流量接入 | TODO | `check_request` 就绪，无传输层 |
 | 不打印词条纪律 | DONE | 全部测试只断言结构与计数 |
@@ -260,13 +310,32 @@ Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` �
 
 ## 11. 下一步（按依赖排序）
 
-1. ~~M1 规则语法引擎 + 144B 记录~~ —— **DONE**（提交 `f4b780a`）
-2. ~~M1 四名单模型~~ —— **DONE**
-3. **M2 出站/入站判定链** —— 契约最完整，可用假数据先跑通 ← **下一步**
-4. **M8 与 M3/M4 汇总接线** —— 把已有检测结果变成 `Finding`
-5. **M4 剩余**（Haar / 抓屏 / 自动加黑名单）
-6. ~~M7 配置持久化~~ —— **DONE**
-7. ~~打包 + CLI~~ —— **DONE**
+**已完成**：
+
+| 项 | 提交 |
+|---|---|
+| M1 规则语法 + 144B 记录 + 四名单 | `f4b780a` `5745505` |
+| M2 判定链 + 四段降级骨架 | `5bf7025` `7140f2b` |
+| M8 与 M3/M4 汇总接线 | `8295025` |
+| M7 日志 / 配置 / 密码 / 卸载 | `7475f5c` `6c303a7` `7e8f670` `36d64a0` |
+| 打包 + CLI | `3e59380` |
+| M3 双后端 + 分块 + 相似度 | `0813952` `59becca` `cdedf34` |
+| 测试框架（契约/不变量/结构） | `7140f2b` `420befa` |
+| M4 图像（4 个模块） | `ec2c067` `cd24d8f` `652b3a1` |
+
+**纯 Python 侧已无「不需要平台 API」的待做项。** 剩余全部是：
+
+| 项 | 需要什么 |
+|---|---|
+| M4 ONNX NSFW 分类器 | 模型文件 + onnxruntime |
+| M2 真实代理/防火墙 | 管理员权限 |
+| M5 UIA + OCR | Windows API |
+| M6 进程终止 | 进程权限 |
+| M7 服务宿主 / 卸载执行 | 服务权限 |
+| M9 产品 UI | GUI |
+| M8 时间调度 | 槽位可读，逻辑未做（**纯逻辑，可做**） |
+
+**唯一还属纯逻辑的是 M8 时间调度（J7）与白名单优先。**
 
 ---
 
@@ -275,7 +344,32 @@ Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` �
 | 项 | 理由 |
 |---|---|
 | HNC 句法分析（`GetSentenceALC` 线） | 原厂零调用，凑齐 `.lib` 也无用（`docs/engine-call-graph.md`） |
+| 复刻原厂轮廓/NSFW 判定算法 | 架构 §M4 目标是 ONNX 分类器，不是复刻（`docs/image-layer.md`） |
+| 继续逆向剩余 15 个 `CHECKEX*` | 已还原两个最大的；剩余多为阈值变体，对目标无益 |
+| 矩形分析 `0x10006ee6` | 0.54/252 语义未明；代码抛 `NotReversed` |
 | 原厂打分表当通用词库 | 是某份文档的原文片段，非规范化词表（`docs/replication-status.md`） |
 | `.urf` 元数据区 | 熵 7.98 加密，GIF 已明文可提取（`analysis/probe/p23`） |
 | GDI/API hook 实现 | 架构明确改代理 + 无障碍/OCR（`docs/architecture.md`） |
 | 防卸载/加固 | 架构明确不做 |
+
+---
+
+## 13. 修订记录（防误读）
+
+本清单曾长期停留在 M8 完成时的状态，导致多处「待做」其实是「早已完成」。
+2026 年这次核对逐条比对 `src/` 与 `tests/` 后修正。记录在此，避免再犯。
+
+| 曾被写成「待做」 | 实际状态 | 何时完成 |
+|---|---|---|
+| 四名单运行时模型 | DONE `namelists.py` | `5745505` |
+| 144B 记录编解码 | DONE `namelist.py` | `f4b780a` |
+| 规则语法引擎 | DONE `namelist.py` | `f4b780a` |
+| 第二后端 | DONE `backends.py` | `0813952` |
+| 传输层四段 | DONE（骨架）`transport.py` | `7140f2b` |
+| 配置持久化 | DONE `config.py` | `6c303a7` |
+| 日志 | DONE `eventlog.py` | `7475f5c` |
+| 打包 + CLI | DONE `pyproject.toml` `cli*.py` | `3e59380` |
+| 「没有 CLI、没有打包配置」 | **错误**，两者都有 | `3e59380` |
+
+**教训**：清单是给未来的自己看的。写完代码不更新清单，等于把进度藏起来。
+以后每次提交若改变清单里的任何一行，必须同一次提交内改掉。
