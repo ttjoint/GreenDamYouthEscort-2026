@@ -89,6 +89,45 @@ def cmd_screen(args) -> int:
     return 0
 
 
+def cmd_texture(args) -> int:
+    """Run the CHECKEX13x texture path on a synthetic frame.
+
+    Takes a stddev directly rather than an image: the arithmetic is what this
+    exercises, and generating a frame whose centre window has a chosen stddev
+    would add machinery without testing anything new.
+    """
+    from . import imaging_checkex as cx
+
+    if args.width and args.height:
+        ok = cx.checkex_aspect_ok(args.width, args.height)
+    else:
+        ok = None
+
+    grade = cx.texture_grade(args.stddev)
+    payload = {
+        "stddev": args.stddev,
+        "grade": grade,
+        "weight": cx.texture_grade_weight(grade),
+        "passes_texture": cx.texture_ok(args.stddev),
+        "above_threshold": args.stddev >= cx.CENTRE_STDDEV_THRESHOLD,
+    }
+    if ok is not None:
+        payload["aspect_ok"] = ok
+
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+
+    print(f"stddev         : {args.stddev}")
+    print(f"grade          : {grade} (0..7)")
+    print(f"weight         : {cx.texture_grade_weight(grade)}")
+    print(f"above 1.4      : {payload['above_threshold']}")
+    print(f"passes texture : {payload['passes_texture']}")
+    if ok is not None:
+        print(f"aspect ok      : {ok} (integer gate, max {cx.CHECKEX_MAX_ASPECT})")
+    return 0
+
+
 def cmd_replay(args) -> int:
     """Replay a flow file through the planner and the filter."""
     from .replay import FlowFileError, replay_file

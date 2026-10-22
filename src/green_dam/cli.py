@@ -47,6 +47,7 @@ from .cli_filter import (
     cmd_replay,
     cmd_screen,
     cmd_similar,
+    cmd_texture,
 )
 from .cli_lifecycle import cmd_password, cmd_uninstall
 
@@ -76,6 +77,15 @@ def _add_filter_commands(sub) -> None:
                         "skip the high-tone check")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_screen)
+
+    p = sub.add_parser("texture", help="run the CHECKEX13x texture path on a "
+                                       "given stddev (no image is read)")
+    p.add_argument("--stddev", type=float, required=True,
+                   help="centre-window stddev to grade")
+    p.add_argument("--width", type=int, help="also check the integer aspect gate")
+    p.add_argument("--height", type=int)
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_texture)
 
     p = sub.add_parser("replay", help="replay a JSON flow file through the "
                                       "four-stage planner (no network)")

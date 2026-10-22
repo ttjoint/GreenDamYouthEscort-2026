@@ -62,12 +62,13 @@ HIGH_TONE_FLOOR = 210
 #: Read from ``[0x1000d540]``: 0.9.
 HIGH_TONE_THRESHOLD = 0.9
 
-
 class Check(str, Enum):
     """Which check produced a verdict. Values are stable log tokens."""
 
     TOO_SMALL = "too_small"
     ASPECT = "aspect"
+    CHECKEX_ASPECT = "checkex_aspect"
+    TEXTURE = "texture"
     HIGH_TONE = "high_tone"
 
 

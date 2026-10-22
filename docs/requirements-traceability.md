@@ -98,7 +98,8 @@
 | F2 | 高亮度检查，R≥210 占比 ≥ 0.9 | 逆向 p22 | `test_imaging.py` | COVERED |
 | F3 | 部分筛选可辨识（不得把"没查全"报成"干净"） | 本项目修正 | `test_imaging.py::ScreenTest` | COVERED |
 | F4 | NSFW / 人脸分类 | architecture §M4 | — | **MISSING**（训练模型） |
-| F6 | 轮廓/形态学主判定（`CHECKEX8x`/`13x`/`CAPSCREEN`） | 逆向 p26 | — | **MISSING**（语义未逆向） |
+| F6 | `CHECKEX13x` 主判定（门控/灰度/标准差/纹理分级） | 逆向 p27 | `test_imaging_checkex.py` 41 项 | COVERED |
+| F7 | 其余 16 个 `CHECKEX*` 的算法组合 | 逆向 p26 | — | **MISSING**（未逆向） |
 | F5 | 图像过滤受 sys.dat 槽 13 + 5 双重门控 | 逆向 | `test_filter.py::ImagePathTest` | COVERED |
 
 ## G. M5 屏幕文字

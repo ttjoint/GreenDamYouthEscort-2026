@@ -562,3 +562,31 @@ class SimilarCliTest(unittest.TestCase):
                             "--right", "李四的腿被张三打断",
                             "--threshold", "0.1"])
         self.assertIn("similar    : True", out)
+
+
+class TextureCliTest(unittest.TestCase):
+    def test_grades_a_stddev(self):
+        code, out, _ = run(["texture", "--stddev", "200"])
+        self.assertEqual(code, 0)
+        self.assertIn("grade          : 5", out)
+
+    def test_zero_weight_grade_reports_not_passing(self):
+        code, out, _ = run(["texture", "--stddev", "80"])
+        self.assertIn("grade          : 3", out)
+        self.assertIn("passes texture : False", out)
+
+    def test_below_threshold(self):
+        code, out, _ = run(["texture", "--stddev", "1.0"])
+        self.assertIn("above 1.4      : False", out)
+
+    def test_integer_aspect_gate(self):
+        code, out, _ = run(["texture", "--stddev", "200",
+                            "--width", "900", "--height", "100"])
+        self.assertIn("aspect ok      : False", out)
+
+    def test_json(self):
+        code, out, _ = run(["texture", "--stddev", "200", "--json"])
+        payload = json.loads(out)
+        self.assertEqual(payload["grade"], 5)
+        self.assertTrue(payload["passes_texture"])
+        self.assertAlmostEqual(payload["weight"], 0.749116911)

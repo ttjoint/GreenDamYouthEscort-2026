@@ -219,7 +219,18 @@
 | IMG07 | CImage.dll 用 OpenCV 轮廓/形态学/霍夫线全套 | IMP | p22 + **p26** | CLOSED | ME | p26 补证：非死导入，17 个 CHECK* 经 2-3 层调用可达 |
 | IMG08 | CImage.dll 有 17 个 CHECK* 导出（非仅 CHECKEX2） | PE-HDR | **p26** | CLOSED | ME | 导出表实测，编号 1–8、10–13，无 9 |
 | IMG09 | 15 个 CHECK* 函数 3 层内可达 OpenCV 桩 | DISASM | **p26** | CLOSED | ME | capstone 精确反汇编 + BFS |
-| IMG10 | 主图像判定在 CHECKEX8x / CHECKEX13x / CAPSCREEN | DISASM | **p26** | **OPEN** | ME | 规模 845/1363/1353 条指令，语义未逆向 |
+| IMG10 | 主图像判定在 CHECKEX8x / CHECKEX13x / CAPSCREEN | DISASM | p26 | CLOSED | ME | 三处规模 845/1363/1353 条指令 |
+| IMG18 | `CHECKEX13x` 主判定 = `0x100078e0`，逻辑已还原 | DISASM | **p27** | CLOSED | ME | 门控/双比值/分支/返回码全还原 |
+| IMG19 | 灰度权重 0.11/0.30/0.59 + 0.5（BGR 序） | BYTES | **p27** | CLOSED | ME | `0xd678`/`0xd670`/`0xd668`/`0xd660` |
+| IMG20 | 中心 8×8 窗口标准差阈值 1.4 | BYTES | **p27** | CLOSED | ME | `0xd658`，`0x10002790` 是总体标准差 |
+| IMG21 | 8 档纹理分级边界 20/40/75/155/190/270/295/316 | BYTES | **p27** | CLOSED | ME | `0x100027e0` 分支链实测 |
+| IMG22 | 分级结果按 `9*g1+3*g2+g3` 打包（0–71） | DISASM | **p27** | CLOSED | ME | `0x10002955` lea 链 |
+| IMG23 | `0x10005150` 与 `0x10008e70` 是同一算法的两份拷贝 | DISASM | **p27** | CLOSED | ME | 同用 `0xd518`/`0xd540`/210 分界 |
+| IMG24 | `CHECKEX13x` 不调用轮廓/霍夫，那是别的 CHECKEX* | DISASM | **p27** | CLOSED | ME | 推翻 p22 的合并表述 |
+| IMG12 | `0x10001ba0`（ratio1≥0.4 分支）语义 | — | — | **OPEN** | — | 决定分支 A 行为 |
+| IMG13 | 返回 `0x64` 在正常路径的含义 | — | — | **OPEN** | — | 与反调试返回值同值，易混淆 |
+| IMG14 | 8 项权重表 `0x1000d110` 的来源 | — | — | **OPEN** | — | 无字符串/配置引用 |
+| IMG15 | `ratio1`/`ratio2` 的物理含义 | — | — | **OPEN** | — | 公式未完全推导 |
 | IMG11 | 其余 16 个 CHECKEX 的参数契约与返回码 | — | — | **OPEN** | — | 仅 CHECKEX2 已逆向（首参 0x7ab7） |
 
 ## 十七、名单D与查询命令（P10 成果，本轮新增）
