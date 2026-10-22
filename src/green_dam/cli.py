@@ -47,6 +47,7 @@ from .cli_filter import (
     cmd_replay,
     cmd_screen,
     cmd_similar,
+    cmd_skin,
     cmd_texture,
 )
 from .cli_lifecycle import cmd_password, cmd_uninstall
@@ -86,6 +87,17 @@ def _add_filter_commands(sub) -> None:
     p.add_argument("--height", type=int)
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_texture)
+
+    p = sub.add_parser("skin", help="classify a BGR triple with CHECKEX8x's "
+                                    "skin rules")
+    p.add_argument("--r", type=int)
+    p.add_argument("--g", type=int)
+    p.add_argument("--b", type=int)
+    p.add_argument("--flat", help="r,g,b for a flat frame instead of one pixel")
+    p.add_argument("--width", type=int)
+    p.add_argument("--height", type=int)
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_skin)
 
     p = sub.add_parser("replay", help="replay a JSON flow file through the "
                                       "four-stage planner (no network)")

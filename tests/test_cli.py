@@ -590,3 +590,36 @@ class TextureCliTest(unittest.TestCase):
         self.assertEqual(payload["grade"], 5)
         self.assertTrue(payload["passes_texture"])
         self.assertAlmostEqual(payload["weight"], 0.749116911)
+
+
+class SkinCliTest(unittest.TestCase):
+    def test_classifies_skin_tone(self):
+        code, out, _ = run(["skin", "--r", "200", "--g", "150", "--b", "120"])
+        self.assertEqual(code, 0)
+        self.assertIn("skin       : True", out)
+
+    def test_rejects_grey(self):
+        code, out, _ = run(["skin", "--r", "128", "--g", "128", "--b", "128"])
+        self.assertIn("skin       : False", out)
+
+    def test_json(self):
+        code, out, _ = run(["skin", "--r", "200", "--g", "150", "--b", "120",
+                            "--json"])
+        payload = json.loads(out)
+        self.assertTrue(payload["skin"])
+        self.assertAlmostEqual(payload["saturation"], 0.4, places=3)
+
+    def test_flat_frame(self):
+        code, out, _ = run(["skin", "--flat", "200,150,120",
+                            "--width", "4", "--height", "4"])
+        self.assertEqual(code, 0)
+        self.assertIn("pixels     : 16", out)
+        self.assertIn("skin       : 16", out)
+
+    def test_missing_channels_errors(self):
+        code, _, err = run(["skin", "--r", "200"])
+        self.assertEqual(code, 2)
+
+    def test_no_input_errors(self):
+        code, _, err = run(["skin"])
+        self.assertEqual(code, 2)

@@ -69,6 +69,8 @@ class LayeringTest(unittest.TestCase):
         "namelist": set(),
         "imaging": set(),
         "imaging_checkex": set(),
+        "imaging_skin": set(),
+        "imaging_skin_hsv": set(),
         "hnc": set(),
         "l_concepts": set(),
         "chunk_tags": set(),
@@ -94,7 +96,8 @@ class LayeringTest(unittest.TestCase):
         "replay": {"filter", "transport"},
         "cli_admin": {"config", "eventlog", "filter", "sysdat"},
         "cli_filter": {"backends", "chunkpath", "eventlog", "filter", "imaging",
-                       "imaging_checkex", "intercept", "replay", "simpath"},
+                       "imaging_checkex", "imaging_skin_hsv", "intercept", "replay",
+                       "simpath"},
         "cli_lifecycle": {"journal", "secret"},
         "cli": {"cli_admin", "cli_filter", "cli_lifecycle"},
     }
