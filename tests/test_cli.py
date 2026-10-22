@@ -208,3 +208,35 @@ class ParserTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ScreenTest(unittest.TestCase):
+    def test_clean_frame(self):
+        code, out, _ = run(["screen", "--width", "640", "--height", "480"])
+        self.assertEqual(code, 0)
+        self.assertIn("suspect        : False", out)
+
+    def test_thin_frame_fires(self):
+        code, out, _ = run(["screen", "--width", "1000", "--height", "32",
+                            "--red", "255"])
+        self.assertEqual(code, 0)
+        self.assertIn("suspect        : True", out)
+        self.assertIn("aspect", out)
+
+    def test_json_shape(self):
+        code, out, _ = run(["screen", "--width", "64", "--height", "64",
+                            "--red", "10", "--json"])
+        payload = json.loads(out)
+        self.assertIn("suspect", payload)
+        self.assertIn("checks_run", payload)
+        self.assertIn("aspect_ratio", payload["metrics"])
+
+    def test_red_out_of_range(self):
+        code, _, err = run(["screen", "--width", "64", "--height", "64",
+                            "--red", "999"])
+        self.assertEqual(code, 2)
+        self.assertIn("0..255", err)
+
+    def test_missing_dimensions_errors(self):
+        code, _, _ = run(["screen", "--width", "64"])
+        self.assertNotEqual(code, 0)

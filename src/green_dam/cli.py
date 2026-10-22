@@ -118,6 +118,37 @@ def _cmd_check(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_screen(args: argparse.Namespace) -> int:
+    """Screen a synthetic frame. No image file is read: dimensions only."""
+    from .imaging import screen
+
+    red = None
+    if args.red is not None:
+        if not 0 <= args.red <= 255:
+            print("--red must be 0..255", file=sys.stderr)
+            return 2
+        red = bytes([args.red]) * (args.width * args.height)
+
+    result = screen(width=args.width, height=args.height, red_channel=red)
+    if args.json:
+        print(json.dumps({
+            "suspect": result.suspect,
+            "detail": result.detail,
+            "fully_screened": result.fully_screened,
+            "fired": [c.value for c in result.fired],
+            "checks_run": [c.value for c in result.checks_run],
+            "metrics": result.metrics,
+        }, ensure_ascii=False, indent=2, sort_keys=True))
+    else:
+        print(f"suspect        : {result.suspect}")
+        print(f"detail         : {result.detail}")
+        print(f"fully screened : {result.fully_screened}")
+        print(f"fired          : {[c.value for c in result.fired] or '-'}")
+        for key, value in sorted(result.metrics.items()):
+            print(f"{key:<15}: {value:.4f}")
+    return 0
+
+
 def _cmd_validate(args: argparse.Namespace) -> int:
     path = Path(args.path)
     try:
@@ -185,6 +216,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--text-file", help="read text from a file")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=_cmd_check)
+
+    p = sub.add_parser("screen", help="run the ported image checks on a "
+                                      "synthetic frame (no file is read)")
+    p.add_argument("--width", type=int, required=True)
+    p.add_argument("--height", type=int, required=True)
+    p.add_argument("--red", type=int,
+                   help="fill the R plane with one value (0..255); omit to "
+                        "skip the high-tone check")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=_cmd_screen)
 
     p = sub.add_parser("validate", help="validate a policy blob")
     p.add_argument("path")

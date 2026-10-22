@@ -61,22 +61,61 @@ return 0x64(100)       ; 返回错误码
 | Haar 级联 | FImage.dll + XFimage.xml | 人脸检测 |
 | 轮廓形状 | cvFindContours 系列 | 图形特征 |
 
-## 关键浮点阈值（0x10004a60 三种模式）
+## 两个检测函数的精确逻辑（**实测重写，见下方更正**）
 
-| 模式 | 常量 | 值(约) |
-|---|---|---|
-| 1 | 0x3fbeb851 / 0x3fd33333 | 0.115 / 0.413 |
-| 3 | 0x3faeb851 / 0x3fc47ae1 | 0.174 / 0.184 |
-| 其他 | 0x3fb70a3d / 0x3fc99999 | 0.183 / 0.206 |
+### 宽高比检查 `0x10008e20(width, height) -> int`
 
-（这些是 Haar 检测器的 scale_factor / min_neighbors 相关参数）
+```
+if width < 32 or height < 32:      ; 0x8e24/0x8e2d: cmp ...,0x20
+    return 1                       ; 太小，不判异常
+ratio = max(w,h) / min(w,h)        ; 0x8e32-0x8e44: fild/fidiv，先比大小再相除
+if ratio < [0x1000dc48]:           ; fcomp qword
+    return 0                       ; 过于细长 → 判异常
+return 1
+```
 
-## 复刻契约（图像过滤）
+**`[0x1000dc48]` 实测 = 10.0（double）**，字节 `0000000000002440`。
 
-1. 抓屏（CAPSCREEN）→ 得到图像
-2. CHECKEX2 检测（3 模式）：
-   - 宽高比检查
-   - 颜色直方图（肤色占比）
-   - Haar 人脸检测（XFimage.xml）
-   - 轮廓形状分析
-3. 返回检测结果（0=干净, 非0=命中）
+### 颜色直方图 `0x10008e70(ptr, width, height) -> int`
+
+```
+hist[256] = 0.0                    ; 0x8e85-0x8e92: rep stosd 0x200 dword
+for row in range(height):          ; 0x8e94-0x8ecf
+    p = ptr + 2                    ; 0x8e99: lea edi,[eax+2] —— BGR 的 R 通道
+    for col in range(width):
+        hist[p[0]] += 1.0          ; 0x8ea4-0x8ec7: 取 1 字节，+[0x1000d518]=1.0
+        p += 3                     ; 0x8ea6: add ecx,3 —— 步进 3 字节
+    ptr += width * 3               ; 0x8ec9-0x8ecc
+total = width * height
+for i in range(256): hist[i] /= total   ; 0x8ed4-0x10008ef3: 归一化
+low  = sum(hist[0   .. 0xd1])      ; 0x8f07: ecx=0xd2(210) 个桶
+high = sum(hist[0xd2 .. 0xff])     ; 0x8f1f: ecx=0x2e(46) 个桶
+if high / (low + high) >= [0x1000d540]:
+    return 1
+```
+
+**`[0x1000d540]` 实测 = 0.9（double）**，字节 `cdccccccccccec3f`。
+**`[0x1000d518]` 实测 = 1.0（double）**，字节 `000000000000f03f`。
+
+### 更正：本节原先把这两个函数描述错了
+
+| 原先写的 | 实际（本轮实测） |
+|---|---|
+| "宽高比阈值 0.115/0.413 等三组" | 宽高比只有一个阈值 **10.0** |
+| "颜色直方图 = 肤色占比" | 是 **高亮度桶（R ≥ 210）占比 ≥ 0.9**，即过曝/白屏检测 |
+| "0x10004a60 三种模式有不同浮点阈值" | 那三组常量不在 `0x10004a60`，是别处的；宽高比与直方图各自只有**一个**阈值 |
+
+原先那句"这些是 Haar 检测器的 scale_factor / min_neighbors 参数"是**推断**，
+本轮未能在代码中找到依据，已删除。Haar 确实存在（`FImage.dll` 引用
+`XFimage.xml`），但它与这两个函数的阈值无关。
+
+## 复刻契约（图像过滤，按实测重写）
+
+| 步骤 | 函数 | 判据 | 证据 |
+|---|---|---|---|
+| 1 | `0x10008e20` | 短边 < 32 → 放行；长/短 ≥ 10.0 → 异常 | 0x8e20-0x8e5f |
+| 2 | `0x10008e70` | R 通道 ≥ 210 的像素占比 ≥ 0.9 → 异常 | 0x8e70-0x8f4e |
+| 3 | `FImage.dll` + `XFimage.xml` | Haar 人脸检测 | 字符串引用 @0x7030 |
+
+三者是**独立判据**，任一命中即"可疑"。原厂 `CHECKEX2` 把它们串起来，
+返回 0=干净 / 非 0=命中。

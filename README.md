@@ -44,6 +44,7 @@ docs/              design and migration notes
   config-persistence.md  atomic policy-array persistence
   facade.md            how the layers are wired together
   cli.md               diagnostic command-line tool
+  image-layer.md       M4: the two image checks that were decodable
 analysis/          reverse-engineering write-ups of the original product
                      (master ledger, facts, corrections, spec; see analysis/README.md)
 tools/             legacy import tooling (run once, then irrelevant)

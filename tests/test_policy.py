@@ -256,3 +256,55 @@ class AssessTest(unittest.TestCase):
         got = assess(network=net)
         self.assertIsNone(got.action)
         self.assertIsNotNone(got.network)
+
+
+class ImageAssessmentTest(unittest.TestCase):
+    """Image evidence combines with the others without inventing an action."""
+
+    def _screen(self, suspect=True, detail="high_tone"):
+        from green_dam.imaging import Check, ScreenResult
+        return ScreenResult(
+            suspect=suspect,
+            fired=(Check.HIGH_TONE,) if suspect else (),
+            checks_run=(Check.ASPECT, Check.HIGH_TONE),
+            detail=detail,
+        )
+
+    def test_image_alone_has_no_action(self):
+        # A measurement is not a policy: no image_action means no action.
+        got = assess(image=self._screen())
+        self.assertIsNone(got.action)
+        self.assertIsNotNone(got.image)
+
+    def test_image_action_applied(self):
+        got = assess(image=self._screen(), image_action="block")
+        self.assertEqual(got.action, "block")
+        self.assertEqual(got.source, "image")
+        self.assertEqual(got.reason, "high_tone")
+
+    def test_network_block_beats_image(self):
+        from green_dam.intercept import Decision, Outcome, Stage
+        net = Decision(Outcome.BLOCK, Stage.HOST, "host_listed")
+        got = assess(network=net, image=self._screen(), image_action="block")
+        self.assertEqual(got.source, "network")
+
+    def test_stronger_of_text_and_image_wins(self):
+        text = Verdict(findings=(), action="log", reason="keyword")
+        got = assess(text=text, image=self._screen(), image_action="block")
+        self.assertEqual(got.source, "image")
+        self.assertEqual(got.action, "block")
+
+    def test_weaker_image_does_not_beat_text(self):
+        text = Verdict(findings=(), action="block", reason="keyword")
+        got = assess(text=text, image=self._screen(), image_action="log")
+        self.assertEqual(got.source, "text")
+
+    def test_tie_keeps_text(self):
+        text = Verdict(findings=(), action="warn", reason="keyword")
+        got = assess(text=text, image=self._screen(), image_action="warn")
+        self.assertEqual(got.source, "text")
+
+    def test_image_provenance_kept(self):
+        screen_result = self._screen()
+        got = assess(image=screen_result, image_action="block")
+        self.assertIs(got.image, screen_result)

@@ -37,6 +37,7 @@ from pathlib import Path
 from . import config as config_mod
 from . import sysdat
 from .eventlog import EventLog, record_for_assessment, record_for_decision, record_for_gate
+from .imaging import ScreenResult, screen
 from .intercept import Decision, Interceptor, Outcome, Request
 from .namelists import NameLists
 from .policy import Assessment, PolicyEngine, PolicyTable, Verdict, assess, default_policy_table
@@ -145,10 +146,44 @@ class Filter:
                 assess(text=verdict), direction="text"))
         return verdict
 
+    # -- image path -------------------------------------------------------
+
+    def check_image(self, *, width: int, height: int,
+                    red_channel: bytes | None = None) -> ScreenResult:
+        """Screen one frame, honouring the image-filter switches.
+
+        Returns the measurement only. Whether a suspect frame becomes a block is
+        :meth:`check`'s job via ``image_action``, because the vendor's
+        score-to-action mapping is still unknown.
+        """
+        reason = self._gate(keyword=False)
+        if reason is not None:
+            if self.log is not None:
+                self.log.append(record_for_gate(reason))
+            return ScreenResult(suspect=False, detail=reason)
+
+        if self.legacy is not None and not self.legacy.image_filter_enabled:
+            # Image filtering is switched off in the policy array. Report that
+            # rather than a clean frame - same rule as everywhere else.
+            if self.log is not None:
+                self.log.append(record_for_gate("image_filter_disabled"))
+            return ScreenResult(suspect=False, detail="image_filter_disabled")
+
+        if self.legacy is None:
+            # No policy at all: treat image filtering as off rather than
+            # silently screening. "Not configured" must not read as "enabled".
+            if self.log is not None:
+                self.log.append(record_for_gate("image_filter_disabled"))
+            return ScreenResult(suspect=False, detail="image_filter_disabled")
+
+        return screen(width=width, height=height, red_channel=red_channel)
+
     # -- combined ---------------------------------------------------------
 
     def check(self, *, request: Request | None = None,
-              text: str | None = None) -> Assessment:
+              text: str | None = None,
+              image: ScreenResult | None = None,
+              image_action=None) -> Assessment:
         """Judge a request and/or text together, returning one action.
 
         A network block wins; otherwise a text action; otherwise nothing. The
@@ -180,7 +215,8 @@ class Filter:
                 # result. 'Not looking' must not look like 'nothing found'.
                 verdict = Verdict(findings=(), action=None, reason="no_wordlists")
 
-        result = assess(network=network, text=verdict)
+        result = assess(network=network, text=verdict, image=image,
+                        image_action=image_action)
         if self.log is not None:
             self.log.append(record_for_assessment(
                 result, direction=request.direction if request else "text"))

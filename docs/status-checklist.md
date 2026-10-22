@@ -13,7 +13,7 @@
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：CLI + 打包完成时（600 passed）。
+> 最后核对：M4 图像（两项实测检查）完成时（644 passed）。
 
 ---
 
@@ -24,7 +24,7 @@
 | M1 数据 | 载入 JSON、建索引、类别模型 | **PARTIAL** | `wordlists.py` `namelist.py` `namelists.py` | `test_wordlists` `test_namelist` `test_namelists` |
 | M2 网络 | 四段拦截 | **PARTIAL** | `intercept.py`（判定链） | `test_intercept` |
 | M3 文本 | 分词、语境判定、双后端 | **PARTIAL** | `chunker.py` `hnc.py` `semantic.py` `l_concepts.py` `chunk_tags.py` `similarity.py` | `test_chunker` 等 7 个 |
-| M4 图像 | 不良/人脸分类 | **TODO** | — | — |
+| M4 图像 | 不良/人脸分类 | **PARTIAL** | `imaging.py`（2 项实测检查） | `test_imaging` |
 | M5 屏幕 | 屏幕文字提取 | **TODO** | — | — |
 | M6 应用控制 | 禁止指定程序联网 | **TODO** | — | — |
 | M7 基础设施 | 服务、配置、日志、IPC | **PARTIAL** | `eventlog.py` `config.py` | `test_eventlog` `test_config` |
@@ -137,23 +137,37 @@
 
 ---
 
-## 4. M4 图像层 —— TODO
+## 4. M4 图像层 —— PARTIAL
 
-逆向已闭合（`analysis/probe/p22`，C-021），`src/` 无代码。
+两个能逐字节读懂的函数已复刻（`src/green_dam/imaging.py`，27 项测试）。
+Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` §5 说明。
 
-| 待做项 | 逆向依据 | 说明 |
+### 已实现
+
+| 项 | 位置 | 状态 |
 |---|---|---|
-| 检测算法组合 | p22 | 宽高比 → 颜色直方图 → Haar 人脸 → 轮廓 |
-| 三档灵敏度 | p22 | 原厂 `0x10004a60` 三种模式对应 UI 低/中/高 |
-| 抓屏入口 | p22 | 原厂 `CAPSCREEN` |
-| 自动加黑名单 | p22 + p24 | 命中后写名单 D（M1 待做项） |
+| 宽高比检查（`0x10008e20`，阈值 10.0） | `imaging.py` | DONE |
+| 高亮度检查（`0x10008e70`，阈值 0.9） | `imaging.py` | DONE |
+| BGR 平面提取 | `imaging.py` | DONE |
+| 部分筛选可辨识（`checks_run`/`fully_screened`） | `imaging.py` | DONE |
+| 接入 `assess` + `Filter.check_image` | `policy.py` `filter.py` | DONE |
+
+### 待做
+
+| 项 | 说明 | 优先级 |
+|---|---|---|
+| Haar 人脸检测 | 需 OpenCV 或等价级联求值器 + 模型 | 低（非逻辑） |
+| 轮廓/形态学判定路径 | 已 import 但未找到判定调用 | 低 |
+| 抓屏（`CAPSCREEN`） | 平台 API，属 M5 | 中 |
+| 自动加黑名单（写名单 D） | 依赖 M1 运行时容器接线 | 中 |
 
 ### 待测
 
 | 项 | 说明 |
 |---|---|
-| 检测器单元测试 | 需中性测试图（纯色/几何图形），不使用任何原厂样例 |
-| 灵敏度三档差异 | 需证明三档在同一图上给出不同判定 |
+| ~~检测器单元测试~~ | **DONE**：全部用算术生成的合成图，无素材依赖 |
+| 灵敏度三档差异 | **未做**：实测两个函数各只有一个阈值，原厂"三档"未找到对应代码 |
+| 真实图片端到端 | 需解码器，属输入层 |
 
 ---
 
@@ -244,7 +258,7 @@
 2. ~~M1 四名单模型~~ —— **DONE**
 3. **M2 出站/入站判定链** —— 契约最完整，可用假数据先跑通 ← **下一步**
 4. **M8 与 M3/M4 汇总接线** —— 把已有检测结果变成 `Finding`
-5. **M4 图像检测** —— 依赖 M1 名单 D（自动加黑名单）
+5. **M4 剩余**（Haar / 抓屏 / 自动加黑名单）
 6. ~~M7 配置持久化~~ —— **DONE**
 7. ~~打包 + CLI~~ —— **DONE**
 

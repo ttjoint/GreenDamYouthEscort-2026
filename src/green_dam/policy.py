@@ -238,6 +238,8 @@ class Assessment:
     network: object | None = None
     #: The text verdict, when one was made.
     text: Verdict | None = None
+    #: The image screen result, when one was made.
+    image: object | None = None
 
     @property
     def blocked(self) -> bool:
@@ -248,16 +250,28 @@ def assess(
     *,
     network=None,
     text: Verdict | None = None,
+    image=None,
+    image_action: Action | None = None,
 ) -> Assessment:
-    """Combine a network ``Decision`` and a text ``Verdict`` into one action.
+    """Combine network, text and image evidence into one action.
 
     Precedence rules, in order:
 
     1. **A network block wins.** The legacy chain stopped at the first hit and
-       returned 0; a text verdict never had the chance to soften that.
-    2. **A text action wins next**, because a wordlist hit is still evidence
-       even when the network stages all passed.
+       returned 0; nothing downstream had a chance to soften that.
+    2. **Then the strongest of the remaining actions** - text or image. A
+       suspect frame is evidence just as a wordlist hit is, and the two are not
+       ranked against each other because the vendor never published such an
+       ordering. ``ACTION_STRENGTH`` decides, and ties keep the text action
+       (documented in ``test_policy``).
     3. Otherwise ``None`` - no action, and no invented "allow".
+
+    ``image_action`` is supplied by the caller because a ``ScreenResult``
+    deliberately carries no action: whether a suspect frame should be blocked,
+    warned or merely logged is policy, not measurement. A caller that passes an
+    ``image`` but no ``image_action`` gets the frame recorded as evidence with
+    no action - the same "attested measurement, unattested policy" split used
+    for wordlists.
 
     ``allow`` from a trusted domain is deliberately *not* promoted here: it is
     a statement about one piece of evidence, not a licence to override a
@@ -273,22 +287,36 @@ def assess(
             reason=str(getattr(network, "reason", "") or "network_block"),
             network=network,
             text=text,
+            image=image,
         )
 
+    # Pick the strongest remaining action. Ties keep text, because a wordlist
+    # hit names something specific while an image screen only reports a metric.
+    candidates: list[tuple[str, Action, str]] = []
     if text_action is not None:
+        candidates.append(("text", text_action,
+                           text.reason if text is not None else ""))
+    if image_action is not None:
+        reason = str(getattr(image, "detail", "") or "image_suspect")
+        candidates.append(("image", image_action, reason))
+
+    if candidates:
+        best_source, best_action, best_reason = max(
+            candidates, key=lambda c: _strength(c[1]))
         return Assessment(
-            action=text_action,
-            source="text",
-            reason=text.reason if text is not None else "",
+            action=best_action,
+            source=best_source,
+            reason=best_reason,
             network=network,
             text=text,
+            image=image,
         )
 
-    # No action from either side. Keep the text verdict's reason when there is
+    # No action from any side. Keep the text verdict's reason when there is
     # one, so callers can distinguish "no wordlists loaded" from "looked and
     # found nothing" - collapsing both to 'no_evidence' loses that.
     reason = "no_evidence"
     if text is not None and text.reason:
         reason = text.reason
     return Assessment(action=None, source=None, reason=reason,
-                      network=network, text=text)
+                      network=network, text=text, image=image)

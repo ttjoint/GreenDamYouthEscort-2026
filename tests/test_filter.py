@@ -219,3 +219,54 @@ class PersistenceIntegrationTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ImagePathTest(unittest.TestCase):
+    """Image screening honours the sys.dat switches, like every other path."""
+
+    def _bgr(self, w, h, b, g, r):
+        return bytes([b, g, r]) * (w * h)
+
+    def test_disabled_by_default_in_shipped_policy(self):
+        # Shipped sys.dat has policy 13 (enable image filter) = 0.
+        f = Filter(log=EventLog())
+        got = f.check_image(width=64, height=64)
+        self.assertFalse(got.suspect)
+        self.assertEqual(got.detail, "image_filter_disabled")
+
+    def test_enabled_screens_the_frame(self):
+        values = [0] * sysdat.SLOT_COUNT
+        values[sysdat.slot_index(13)] = 1     # enable
+        values[sysdat.slot_index(5)] = 2      # level: mid
+        legacy = sysdat.PolicyArray(values=tuple(values))
+        f = _filter(log=EventLog(), legacy=legacy,
+                    entries={})
+        buf = self._bgr(64, 64, 255, 255, 255)
+        from green_dam.imaging import red_channel_from_bgr
+        got = f.check_image(width=64, height=64,
+                            red_channel=red_channel_from_bgr(buf, 64, 64))
+        self.assertTrue(got.suspect)
+
+    def test_master_switch_gates_image(self):
+        values = [0] * sysdat.SLOT_COUNT
+        values[sysdat.slot_index(2)] = 1      # disable filtering
+        values[sysdat.slot_index(13)] = 1
+        legacy = sysdat.PolicyArray(values=tuple(values))
+        f = _filter(log=EventLog(), legacy=legacy)
+        got = f.check_image(width=64, height=64)
+        self.assertEqual(got.detail, "legacy_filtering_disabled")
+
+    def test_gate_is_logged(self):
+        f = Filter(log=EventLog())
+        f.check_image(width=64, height=64)
+        self.assertEqual(f.log.records[0].event, Event.GATED)
+
+    def test_image_flows_into_check(self):
+        f = _filter(log=EventLog())
+        from green_dam.imaging import Check, ScreenResult
+        result = ScreenResult(suspect=True, fired=(Check.HIGH_TONE,),
+                              checks_run=(Check.ASPECT, Check.HIGH_TONE),
+                              detail="high_tone")
+        got = f.check(image=result, image_action="block")
+        self.assertEqual(got.action, "block")
+        self.assertEqual(got.source, "image")
