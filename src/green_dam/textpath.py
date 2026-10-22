@@ -72,6 +72,10 @@ class TextSources:
     wordlists: object | None = None
     backend: object | None = None
     matcher: object | None = None
+    #: Optional :class:`green_dam.chunkpath.ChunkSource`. Off by default: chunk
+    #: structure is a feature, not evidence of harm, so most callers want the
+    #: summary without adding findings.
+    chunker: object | None = None
 
     @property
     def configured(self) -> bool:
@@ -82,7 +86,8 @@ class TextSources:
         looked at.
         """
         return any(x is not None
-                   for x in (self.wordlists, self.backend, self.matcher))
+                   for x in (self.wordlists, self.backend, self.matcher,
+                             self.chunker))
 
     def active_backend(self) -> object | None:
         """The backend-shaped source, preferring an explicit ``backend``."""
@@ -138,6 +143,10 @@ def gather(sources: TextSources, text: str,
     backend = sources.active_backend()
     if backend is not None:
         out.extend(findings_from_backend(backend, text))
+    # Chunk structure is opt-in per source: ChunkSource.findings() returns []
+    # unless emit_findings was set, so this is safe to call unconditionally.
+    if sources.chunker is not None and hasattr(sources.chunker, "findings"):
+        out.extend(sources.chunker.findings(text))
     return out
 
 

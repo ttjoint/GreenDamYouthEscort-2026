@@ -78,6 +78,10 @@ class Filter:
     #: the reference backend without touching Filter. ``hnc`` stays supported
     #: because that is what the existing call sites pass.
     backend: object | None = None
+    #: Optional :class:`green_dam.chunkpath.ChunkSource`. When set, semantic
+    #: chunking contributes structure summaries, and (if the source was built
+    #: with ``emit_findings=True``) findings for unstructured text.
+    chunker: object | None = None
     log: EventLog | None = None
     policies: PolicyTable | None = None
 
@@ -146,7 +150,7 @@ class Filter:
     @property
     def text_sources(self) -> TextSources:
         return TextSources(wordlists=self.words, backend=self.backend,
-                           matcher=self.hnc)
+                           matcher=self.hnc, chunker=self.chunker)
 
     @property
     def _engine(self) -> PolicyEngine | None:
@@ -191,6 +195,18 @@ class Filter:
         return Decision(Outcome.ALLOW, None, "not_watched")
 
     # -- path: text --------------------------------------------------------
+
+    def chunk_structure(self, text: str) -> dict | None:
+        """Semantic chunk summary for ``text``, or None when no chunker is set.
+
+        Returned as a plain dict so it can go straight into a log record: it
+        holds counts and role names, never the text.
+        """
+        if self.chunker is None:
+            return None
+        if hasattr(self.chunker, "summarise"):
+            return self.chunker.summarise(text).to_dict()
+        return None
 
     def check_text(self, text: str) -> Verdict:
         """Judge text against every configured text source."""
@@ -333,5 +349,6 @@ class Filter:
             # backend or matcher is configured".
             "hnc_loaded": self.text_sources.configured,
             "text_sources_loaded": self.text_sources.configured,
+            "chunker_loaded": self.chunker is not None,
             "log_records": len(self.log) if self.log is not None else 0,
         }

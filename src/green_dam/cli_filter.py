@@ -123,6 +123,43 @@ def cmd_replay(args) -> int:
     return 0
 
 
+def cmd_chunk(args) -> int:
+    """Show the semantic chunk structure of a sentence.
+
+    Prints roles and counts, never the block text: the point is to inspect the
+    structure, and the structure is what the log records.
+    """
+    from .chunkpath import ChunkSource
+
+    text = args.text
+    if args.text_file:
+        text = Path(args.text_file).read_text(encoding="utf-8",
+                                              errors="replace")
+
+    source = ChunkSource()
+    chunking = source.analyse(text)
+    summary = source.summarise(text)
+
+    if args.json:
+        print(json.dumps({
+            "summary": summary.to_dict(),
+            "roles": [c.role.value for c in chunking.chunks],
+        }, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+
+    print(f"shape      : {summary.shape}")
+    print(f"pattern    : {summary.pattern or '-'}")
+    print(f"blocks     : {summary.block_count} "
+          f"(main {summary.main_count}, secondary {summary.secondary_count})")
+    print(f"min conf   : {summary.min_confidence:.2f}")
+    if args.show_text:
+        for chunk in chunking.chunks:
+            print(f"  {chunk.role.value:<3} {chunk.text!r}")
+    else:
+        print("  (use --show-text to print block text)")
+    return 0
+
+
 def cmd_ab(args) -> int:
     """Run the two text backends over a corpus and report their agreement."""
     from .backends import load_ab_pair, run_ab

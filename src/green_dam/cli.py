@@ -40,7 +40,7 @@ from .cli_admin import (
     cmd_status,
     cmd_validate,
 )
-from .cli_filter import cmd_ab, cmd_check, cmd_replay, cmd_screen
+from .cli_filter import cmd_ab, cmd_check, cmd_chunk, cmd_replay, cmd_screen
 from .cli_lifecycle import cmd_password, cmd_uninstall
 
 
@@ -80,6 +80,15 @@ def _add_filter_commands(sub) -> None:
                    help="treat image judging as unsupported")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_replay)
+
+    p = sub.add_parser("chunk", help="show the semantic chunk structure of a "
+                                     "sentence (roles only by default)")
+    p.add_argument("--text", help="sentence to chunk")
+    p.add_argument("--text-file", help="read the sentence from a file")
+    p.add_argument("--show-text", action="store_true",
+                   help="print block text as well as roles")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_chunk)
 
     p = sub.add_parser("ab", help="compare the two text backends over a corpus "
                                   "(one text per line)")

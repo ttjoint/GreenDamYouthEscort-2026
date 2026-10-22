@@ -489,3 +489,37 @@ class UninstallCliTest(unittest.TestCase):
             self.assertEqual(code, 0)
             from green_dam import journal
             self.assertTrue(journal.Manifest.load(path).rolled_back)
+
+
+class ChunkCliTest(unittest.TestCase):
+    def test_shows_structure(self):
+        code, out, _ = run(["chunk", "--text", "张三打断了李四的腿"])
+        self.assertEqual(code, 0)
+        self.assertIn("structured", out)
+        self.assertIn("A+E+B", out)
+
+    def test_hides_block_text_by_default(self):
+        code, out, _ = run(["chunk", "--text", "张三打断了李四的腿"])
+        self.assertEqual(code, 0)
+        for fragment in ("张三", "李四", "打断"):
+            self.assertNotIn(fragment, out)
+
+    def test_show_text_opt_in(self):
+        code, out, _ = run(["chunk", "--text", "张三打断了李四的腿",
+                            "--show-text"])
+        self.assertIn("张三", out)
+
+    def test_json(self):
+        code, out, _ = run(["chunk", "--text", "如果下雨，比赛就取消", "--json"])
+        payload = json.loads(out)
+        self.assertEqual(payload["summary"]["shape"], "structured")
+        self.assertEqual(payload["roles"], ["Cn", "A", "E"])
+
+    def test_json_has_no_text(self):
+        code, out, _ = run(["chunk", "--text", "张三打断了李四的腿", "--json"])
+        for fragment in ("张三", "李四"):
+            self.assertNotIn(fragment, out)
+
+    def test_no_predicate(self):
+        code, out, _ = run(["chunk", "--text", "甲乙"])
+        self.assertIn("no_predicate", out)

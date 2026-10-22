@@ -13,7 +13,7 @@
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：卸载清单（I9/I10）完成时（933 passed）。
+> 最后核对：分块层接入（E6）完成时（966 passed）。
 
 ---
 
@@ -23,7 +23,7 @@
 |---|---|---|---|---|
 | M1 数据 | 载入 JSON、建索引、类别模型 | **PARTIAL** | `wordlists.py` `namelist.py` `namelists.py` | `test_wordlists` `test_namelist` `test_namelists` |
 | M2 网络 | 四段拦截 | **PARTIAL** | `intercept.py`（判定链） | `test_intercept` |
-| M3 文本 | 分词、语境判定、双后端 | **PARTIAL** | `chunker.py` `semantic.py` `backends.py` 等 | `test_chunker` `test_backends` 等 8 个 |
+| M3 文本 | 分词、语境判定、双后端 | **DONE** | `chunker.py` `semantic.py` `backends.py` `chunkpath.py` | 9 个测试文件 |
 | M4 图像 | 不良/人脸分类 | **PARTIAL** | `imaging.py`（2 项实测检查） | `test_imaging` |
 | M5 屏幕 | 屏幕文字提取 | **TODO** | — | — |
 | M6 应用控制 | 禁止指定程序联网 | **TODO** | — | — |
@@ -130,7 +130,7 @@
 | 项 | 说明 |
 |---|---|
 | ~~HNC 接线~~ | **DONE**：9 项测试，含等级 0 误命中回归 |
-| 分块层端到端 | 目前测的是分块器本身，未测「文本 → 分块 → 判定 → Verdict」全链 |
+| ~~分块层端到端~~ | **DONE**：`test_chunkpath.py` 含 Filter 集成 |
 | 双后端等价性 | 第二后端未存在，无从对比 |
 
 ### 明确的上限（不是 TODO）
