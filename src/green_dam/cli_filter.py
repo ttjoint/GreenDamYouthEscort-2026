@@ -160,6 +160,52 @@ def cmd_chunk(args) -> int:
     return 0
 
 
+def cmd_similar(args) -> int:
+    """Score how similar two sentences are, or explain why it cannot be done.
+
+    Prints the score and the terms that produced it, never the sentences: the
+    numbers are what a caller would log.
+    """
+    from .simpath import SimilaritySource
+
+    left = args.left
+    right = args.right
+    if args.file:
+        lines = [ln for ln in
+                 Path(args.file).read_text(encoding="utf-8",
+                                           errors="replace").splitlines()
+                 if ln.strip()]
+        if len(lines) < 2:
+            print("file needs two non-empty lines", file=sys.stderr)
+            return 2
+        left, right = lines[0], lines[1]
+
+    if not left or not right:
+        print("need two sentences", file=sys.stderr)
+        return 2
+
+    source = SimilaritySource(threshold=args.threshold)
+    result = source.compare(left, right)
+
+    if args.json:
+        print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2,
+                         sort_keys=True))
+        return 0
+
+    print(f"scored     : {result.scored}")
+    if not result.scored:
+        print(f"reason     : {result.reason}")
+        print("  (a pair the chunker cannot structure is refused, not scored)")
+        return 0
+    print(f"total      : {result.total:.4f}")
+    print(f"threshold  : {result.threshold}")
+    print(f"similar    : {result.similar}")
+    print(f"degraded   : {len(result.degraded)} substitute term(s)")
+    for key, value in sorted(result.metrics.items()):
+        print(f"  {key:<8}: {value:.4f}")
+    return 0
+
+
 def cmd_ab(args) -> int:
     """Run the two text backends over a corpus and report their agreement."""
     from .backends import load_ab_pair, run_ab

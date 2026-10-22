@@ -40,7 +40,14 @@ from .cli_admin import (
     cmd_status,
     cmd_validate,
 )
-from .cli_filter import cmd_ab, cmd_check, cmd_chunk, cmd_replay, cmd_screen
+from .cli_filter import (
+    cmd_ab,
+    cmd_check,
+    cmd_chunk,
+    cmd_replay,
+    cmd_screen,
+    cmd_similar,
+)
 from .cli_lifecycle import cmd_password, cmd_uninstall
 
 
@@ -89,6 +96,15 @@ def _add_filter_commands(sub) -> None:
                    help="print block text as well as roles")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_chunk)
+
+    p = sub.add_parser("similar", help="score how similar two sentences are")
+    p.add_argument("--left", help="first sentence")
+    p.add_argument("--right", help="second sentence")
+    p.add_argument("--file", help="file whose first two lines are the pair")
+    p.add_argument("--threshold", type=float, default=0.2,
+                   help="similarity threshold (default 0.2)")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_similar)
 
     p = sub.add_parser("ab", help="compare the two text backends over a corpus "
                                   "(one text per line)")

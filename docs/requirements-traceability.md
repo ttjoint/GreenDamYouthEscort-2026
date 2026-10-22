@@ -88,6 +88,7 @@
 | E5 | 命中不给动作（分→动作 未还原） | architecture §M3 | `test_semantic.py::BridgeTest` | COVERED |
 | E6 | 分块层（`chunker`）参与判定 | 逆向 + architecture | `test_chunkpath.py` 27 项 | COVERED |
 | E7 | 分块不得伪造句类整数（`SENTEN.LIB` 缺失） | 诚实标注 | `test_chunkpath.py::NoFrameInventedTest` | COVERED |
+| E8 | 句子相似度可用，且分块质量不足时拒绝评分 | 逆向 + 本项目 | `test_simpath.py` 35 项 | COVERED |
 
 ## F. M4 图像层
 
@@ -171,7 +172,7 @@
 
 | 状态 | 数量 |
 |---|---|
-| COVERED | 57 |
+| COVERED | 58 |
 | PARTIAL | 1 |
 | **MISSING** | **10** |
 | MANUAL | 0（合并进 MISSING 的说明里） |

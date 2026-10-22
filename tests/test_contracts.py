@@ -84,6 +84,7 @@ class LayeringTest(unittest.TestCase):
         "backends": {"semantic"},
         "similarity": {"chunker"},
         "chunkpath": {"chunker", "policy"},
+        "simpath": {"chunker", "policy", "similarity"},
         "transport": {"intercept"},
         "textpath": {"policy", "semantic"},
         "filter": {"backends", "chunkpath", "config", "eventlog", "gate",
@@ -92,7 +93,7 @@ class LayeringTest(unittest.TestCase):
         "replay": {"filter", "transport"},
         "cli_admin": {"config", "eventlog", "filter", "sysdat"},
         "cli_filter": {"backends", "chunkpath", "eventlog", "filter", "imaging",
-                       "intercept", "replay"},
+                       "intercept", "replay", "simpath"},
         "cli_lifecycle": {"journal", "secret"},
         "cli": {"cli_admin", "cli_filter", "cli_lifecycle"},
     }

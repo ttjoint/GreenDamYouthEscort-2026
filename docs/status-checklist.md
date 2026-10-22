@@ -13,7 +13,7 @@
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：分块层接入（E6）完成时（966 passed）。
+> 最后核对：句子相似度接入完成时（1003 passed）。
 
 ---
 
@@ -21,7 +21,7 @@
 
 | 模块 | 职责 | 状态 | src 文件 | SRC 测试 |
 |---|---|---|---|---|
-| M1 数据 | 载入 JSON、建索引、类别模型 | **PARTIAL** | `wordlists.py` `namelist.py` `namelists.py` | `test_wordlists` `test_namelist` `test_namelists` |
+| M1 数据 | 载入 JSON、建索引、类别模型 | **PARTIAL** | `wordlists.py` `namelist.py` `namelists.py` `simpath.py` | `test_wordlists` `test_simpath` 等 4 个 |
 | M2 网络 | 四段拦截 | **PARTIAL** | `intercept.py`（判定链） | `test_intercept` |
 | M3 文本 | 分词、语境判定、双后端 | **DONE** | `chunker.py` `semantic.py` `backends.py` `chunkpath.py` | 9 个测试文件 |
 | M4 图像 | 不良/人脸分类 | **PARTIAL** | `imaging.py`（2 项实测检查） | `test_imaging` |

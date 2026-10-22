@@ -52,6 +52,7 @@ docs/              design and migration notes
   password.md          M7: parent-password storage
   uninstall.md         M7: install journal and reverse-order rollback
   chunk-layer.md       M3: semantic chunking as text evidence
+  similarity-layer.md  M3: sentence similarity and its measured limits
 analysis/          reverse-engineering write-ups of the original product
                      (master ledger, facts, corrections, spec; see analysis/README.md)
 tools/             legacy import tooling (run once, then irrelevant)

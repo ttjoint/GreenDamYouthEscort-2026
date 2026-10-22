@@ -523,3 +523,42 @@ class ChunkCliTest(unittest.TestCase):
     def test_no_predicate(self):
         code, out, _ = run(["chunk", "--text", "甲乙"])
         self.assertIn("no_predicate", out)
+
+
+class SimilarCliTest(unittest.TestCase):
+    def test_scores_a_reworded_pair(self):
+        code, out, _ = run(["similar", "--left", "他认真地看书",
+                            "--right", "他仔细地看书"])
+        self.assertEqual(code, 0)
+        self.assertIn("scored     : True", out)
+        self.assertIn("similar    : True", out)
+
+    def test_refuses_unstructured_pair(self):
+        code, out, _ = run(["similar", "--left", "张三打断了李四的腿",
+                            "--right", "王五擦干净了桌子"])
+        self.assertEqual(code, 0)
+        self.assertIn("scored     : False", out)
+        self.assertIn("degraded_chunking", out)
+
+    def test_json(self):
+        code, out, _ = run(["similar", "--left", "他认真地看书",
+                            "--right", "他仔细地看书", "--json"])
+        payload = json.loads(out)
+        self.assertTrue(payload["scored"])
+        self.assertIn("metrics", payload)
+
+    def test_does_not_echo_sentences(self):
+        code, out, _ = run(["similar", "--left", "私密甲句子",
+                            "--right", "私密乙句子", "--json"])
+        self.assertEqual(code, 0)
+        self.assertNotIn("私密", out)
+
+    def test_missing_sentence_errors(self):
+        code, _, err = run(["similar", "--left", "只有一个"])
+        self.assertEqual(code, 2)
+
+    def test_threshold_override(self):
+        code, out, _ = run(["similar", "--left", "张三打断了李四的腿",
+                            "--right", "李四的腿被张三打断",
+                            "--threshold", "0.1"])
+        self.assertIn("similar    : True", out)

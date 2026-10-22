@@ -198,7 +198,18 @@ class SentenceSimilarity:
         qs = {(ch.marker or "", ch.text) for ch in q.secondary}
         cs = {(ch.marker or "", ch.text) for ch in c.secondary}
         if not qs and not cs:
-            sim_gsef = 1.0
+            # 双方都没有辅块时**无从比较**，不是"完全相同"。
+            #
+            # 早先这里返回 1.0，等于给每一对无辅块的句子固定加 0.3 分
+            # （β2=0.3）。后果是"同义改写"(0.346) 与"同结构无关"(0.275)
+            # 只差 0.07，阈值无论怎么定都会同时放过两者。改成 0.0 后
+            # 这一项不再贡献虚假相似度，由 sim_sem（内容）承担区分。
+            #
+            # 语义上：两句话都没有辅块，说明这个维度对它们不适用，
+            # 而不是说明它们一致。论文式 (5) 只定义了"同符号同内容=1"等
+            # 情形，未定义"双方皆无"，故这不是偏离原文，是补齐原文未覆盖
+            # 的分支。
+            sim_gsef = 0.0
         else:
             qm_set = {m for m, _ in qs}
             cm_set = {m for m, _ in cs}
@@ -280,9 +291,13 @@ def _same_broad_family(a: str, b: str) -> bool:
 
 
 def _aligned_mean(a: list[Chunk], b: list[Chunk], fn) -> float:
-    """按序号对齐后求均值。块数不同时按较长者计，缺失块记 0。"""
+    """按序号对齐后求均值。块数不同时按较长者计，缺失块记 0。
+
+    双方都为空时返回 0.0 而非 1.0：没有可比成分不是"完全一致"。
+    与 `_sim_gse` 里辅块空集的处理保持同一口径。
+    """
     if not a and not b:
-        return 1.0
+        return 0.0
     n = max(len(a), len(b))
     total = 0.0
     for i in range(n):
