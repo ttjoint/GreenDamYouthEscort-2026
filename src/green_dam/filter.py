@@ -87,6 +87,10 @@ class Filter:
     #: policy slot 24, network access outside allowed hours is refused. The
     #: clock is injected per call; this object never reads the system time.
     schedule: object | None = None
+    #: Optional :class:`green_dam.imagepath.ImageBackend` or
+    #: :class:`green_dam.imagepath.ClassifierChain`. When set, image judgement
+    #: comes from it; the engine never imports a model runtime itself.
+    image_backend: object | None = None
     log: EventLog | None = None
     policies: PolicyTable | None = None
 
@@ -244,6 +248,30 @@ class Filter:
         return verdict
 
     # -- path: image -------------------------------------------------------
+
+    def check_image_verdict(self, buffer: bytes, *, width: int,
+                            height: int):
+        """Judge a frame through the configured image backend.
+
+        Separate from :meth:`check_image` on purpose. ``check_image`` runs the
+        ported arithmetic checks and returns a :class:`ScreenResult`, which is a
+        measurement. This returns an :class:`ImageVerdict`, which may carry an
+        NSFW score from a host-supplied model - and, crucially, distinguishes
+        "no model ran" from "the model said clean".
+
+        When no backend is configured the result is unassessed, not clean.
+        """
+        from .imagepath import ImageVerdict, NO_MODEL
+
+        reason = self.gate.reason(image=True)
+        if reason is not None:
+            self._record_gate(reason)
+            return ImageVerdict(reason=reason, backend="")
+
+        if self.image_backend is None:
+            return ImageVerdict(reason=NO_MODEL, backend="")
+
+        return self.image_backend.classify(buffer, width, height)
 
     def check_image(self, *, width: int, height: int,
                     red_channel: bytes | None = None) -> ScreenResult:

@@ -673,3 +673,35 @@ class ScheduleCliTest(unittest.TestCase):
             code, _, err = run(["schedule", str(Path(td) / "absent.json"),
                                 "--at", "2026-01-07T14:30:00"])
             self.assertNotEqual(code, 0)
+
+
+class ImageCliTest(unittest.TestCase):
+    def test_reference_backend_is_unassessed(self):
+        code, out, _ = run(["image", "--r", "100"])
+        self.assertEqual(code, 0)
+        self.assertIn("assessed    : False", out)
+        self.assertIn("not_assessed", out)
+
+    def test_simulated_model_flags(self):
+        code, out, _ = run(["image", "--score", "0.8"])
+        self.assertIn("assessed    : True", out)
+        self.assertIn("flagged     : True", out)
+        self.assertIn("above_threshold", out)
+
+    def test_simulated_model_clean(self):
+        code, out, _ = run(["image", "--score", "0.1"])
+        self.assertIn("assessed    : True", out)
+        self.assertIn("flagged     : False", out)
+        self.assertIn("below_threshold", out)
+
+    def test_skin_pass(self):
+        code, out, _ = run(["image", "--r", "200", "--g", "150", "--b", "120",
+                            "--skin"])
+        self.assertIn("skin_ratio", out)
+
+    def test_json(self):
+        code, out, _ = run(["image", "--score", "0.8", "--json"])
+        payload = json.loads(out)
+        self.assertTrue(payload["assessed"])
+        self.assertTrue(payload["flagged"])
+        self.assertAlmostEqual(payload["nsfw"], 0.8)

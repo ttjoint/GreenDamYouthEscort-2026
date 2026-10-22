@@ -182,6 +182,47 @@ def cmd_skin(args) -> int:
     return 2
 
 
+def cmd_image(args) -> int:
+    """Run the image backend chain on a flat synthetic frame.
+
+    Takes a colour and dimensions rather than a file: the interface is what this
+    exercises, and reading a real image would need a decoder the engine does not
+    have.
+    """
+    from . import imagepath as ip
+
+    if args.score is not None:
+        # A host backend would supply this; --score simulates one so the
+        # threshold path can be exercised without onnxruntime.
+        class _Stub:
+            name = "stub"
+
+            def classify(self, buffer, width, height):
+                return ip.verdict_from_score(args.score, backend=self.name)
+
+        backend = _Stub()
+    else:
+        backend = ip.ReferenceBackend(run_skin=args.skin)
+
+    chain = ip.ClassifierChain([backend])
+    buffer = bytes([args.b, args.g, args.r]) * (args.width * args.height)
+    verdict = chain.classify(buffer, args.width, args.height)
+
+    if args.json:
+        print(json.dumps(verdict.to_dict(), ensure_ascii=False, indent=2,
+                         sort_keys=True))
+        return 0
+
+    print(f"backend     : {verdict.backend or '-'}")
+    print(f"assessed    : {verdict.assessed}")
+    print(f"nsfw        : {verdict.nsfw if verdict.nsfw is not None else '-'}")
+    print(f"flagged     : {verdict.flagged}")
+    print(f"reason      : {verdict.reason}")
+    for key, value in sorted(verdict.metrics.items()):
+        print(f"  {key:<14}: {value}")
+    return 0
+
+
 def cmd_replay(args) -> int:
     """Replay a flow file through the planner and the filter."""
     from .replay import FlowFileError, replay_file

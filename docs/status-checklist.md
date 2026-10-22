@@ -13,7 +13,7 @@
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：时间调度 J7 完成时（1159 passed）。
+> 最后核对：图像后端接口（F4）完成时（1205 passed）。
 > **本次核对已清理全部过时条目**（见文末「修订记录」）。
 
 ---
@@ -25,7 +25,7 @@
 | M1 数据 | 载入 JSON、建索引、类别模型 | **PARTIAL** | `wordlists.py` `namelist.py` `namelists.py` `simpath.py` | 4 个测试文件 |
 | M2 网络 | 四段拦截 | **PARTIAL** | `intercept.py` `transport.py` `replay.py` | `test_intercept` `test_transport` |
 | M3 文本 | 分词、语境判定、双后端 | **DONE** | `chunker.py` `semantic.py` `backends.py` `chunkpath.py` `textpath.py` | 9 个测试文件 |
-| M4 图像 | 不良/人脸分类 | **PARTIAL** | `imaging.py` `imaging_checkex.py` `imaging_skin.py` `imaging_skin_hsv.py` | 3 个测试文件 |
+| M4 图像 | 不良/人脸分类 | **PARTIAL** | `imaging*.py`（4 个）+ `imagepath.py`（后端接口） | 4 个测试文件 |
 | M5 屏幕 | 屏幕文字提取 | **TODO** | — | — |
 | M6 应用控制 | 禁止指定程序联网 | **PARTIAL** | `namelists.py`（名单 B 匹配） | `test_evidence_paths` |
 | M7 基础设施 | 服务、配置、日志、IPC | **PARTIAL** | `eventlog.py` `config.py` `secret.py` `journal.py` | 4 个测试文件 |
@@ -196,7 +196,8 @@ Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` �
 | 项 | 说明 | 优先级 |
 |---|---|---|
 | Haar 人脸检测 | 需 OpenCV 或等价级联求值器 + 模型 | 低（非逻辑） |
-| ONNX NSFW 分类器 | 架构 §M4 的**目标**；原厂轮廓算法不是目标 | 高（P4） |
+| ~~NSFW 分类器接口~~ | **DONE**：`imagepath.py`，宿主注入，引擎零依赖 | — |
+| 真实 ONNX 模型 | 需 `onnxruntime` + 模型文件，**属宿主** | 高（P4） |
 | 矩形分析（`0x10006ee6`） | 0.54/252 语义未明，**代码里抛 `NotReversed`** | 低 |
 | 其余 15 个 `CHECKEX*` 语义 | 已还原 `CHECKEX13x`/`CHECKEX8x`，剩余多为阈值变体 | 低（对目标无益） |
 | 抓屏（`CAPSCREEN`） | 平台 API，属 M5 | 中 |

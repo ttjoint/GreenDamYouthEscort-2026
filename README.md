@@ -53,6 +53,7 @@ docs/              design and migration notes
   uninstall.md         M7: install journal and reverse-order rollback
   chunk-layer.md       M3: semantic chunking as text evidence
   similarity-layer.md  M3: sentence similarity and its measured limits
+  image-backend.md     M4: pluggable image classifier interface
 analysis/          reverse-engineering write-ups of the original product
                      (master ledger, facts, corrections, spec; see analysis/README.md)
 tools/             legacy import tooling (run once, then irrelevant)

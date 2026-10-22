@@ -45,6 +45,7 @@ from .cli_filter import (
     cmd_ab,
     cmd_check,
     cmd_chunk,
+    cmd_image,
     cmd_replay,
     cmd_screen,
     cmd_similar,
@@ -70,35 +71,7 @@ def _add_filter_commands(sub) -> None:
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_check)
 
-    p = sub.add_parser("screen", help="run the ported image checks on a "
-                                      "synthetic frame (no file is read)")
-    p.add_argument("--width", type=int, required=True)
-    p.add_argument("--height", type=int, required=True)
-    p.add_argument("--red", type=int,
-                   help="fill the R plane with one value (0..255); omit to "
-                        "skip the high-tone check")
-    p.add_argument("--json", action="store_true")
-    p.set_defaults(func=cmd_screen)
-
-    p = sub.add_parser("texture", help="run the CHECKEX13x texture path on a "
-                                       "given stddev (no image is read)")
-    p.add_argument("--stddev", type=float, required=True,
-                   help="centre-window stddev to grade")
-    p.add_argument("--width", type=int, help="also check the integer aspect gate")
-    p.add_argument("--height", type=int)
-    p.add_argument("--json", action="store_true")
-    p.set_defaults(func=cmd_texture)
-
-    p = sub.add_parser("skin", help="classify a BGR triple with CHECKEX8x's "
-                                    "skin rules")
-    p.add_argument("--r", type=int)
-    p.add_argument("--g", type=int)
-    p.add_argument("--b", type=int)
-    p.add_argument("--flat", help="r,g,b for a flat frame instead of one pixel")
-    p.add_argument("--width", type=int)
-    p.add_argument("--height", type=int)
-    p.add_argument("--json", action="store_true")
-    p.set_defaults(func=cmd_skin)
+    _add_image_commands(sub)
 
     p = sub.add_parser("replay", help="replay a JSON flow file through the "
                                       "four-stage planner (no network)")
@@ -134,6 +107,53 @@ def _add_filter_commands(sub) -> None:
     p.add_argument("corpus", help="UTF-8 text file, one sample per line")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_ab)
+
+
+def _add_image_commands(sub) -> None:
+    """Image, screen and skin: the three commands that judge a frame."""
+    p = sub.add_parser("image", help="run the image backend chain on a flat "
+                                     "synthetic frame (no file is read)")
+    p.add_argument("--width", type=int, default=64)
+    p.add_argument("--height", type=int, default=64)
+    p.add_argument("--r", type=int, default=0)
+    p.add_argument("--g", type=int, default=0)
+    p.add_argument("--b", type=int, default=0)
+    p.add_argument("--score", type=float,
+                   help="simulate a host model's NSFW score (0..1)")
+    p.add_argument("--skin", action="store_true",
+                   help="run the skin pass with the reference backend")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_image)
+
+    p = sub.add_parser("screen", help="run the ported image checks on a "
+                                      "synthetic frame (no file is read)")
+    p.add_argument("--width", type=int, required=True)
+    p.add_argument("--height", type=int, required=True)
+    p.add_argument("--red", type=int,
+                   help="fill the R plane with one value (0..255); omit to "
+                        "skip the high-tone check")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_screen)
+
+    p = sub.add_parser("skin", help="classify a BGR triple with CHECKEX8x's "
+                                    "skin rules")
+    p.add_argument("--r", type=int)
+    p.add_argument("--g", type=int)
+    p.add_argument("--b", type=int)
+    p.add_argument("--flat", help="r,g,b for a flat frame instead of one pixel")
+    p.add_argument("--width", type=int)
+    p.add_argument("--height", type=int)
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_skin)
+
+    p = sub.add_parser("texture", help="run the CHECKEX13x texture path on a "
+                                       "given stddev (no image is read)")
+    p.add_argument("--stddev", type=float, required=True,
+                   help="centre-window stddev to grade")
+    p.add_argument("--width", type=int, help="also check the integer aspect gate")
+    p.add_argument("--height", type=int)
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_texture)
 
 
 def _add_admin_commands(sub) -> None:

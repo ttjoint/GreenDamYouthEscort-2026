@@ -97,7 +97,8 @@
 | F1 | 宽高比检查，阈值 10.0，短边 < 32 不判 | 逆向 p22 | `test_imaging.py` | COVERED |
 | F2 | 高亮度检查，R≥210 占比 ≥ 0.9 | 逆向 p22 | `test_imaging.py` | COVERED |
 | F3 | 部分筛选可辨识（不得把"没查全"报成"干净"） | 本项目修正 | `test_imaging.py::ScreenTest` | COVERED |
-| F4 | NSFW / 人脸分类 | architecture §M4 | — | **MISSING**（训练模型） |
+| F4 | NSFW 分类器接口（宿主可注入，引擎零依赖） | architecture §M4 | `test_imagepath.py` 41 项 | COVERED |
+| F9 | 真实 ONNX 模型与会话 | architecture §M4 | — | **MISSING**（属宿主，需模型文件） |
 | F6 | `CHECKEX13x` 主判定（门控/灰度/标准差/纹理分级） | 逆向 p27 | `test_imaging_checkex.py` 41 项 | COVERED |
 | F7 | 其余 15 个 `CHECKEX*` 的算法组合 | 逆向 p26 | — | **MISSING**（未逆向） |
 | F8 | `CHECKEX8x` 门控/ratio 分支/肤色三条件 | 逆向 p28 | `test_imaging_skin.py` 50 项 | COVERED |
