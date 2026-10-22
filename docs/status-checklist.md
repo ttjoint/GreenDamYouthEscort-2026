@@ -13,7 +13,7 @@
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：图像后端接口（F4）完成时（1205 passed）。
+> 最后核对：原厂词库加载（M1）完成时（1247 passed）。
 > **本次核对已清理全部过时条目**（见文末「修订记录」）。
 
 ---
@@ -22,7 +22,7 @@
 
 | 模块 | 职责 | 状态 | src 文件 | SRC 测试 |
 |---|---|---|---|---|
-| M1 数据 | 载入 JSON、建索引、类别模型 | **PARTIAL** | `wordlists.py` `namelist.py` `namelists.py` `simpath.py` | 4 个测试文件 |
+| M1 数据 | 载入 JSON、建索引、类别模型 | **DONE** | `wordlists.py` `namelist.py` `namelists.py` `legacy_words.py` `simpath.py` | 5 个测试文件 |
 | M2 网络 | 四段拦截 | **PARTIAL** | `intercept.py` `transport.py` `replay.py` | `test_intercept` `test_transport` |
 | M3 文本 | 分词、语境判定、双后端 | **DONE** | `chunker.py` `semantic.py` `backends.py` `chunkpath.py` `textpath.py` | 9 个测试文件 |
 | M4 图像 | 不良/人脸分类 | **PARTIAL** | `imaging*.py`（4 个）+ `imagepath.py`（后端接口） | 4 个测试文件 |
@@ -69,7 +69,7 @@ CLI 是**诊断工具**，不是架构里的 M9 产品界面。
 
 | 项 | 说明 | 优先级 |
 |---|---|---|
-| 词库 JSON 加载器接真实 `.dat` | `tools/legacy_wordlist_codec.py` 有解码，`src/` 无加载入口 | 中 |
+| ~~词库加载器接真实 `.dat`~~ | **DONE**：`legacy_words.py`，实测 5 文件 9,143 条 | — |
 | 类别模型（`WordHit.category`）填充 | 字段存在，未从语料映射 | 低 |
 
 **已完成（曾列为待做）**：

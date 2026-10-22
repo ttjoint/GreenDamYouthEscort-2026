@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 
 from .cli_admin import (
+    cmd_load_words,
     cmd_log,
     cmd_schedule,
     cmd_policy,
@@ -186,6 +187,13 @@ def _add_admin_commands(sub) -> None:
     p.add_argument("path")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_log)
+
+    p = sub.add_parser("load-words", help="decode the shipped .dat word lists "
+                                          "and report counts")
+    p.add_argument("dir", help="directory holding wfile.dat and the *fil.dat "
+                               "lists")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_load_words)
 
     p = sub.add_parser("save-defaults", help="write shipped defaults to a file")
     p.add_argument("path")

@@ -116,20 +116,15 @@ class Filter:
                         words: WordlistIndex | None = None,
                         hnc: object | None = None,
                         backend: object | None = None) -> "Filter":
-        """Build from a directory holding ``xconfigs.dat`` (or ``sys.dat``).
+        """Deprecated thin wrapper around :func:`from_config_dir`."""
+        return from_config_dir(path, log=log, words=words, hnc=hnc,
+                               backend=backend)
 
-        Missing configuration is not an error: a fresh install has no file yet,
-        and the shipped defaults are the correct starting state.
-        """
-        for name in ("xconfigs.dat", "sys.dat"):
-            candidate = path / name
-            if candidate.exists():
-                legacy = config_mod.load(candidate)
-                break
-        else:
-            legacy = config_mod.default_for_fresh_install()
-        return cls(legacy=legacy, log=log, words=words, hnc=hnc,
-                   backend=backend)
+    @classmethod
+    def from_vendor_dir(cls, path: Path, *, log: EventLog | None = None,
+                        load_words: bool = True) -> "Filter":
+        """Deprecated thin wrapper around :func:`from_vendor_dir`."""
+        return from_vendor_dir(path, log=log, load_words=load_words)
 
     # -- switches ----------------------------------------------------------
 
@@ -402,3 +397,48 @@ class Filter:
             "chunker_loaded": self.chunker is not None,
             "log_records": len(self.log) if self.log is not None else 0,
         }
+
+
+def from_config_dir(path: Path, *, log: EventLog | None = None,
+                    words: WordlistIndex | None = None,
+                    hnc: object | None = None,
+                    backend: object | None = None) -> "Filter":
+    """Build from a directory holding ``xconfigs.dat`` (or ``sys.dat``).
+
+    Missing configuration is not an error: a fresh install has no file yet,
+    and the shipped defaults are the correct starting state.
+    """
+    for name in ("xconfigs.dat", "sys.dat"):
+        candidate = path / name
+        if candidate.exists():
+            legacy = config_mod.load(candidate)
+            break
+    else:
+        legacy = config_mod.default_for_fresh_install()
+    return Filter(legacy=legacy, log=log, words=words, hnc=hnc,
+               backend=backend)
+
+@classmethod
+def from_vendor_dir(path: Path, *, log: EventLog | None = None,
+                    load_words: bool = True) -> "Filter":
+    """Build from a directory laid out like the vendor's install tree.
+
+    Loads the policy blob and, unless asked not to, decodes the shipped
+    ``.dat`` word lists through :mod:`green_dam.legacy_words`. The lists are
+    the vendor's own data, so their terms are attested; no per-term level is
+    invented because the format carries none.
+
+    This reads the vendor tree; it never writes to it. The product writes
+    only to its own configuration directory.
+    """
+    words: WordlistIndex | None = None
+    if load_words:
+        from .legacy_words import load_directory
+
+        report, words = load_directory(path)
+        if not report.lists:
+            # Nothing decodable there. Keep words None rather than an empty
+            # index: "no lists" and "lists that matched nothing" are
+            # different states, and only the first should silence evidence.
+            words = None
+    return from_config_dir(path, log=log, words=words)

@@ -146,6 +146,39 @@ def cmd_log(args) -> int:
     return 0
 
 
+def cmd_load_words(args) -> int:
+    """Decode the shipped .dat word lists and report counts.
+
+    Prints file names, labels and counts - never a term. The lists are the
+    vendor's content and the project's rule is to report structure only.
+    """
+    from .legacy_words import load_directory
+
+    path = Path(args.dir)
+    if not path.is_dir():
+        print(f"not a directory: {path}", file=sys.stderr)
+        return 2
+
+    report, index = load_directory(path)
+    if args.json:
+        payload = report.summary()
+        payload["index_size"] = index.size
+        print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+
+    print(f"{'file':<16} {'terms':>6}  {'bytes':>7}  label")
+    for entry in report.lists:
+        print(f"{entry.filename:<16} {entry.terms:>6}  "
+              f"{entry.decoded_bytes:>7}  {entry.label}")
+    print()
+    print(f"lists       : {len(report.lists)}")
+    print(f"total terms : {report.total_terms}")
+    print(f"unique      : {index.size}")
+    if report.missing:
+        print(f"missing     : {', '.join(report.missing)}")
+    return 0
+
+
 def cmd_save_defaults(args) -> int:
     """Write the shipped defaults to a file."""
     path = Path(args.path)

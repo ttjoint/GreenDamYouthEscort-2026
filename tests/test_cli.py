@@ -705,3 +705,40 @@ class ImageCliTest(unittest.TestCase):
         self.assertTrue(payload["assessed"])
         self.assertTrue(payload["flagged"])
         self.assertAlmostEqual(payload["nsfw"], 0.8)
+
+
+class LoadWordsCliTest(unittest.TestCase):
+    def _tree(self, td):
+        from test_legacy_words import encode_bytes
+        import sys as _sys
+        _sys.path.insert(0, str(Path(__file__).parent))
+        (Path(td) / "wfile.dat").write_bytes(
+            encode_bytes("1 CATEGORY-LABEL aaa.dat\r\n".encode("gbk")))
+        (Path(td) / "aaa.dat").write_bytes(
+            encode_bytes("甲乙\r\n丙丁\r\n".encode("gbk")))
+        return str(td)
+
+    def test_reports_counts(self):
+        with tempfile.TemporaryDirectory() as td:
+            code, out, _ = run(["load-words", self._tree(td)])
+            self.assertEqual(code, 0)
+            self.assertIn("total terms : 2", out)
+            self.assertIn("unique      : 2", out)
+
+    def test_does_not_print_terms(self):
+        with tempfile.TemporaryDirectory() as td:
+            code, out, _ = run(["load-words", self._tree(td)])
+            self.assertNotIn("甲乙", out)
+            self.assertNotIn("丙丁", out)
+
+    def test_json(self):
+        with tempfile.TemporaryDirectory() as td:
+            code, out, _ = run(["load-words", self._tree(td), "--json"])
+            payload = json.loads(out)
+            self.assertEqual(payload["total_terms"], 2)
+            self.assertEqual(payload["index_size"], 2)
+
+    def test_missing_dir(self):
+        with tempfile.TemporaryDirectory() as td:
+            code, _, err = run(["load-words", str(Path(td) / "absent")])
+            self.assertEqual(code, 2)
