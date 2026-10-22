@@ -13,7 +13,7 @@
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：M3 HNC 接线完成时（653 passed）。
+> 最后核对：证据路径统一（重构）完成时（675 passed）。
 
 ---
 
@@ -31,6 +31,7 @@
 | M8 策略 | 汇总成 放行/阻断/告警 | **DONE** | `policy.py` `sysdat.py` | `test_policy` `test_sysdat` |
 | — 跨层汇总 | 网络 + 文本证据合成 | **DONE** | `policy.py` (`assess`) | `test_policy::AssessTest` |
 | — 门面 | 配置+名单+判定+日志串联 | **DONE** | `filter.py` | `test_filter`（端到端） |
+| — 四路一致 | 网络/文本/图像/进程统一 | **DONE** | `filter.py` | `test_evidence_paths`（19 项交叉验证） |
 | M9 控制台 | 父界面、日志、调度 | **TODO** | `cli.py`（仅诊断 CLI） | `test_cli` |
 
 **没有 CLI、没有 `__main__.py`、没有打包配置** —— 目前是一个纯库。
@@ -230,7 +231,7 @@ Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` �
 | 项 | 说明 |
 |---|---|
 | 时间控制窗口 | 未实现，无从测 |
-| 与 M4 图像的汇总 | 图像结果尚未接入 `assess` |
+| ~~与 M4 图像的汇总~~ | **DONE**：`image` + `image_action` 已接入 `assess` |
 
 ---
 

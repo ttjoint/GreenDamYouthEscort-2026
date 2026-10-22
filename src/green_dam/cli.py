@@ -100,7 +100,8 @@ def _cmd_check(args: argparse.Namespace) -> int:
     elif args.text:
         text = args.text
 
-    assessment = f.check(request=request, text=text)
+    assessment = f.check(request=request, text=text,
+                         process=args.process_name)
 
     if args.json:
         print(json.dumps({
@@ -212,6 +213,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--port", type=int)
     p.add_argument("--process")
     p.add_argument("--body", help="request body (outbound URL extraction)")
+    p.add_argument("--process-name", dest="process_name",
+                   help="program name to check against the watched list")
     p.add_argument("--text", help="text to judge against wordlists")
     p.add_argument("--text-file", help="read text from a file")
     p.add_argument("--json", action="store_true")

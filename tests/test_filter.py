@@ -261,8 +261,12 @@ class ImagePathTest(unittest.TestCase):
         f.check_image(width=64, height=64)
         self.assertEqual(f.log.records[0].event, Event.GATED)
 
-    def test_image_flows_into_check(self):
-        f = _filter(log=EventLog())
+    def test_image_flows_into_check_when_enabled(self):
+        values = [0] * sysdat.SLOT_COUNT
+        values[sysdat.slot_index(13)] = 1     # enable image filtering
+        values[sysdat.slot_index(5)] = 2      # level must also be non-zero
+        legacy = sysdat.PolicyArray(values=tuple(values))
+        f = _filter(log=EventLog(), legacy=legacy)
         from green_dam.imaging import Check, ScreenResult
         result = ScreenResult(suspect=True, fired=(Check.HIGH_TONE,),
                               checks_run=(Check.ASPECT, Check.HIGH_TONE),
@@ -270,6 +274,18 @@ class ImagePathTest(unittest.TestCase):
         got = f.check(image=result, image_action="block")
         self.assertEqual(got.action, "block")
         self.assertEqual(got.source, "image")
+
+    def test_image_action_suppressed_when_disabled(self):
+        # check() must not contradict check_image(): with image filtering off,
+        # an image action must not leak out of the combined entry point.
+        f = _filter(log=EventLog())
+        from green_dam.imaging import Check, ScreenResult
+        result = ScreenResult(suspect=True, fired=(Check.HIGH_TONE,),
+                              checks_run=(Check.ASPECT, Check.HIGH_TONE),
+                              detail="high_tone")
+        got = f.check(image=result, image_action="block")
+        self.assertIsNone(got.action)
+        self.assertEqual(f.log.records[0].event, Event.GATED)
 
 
 class HncPathTest(unittest.TestCase):

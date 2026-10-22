@@ -240,3 +240,20 @@ class ScreenTest(unittest.TestCase):
     def test_missing_dimensions_errors(self):
         code, _, _ = run(["screen", "--width", "64"])
         self.assertNotEqual(code, 0)
+
+
+class ProcessPathTest(unittest.TestCase):
+    def test_process_option_accepted(self):
+        with tempfile.TemporaryDirectory() as td:
+            code, out, _ = run(["check", "--config", td,
+                                "--process-name", "notepad.exe"])
+            self.assertEqual(code, 0)
+            self.assertIn("action : None", out)
+
+    def test_process_option_in_json(self):
+        with tempfile.TemporaryDirectory() as td:
+            code, out, _ = run(["check", "--config", td, "--json",
+                                "--process-name", "notepad.exe"])
+            payload = json.loads(out)
+            self.assertIn("events", payload)
+            self.assertEqual(len(payload["events"]), 1)
