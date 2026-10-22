@@ -230,3 +230,46 @@ class NoLeakTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BackendSwapTest(unittest.TestCase):
+    """E1: the text path accepts either backend without changing callers."""
+
+    def _matcher(self):
+        from green_dam.semantic import LegacySemanticMatcher
+        return LegacySemanticMatcher({"甲乙": (2,), "丙丁": (0,)})
+
+    def test_hnc_backend_yields_findings(self):
+        from green_dam.backends import HncBackend
+        f = Filter(backend=HncBackend(matcher=self._matcher()))
+        got = f.check_text("甲乙")
+        self.assertTrue(got.findings)
+        self.assertEqual(got.findings[0].sources, ("hnc",))
+
+    def test_segmentation_backend_yields_no_severity(self):
+        # The reference backend has no severity information, so its level-0 hits
+        # are dropped - it can only agree about spans, not about harm.
+        from green_dam.backends import SegmentationBackend
+        f = Filter(backend=SegmentationBackend.from_terms(["甲乙"]))
+        got = f.check_text("甲乙")
+        self.assertEqual(got.findings, ())
+
+    def test_bare_matcher_still_works(self):
+        # The pre-existing call style must not break.
+        f = Filter(hnc=self._matcher())
+        self.assertTrue(f.check_text("甲乙").findings)
+
+    def test_backend_takes_precedence_over_bare_matcher(self):
+        from green_dam.backends import HncBackend
+        f = Filter(hnc=self._matcher(),
+                   backend=HncBackend(matcher=self._matcher()))
+        self.assertTrue(f.check_text("甲乙").findings)
+
+    def test_status_reports_backend(self):
+        from green_dam.backends import HncBackend
+        self.assertTrue(
+            Filter(backend=HncBackend(matcher=self._matcher()))
+            .status()["hnc_loaded"])
+
+    def test_no_backend_still_reports_no_wordlists(self):
+        self.assertEqual(Filter().check_text("x").reason, "no_wordlists")

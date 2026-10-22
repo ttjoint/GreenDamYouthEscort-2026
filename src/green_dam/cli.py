@@ -185,6 +185,39 @@ def _cmd_replay(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_ab(args: argparse.Namespace) -> int:
+    """Run the two text backends over a corpus and report their agreement."""
+    from .backends import load_ab_pair, run_ab
+
+    corpus_path = Path(args.corpus)
+    if not corpus_path.exists():
+        print(f"no such corpus: {corpus_path}", file=sys.stderr)
+        return 2
+    lines = [line for line in
+             corpus_path.read_text(encoding="utf-8", errors="replace").splitlines()
+             if line.strip()]
+    if not lines:
+        print("corpus is empty", file=sys.stderr)
+        return 2
+
+    left, right = load_ab_pair()
+    report = run_ab(left, right, lines)
+    summary = report.summary()
+
+    if args.json:
+        print(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True))
+    else:
+        print(f"backends       : {left.name} vs {right.name}")
+        print(f"texts          : {summary['texts']}")
+        print(f"mean agreement : {summary['mean_agreement']}")
+        print(f"identical      : {summary['identical']}")
+        print(f"disagreed      : {summary['disagreed']}")
+        print(f"spans agreed   : {summary['spans_agreed']}")
+        print(f"spans only L/R : {summary['spans_only_left']} / "
+              f"{summary['spans_only_right']}")
+    return 0
+
+
 def _cmd_validate(args: argparse.Namespace) -> int:
     path = Path(args.path)
     try:
@@ -275,6 +308,12 @@ def build_parser() -> argparse.ArgumentParser:
                    help="treat image judging as unsupported")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=_cmd_replay)
+
+    p = sub.add_parser("ab", help="compare the two text backends over a corpus "
+                                  "(one text per line)")
+    p.add_argument("corpus", help="UTF-8 text file, one sample per line")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=_cmd_ab)
 
     p = sub.add_parser("validate", help="validate a policy blob")
     p.add_argument("path")

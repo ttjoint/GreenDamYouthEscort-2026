@@ -81,8 +81,8 @@
 
 | # | 需求 | 来源 | 测试 | 状态 |
 |---|---|---|---|---|
-| E1 | 两个可互换后端，同一接口 `analyse(text) -> [Hit]` | architecture §M3 | — | **MISSING** |
-| E2 | 两后端可在同一语料上 A/B 对比 | architecture §M3 | — | **MISSING** |
+| E1 | 两个可互换后端，同一接口 `analyse(text) -> [Hit]` | architecture §M3 | `test_backends.py::ProtocolTest` | COVERED |
+| E2 | 两后端可在同一语料上 A/B 对比 | architecture §M3 | `test_backends.py::CompareTest` `AbReportTest` | COVERED |
 | E3 | HNC 后端不是原引擎的位级复刻（须诚实标注） | architecture §M3 | `test_semantic.py::HonestLimitsTest` | COVERED |
 | E4 | 等级 0 不算有害证据（避免误报） | 本项目修正 | `test_semantic.py::BridgeTest` | COVERED |
 | E5 | 命中不给动作（分→动作 未还原） | architecture §M3 | `test_semantic.py::BridgeTest` | COVERED |
@@ -169,16 +169,15 @@
 
 | 状态 | 数量 |
 |---|---|
-| COVERED | 49 |
+| COVERED | 51 |
 | PARTIAL | 1 |
-| **MISSING** | **16** |
+| **MISSING** | **14** |
 | MANUAL | 0（合并进 MISSING 的说明里） |
 
 ### MISSING 的 20 项，按"能否脱离真机实现"分组
 
 **纯逻辑，不需要权限**（建议优先）：
 
-- E1 / E2 双后端接口 + A/B 对比
 - E6 分块层接入
 - I6 密码哈希（纯计算，PBKDF2）
 - I9 / I10 卸载清单（manifest 生成与逆序回滚的纯数据部分）
@@ -212,10 +211,10 @@ pytest tests/ -q
 
 | 层 | 文件 | 回答的问题 | 数量 |
 |---|---|---|---|
-| 单元 | `test_*.py`（各模块） | 这个函数做对了吗 | ~650 |
+| 单元 | `test_*.py`（各模块） | 这个函数做对了吗 | ~690 |
 | **契约** | `test_contracts.py` | **代码结构还符合架构吗** | 14 |
 | **不变量** | `test_invariants.py` | **跨路径的全局性质还成立吗** | 23 |
-| **端到端** | `test_transport.py` `test_evidence_paths.py` | **子系统串起来还对吗** | 49 |
+| **端到端** | `test_transport.py` `test_evidence_paths.py` `test_backends.py` | **子系统串起来还对吗** | 75 |
 
 前两层是**否定性**的：它们证明"没有做不该做的事"。这类测试最容易在重构中
 被悄悄削弱，所以它们的断言都写在测试文件里、带需求编号，而不是靠注释提醒。

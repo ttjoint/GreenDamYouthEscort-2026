@@ -88,6 +88,11 @@ class Filter:
     #: independent text evidence source: wordlists come from the external .lib
     #: files, this one from the HNC score table.
     hnc: object | None = None
+    #: Optional :class:`green_dam.backends.SemanticBackend`. When set, the text
+    #: path consults it *instead of* ``hnc`` directly, so a caller can swap in
+    #: the reference backend without touching Filter. ``hnc`` stays supported
+    #: because that is what the existing call sites pass.
+    backend: object | None = None
     log: EventLog | None = None
     policies: PolicyTable | None = None
 
@@ -213,11 +218,40 @@ class Filter:
         engine = self._engine
         if engine is not None:
             findings.extend(engine._word_findings(text))
-        if self.hnc is not None:
+
+        source = self.backend if self.backend is not None else self.hnc
+        if source is not None:
+            findings.extend(self._backend_findings(source, text))
+        return findings
+
+    def _backend_findings(self, source, text: str) -> list:
+        """Findings from either a SemanticBackend or a bare HNC matcher."""
+        from .policy import KIND_SCORED, Finding
+
+        if hasattr(source, "analyse"):
+            result = source.analyse(text)
+            hits = getattr(result, "hits", ())
+        else:
             from .semantic import analyse_findings
 
-            findings.extend(analyse_findings(self.hnc, text))
-        return findings
+            return analyse_findings(source, text)
+
+        out = []
+        for hit in hits:
+            levels = hit.all_levels or (hit.level,)
+            if max(levels) < 1:
+                continue
+            out.append(Finding(
+                span=(hit.start, hit.start + len(hit.term)),
+                surface=text,
+                kind=KIND_SCORED,
+                sources=(getattr(source, "name", "hnc"),),
+                levels=levels,
+                attested=False,
+                action=None,
+                reason="hnc_score",
+            ))
+        return out
 
     def _text_verdict(self, text: str) -> Verdict:
         """Turn gathered findings into a Verdict, keeping reasons honest."""
@@ -227,7 +261,7 @@ class Filter:
         if not findings:
             # Distinguish "no source configured" from "configured, no hits".
             # Collapsing them would make "not looking" read as "nothing found".
-            if engine is None and self.hnc is None:
+            if engine is None and self.hnc is None and self.backend is None:
                 return Verdict(findings=(), action=None, reason="no_wordlists")
             return Verdict(findings=(), action=None, reason="no_evidence")
 
@@ -385,6 +419,6 @@ class Filter:
                 self.legacy.image_filter_level if self.legacy else None),
             "lists": self.lists.summary(),
             "wordlists_loaded": self.words is not None,
-            "hnc_loaded": self.hnc is not None,
+            "hnc_loaded": self.hnc is not None or self.backend is not None,
             "log_records": len(self.log) if self.log is not None else 0,
         }

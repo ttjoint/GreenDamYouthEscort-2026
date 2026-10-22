@@ -13,7 +13,7 @@
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：证据路径统一（重构）完成时（675 passed）。
+> 最后核对：M3 双后端接口完成时（790 passed）。
 
 ---
 
@@ -23,7 +23,7 @@
 |---|---|---|---|---|
 | M1 数据 | 载入 JSON、建索引、类别模型 | **PARTIAL** | `wordlists.py` `namelist.py` `namelists.py` | `test_wordlists` `test_namelist` `test_namelists` |
 | M2 网络 | 四段拦截 | **PARTIAL** | `intercept.py`（判定链） | `test_intercept` |
-| M3 文本 | 分词、语境判定、双后端 | **PARTIAL** | `chunker.py` `hnc.py` `semantic.py` 等 | `test_chunker` 等 7 个 |
+| M3 文本 | 分词、语境判定、双后端 | **PARTIAL** | `chunker.py` `semantic.py` `backends.py` 等 | `test_chunker` `test_backends` 等 8 个 |
 | M4 图像 | 不良/人脸分类 | **PARTIAL** | `imaging.py`（2 项实测检查） | `test_imaging` |
 | M5 屏幕 | 屏幕文字提取 | **TODO** | — | — |
 | M6 应用控制 | 禁止指定程序联网 | **TODO** | — | — |

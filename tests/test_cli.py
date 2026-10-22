@@ -312,3 +312,44 @@ class ReplayTest(unittest.TestCase):
             code, out, _ = run(["replay", str(path), "--config", td, "--json"])
             self.assertEqual(code, 0)
             self.assertNotIn("secret.example", out)
+
+
+class AbTest(unittest.TestCase):
+    def _corpus(self, td, lines):
+        path = Path(td) / "corpus.txt"
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return path
+
+    def test_reports_summary(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = self._corpus(td, ["hello world", "clean text here"])
+            code, out, _ = run(["ab", str(path)])
+            self.assertEqual(code, 0)
+            self.assertIn("mean agreement", out)
+
+    def test_json_shape(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = self._corpus(td, ["hello world"])
+            code, out, _ = run(["ab", str(path), "--json"])
+            payload = json.loads(out)
+            for key in ("texts", "mean_agreement", "identical", "disagreed"):
+                self.assertIn(key, payload)
+
+    def test_empty_corpus_errors(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "empty.txt"
+            path.write_text("", encoding="utf-8")
+            code, _, err = run(["ab", str(path)])
+            self.assertEqual(code, 2)
+            self.assertIn("empty", err)
+
+    def test_missing_corpus_errors(self):
+        code, _, err = run(["ab", "nope.txt"])
+        self.assertEqual(code, 2)
+
+    def test_does_not_echo_corpus_text(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = self._corpus(td, ["private-marker-xyz"])
+            code, out, _ = run(["ab", str(path), "--json"])
+            self.assertEqual(code, 0)
+            self.assertNotIn("private-marker-xyz", out)

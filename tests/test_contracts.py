@@ -78,13 +78,14 @@ class LayeringTest(unittest.TestCase):
         "policy": {"sysdat", "wordlists"},
         "intercept": {"eventlog", "namelists"},
         "semantic": {"policy"},
+        "backends": {"semantic"},
         "similarity": {"chunker"},
         "transport": {"intercept"},
-        "filter": {"config", "eventlog", "imaging", "intercept", "namelists",
-                   "policy", "semantic", "sysdat", "wordlists"},
+        "filter": {"backends", "config", "eventlog", "imaging", "intercept",
+                   "namelists", "policy", "semantic", "sysdat", "wordlists"},
         "replay": {"filter", "transport"},
-        "cli": {"config", "eventlog", "filter", "imaging", "intercept",
-                "replay", "sysdat", "transport"},
+        "cli": {"backends", "config", "eventlog", "filter", "imaging",
+                "intercept", "replay", "sysdat", "transport"},
     }
 
     def test_every_module_is_declared(self):
