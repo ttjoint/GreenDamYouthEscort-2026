@@ -51,6 +51,18 @@ class Finding:
         start, end = self.span
         return self.surface[start:end]
 
+    def __repr__(self) -> str:
+        """Deliberately omits ``surface`` and ``matched``.
+
+        A Finding holds the text it came from because ``matched`` needs it, but
+        repr() output ends up in tracebacks, logs and bug reports. Printing user
+        content there would undo the redaction discipline everywhere else, so the
+        repr shows the span instead of the text.
+        """
+        return (f"Finding(span={self.span!r}, kind={self.kind!r}, "
+                f"sources={self.sources!r}, levels={self.levels!r}, "
+                f"action={self.action!r}, reason={self.reason!r})")
+
 
 @dataclass(frozen=True)
 class Verdict:

@@ -95,6 +95,39 @@ class Rule:
         return tuple(seen)
 
 
+def _read_bracketed(text: str, i: int, source: str) -> tuple[frozenset[str], int]:
+    """Read one ``{...}`` or ``[...]`` group starting at ``i``.
+
+    Returns the group's entries and the index just past the closing bracket.
+    Extracted from :func:`parse_rule` so the main loop stays shallow enough to
+    read: the bracket handling is a self-contained step and nesting it inline
+    pushed the function to six levels.
+    """
+    opener = text[i]
+    closer = "}" if opener == "{" else "]"
+    end = text.find(closer, i + 1)
+    if end < 0:
+        raise RuleSyntaxError(f"unclosed {opener!r} in rule: {source!r}")
+    entries = _split_entries(text[i + 1:end], source)
+    return frozenset(entries), end + 1
+
+
+def _read_bare(text: str, i: int, source: str) -> tuple[str | None, int]:
+    """Read one unbracketed entry starting at ``i``.
+
+    Returns the entry (or None when it was blank) and the index where scanning
+    should resume.
+    """
+    n = len(text)
+    end = i
+    while end < n and text[end] not in "{[,]}":
+        end += 1
+    piece = text[i:end].strip()
+    if piece and any(c in piece for c in "{}[]"):
+        raise RuleSyntaxError(f"nested bracket in rule: {source!r}")
+    return (piece or None), end
+
+
 def parse_rule(source: str) -> Rule:
     """Parse a legacy rule string.
 
@@ -106,58 +139,38 @@ def parse_rule(source: str) -> Rule:
         return Rule(groups=(), source=source)
 
     groups: list[frozenset[str]] = []
+    # Bare (unbracketed) runs accumulate into ONE group until a bracket starts.
+    bare: list[str] = []
     i = 0
     n = len(text)
     saw_bracket = False
 
-    # Bare (unbracketed) runs accumulate into ONE group until a bracket starts.
-    bare: list[str] = []
-
-    def flush_bare() -> None:
-        if bare:
-            groups.append(frozenset(bare))
-            bare.clear()
-
     while i < n:
         ch = text[i]
         if ch in "{[":
-            flush_bare()
-            opener = ch
-            closer = "}" if opener == "{" else "]"
+            if bare:
+                groups.append(frozenset(bare))
+                bare.clear()
             saw_bracket = True
-            end = text.find(closer, i + 1)
-            if end < 0:
-                raise RuleSyntaxError(f"unclosed {opener!r} in rule: {source!r}")
-            body = text[i + 1:end]
-            entries = _split_entries(body, source)
-            if entries:
-                groups.append(frozenset(entries))
-            i = end + 1
-            # A group's trailing ']' inside a '{}' is consumed by the find above;
-            # skip separators between groups.
+            group, i = _read_bracketed(text, i, source)
+            if group:
+                groups.append(group)
             while i < n and text[i] in ", \t":
                 i += 1
         elif ch in "}]":
             raise RuleSyntaxError(f"unexpected {ch!r} at {i} in rule: {source!r}")
         elif ch == ",":
-            # Separator inside a bare run: stays in the same group.
             if saw_bracket:
                 raise RuleSyntaxError(
                     f"stray {ch!r} at {i} in rule: {source!r}")
             i += 1
         else:
-            # Bare form: read to the next bracket or separator.
-            end = i
-            while end < n and text[end] not in "{[,]}":
-                end += 1
-            piece = text[i:end].strip()
+            piece, i = _read_bare(text, i, source)
             if piece:
-                if any(c in piece for c in "{}[]"):
-                    raise RuleSyntaxError(f"nested bracket in rule: {source!r}")
                 bare.append(piece)
-            i = end
 
-    flush_bare()
+    if bare:
+        groups.append(frozenset(bare))
 
     if len(groups) > MAX_GROUPS:
         raise RuleSyntaxError(

@@ -214,6 +214,7 @@ pytest tests/ -q
 | 单元 | `test_*.py`（各模块） | 这个函数做对了吗 | ~690 |
 | **契约** | `test_contracts.py` | **代码结构还符合架构吗** | 14 |
 | **不变量** | `test_invariants.py` | **跨路径的全局性质还成立吗** | 23 |
+| **结构** | `test_structure.py` | **代码还保持可维护吗** | 15 |
 | **端到端** | `test_transport.py` `test_evidence_paths.py` `test_backends.py` | **子系统串起来还对吗** | 75 |
 
 前两层是**否定性**的：它们证明"没有做不该做的事"。这类测试最容易在重构中

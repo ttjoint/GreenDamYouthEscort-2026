@@ -1,56 +1,49 @@
 """One entry point that wires the layers together.
 
 Everything below this module is deliberately independent: ``sysdat`` decodes,
-``namelists`` stores, ``intercept`` decides, ``policy`` weighs evidence,
-``eventlog`` records. That independence is why each piece is testable on its
-own, and also why nothing below answers the only question a caller actually
-has: *given this input, what do I do, and what gets written down?*
+``gate`` decides what may run, ``namelists`` stores, ``intercept`` decides,
+``textpath`` gathers text evidence, ``policy`` weighs evidence, ``eventlog``
+records. That independence is why each piece is testable on its own, and also
+why nothing below answers the only question a caller actually has: *given this
+input, what do I do, and what gets written down?*
 
-:class:`Filter` is that answer.
-
-Four evidence paths, one shape
-------------------------------
-There are four independent sources of evidence:
+:class:`Filter` is that answer, and nothing more. It owns configuration and
+orchestration; the four evidence paths live in their own modules:
 
 ============  ==========================  ==============================
-path          produced by                 carries
+path          delegated to                returns
 ============  ==========================  ==============================
-``network``   :mod:`green_dam.intercept`  a :class:`Decision`
-``text``      :mod:`green_dam.policy`     a :class:`Verdict`
-``image``     :mod:`green_dam.imaging`    a :class:`ScreenResult`
-``process``   the name list B             a :class:`Decision`
+``network``   :mod:`green_dam.intercept`  :class:`Decision`
+``text``      :mod:`green_dam.textpath`   :class:`Verdict`
+``image``     :mod:`green_dam.imaging`    :class:`ScreenResult`
+``process``   name list B                 :class:`Decision`
 ============  ==========================  ==============================
 
 The process path is not separate machinery: list B is the first stage of the
-network chain, and the original reached it through the same ``DBFP_Socket``
-hook as everything else. It is listed separately here because callers ask about
-it separately ("is this program watched?"), and :meth:`Filter.check_process`
-answers that without inventing a fake request.
+network chain, and the original reached it through the same ``DBFP_Socket`` hook.
+It is exposed separately because callers ask about it separately ("is this
+program watched?"), and :meth:`Filter.check_process` answers that without
+inventing a fake request.
 
-Each path has a ``check_*`` method that runs *only* that path and returns its
-native measurement. :meth:`Filter.check` runs any combination and returns one
-:class:`~green_dam.policy.Assessment`. Crucially, ``check`` calls the same
-helpers the single-path methods use, so the two cannot disagree - a bug this
-module actually had: ``check`` once skipped the HNC matcher that
-``check_text`` consulted, so the same text gave different answers depending on
-which entry point you used.
+Gating
+------
+:class:`~green_dam.gate.Gate` answers "may this path run". This module asks it,
+records the answer as a ``gated`` event, and never turns that answer into
+``allow``. A gated result has ``action=None`` and a reason naming the switch.
+That distinction - "looked and found nothing" versus "was told not to look" - is
+the core behavioural correction this project makes against the original.
 
-Gating happens once
+One record per call
 -------------------
-``sysdat`` slots 2 and 10 mean "stop filtering" and "stop keyword filtering".
-Rather than each path testing them, every path asks :meth:`Filter._gate` and the
-answer is recorded as a ``gated`` event. That keeps "looked and found nothing"
-distinguishable from "was told not to look" - the difference the original
-product hid from its users.
-
-A gate suppresses evidence; it never manufactures ``allow``. A gated
-:class:`Assessment` has ``action=None`` and a reason naming the switch.
+:meth:`Filter.check` writes exactly one log record regardless of how many paths
+ran. Gates encountered on the way are collected and recorded once, at the end.
+Writing one record per path would double every count and made a gated call emit
+two records before this was fixed.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
 
 from . import config as config_mod
 from . import sysdat
@@ -60,26 +53,18 @@ from .eventlog import (
     record_for_decision,
     record_for_gate,
 )
+from .gate import Gate
 from .imaging import ScreenResult, screen
-from .intercept import Decision, Interceptor, Request
+from .intercept import Decision, Interceptor, Outcome, Request, Stage
 from .namelists import NameLists
-from .policy import (
-    ACTION_STRENGTH,
-    Assessment,
-    PolicyEngine,
-    PolicyTable,
-    Verdict,
-    assess,
-)
+from .policy import Assessment, PolicyEngine, PolicyTable, Verdict, assess
+from .textpath import TextSources, evaluate
 from .wordlists import WordlistIndex
-
-#: The four evidence paths, in the order ``assess`` ranks them.
-Path = Literal["network", "text", "image", "process"]
 
 
 @dataclass
 class Filter:
-    """Configured filter: policy array + lists + wordlists + log."""
+    """Configured filter: policy array + lists + text sources + log."""
 
     legacy: sysdat.PolicyArray | None = None
     lists: NameLists = field(default_factory=NameLists)
@@ -116,7 +101,8 @@ class Filter:
     @classmethod
     def from_config_dir(cls, path: Path, *, log: EventLog | None = None,
                         words: WordlistIndex | None = None,
-                        hnc: object | None = None) -> "Filter":
+                        hnc: object | None = None,
+                        backend: object | None = None) -> "Filter":
         """Build from a directory holding ``xconfigs.dat`` (or ``sys.dat``).
 
         Missing configuration is not an error: a fresh install has no file yet,
@@ -129,50 +115,54 @@ class Filter:
                 break
         else:
             legacy = config_mod.default_for_fresh_install()
-        return cls(legacy=legacy, log=log, words=words, hnc=hnc)
+        return cls(legacy=legacy, log=log, words=words, hnc=hnc,
+                   backend=backend)
 
     # -- switches ----------------------------------------------------------
 
     @property
+    def gate(self) -> Gate:
+        """The switches, derived from the policy array."""
+        return Gate(legacy=self.legacy)
+
+    @property
     def filtering_disabled(self) -> bool:
-        return self.legacy is not None and self.legacy.filtering_disabled
+        return self.gate.filtering_disabled
 
     @property
     def keyword_filter_disabled(self) -> bool:
-        return self.legacy is not None and self.legacy.keyword_filter_disabled
+        return self.gate.keyword_filter_disabled
 
     @property
     def image_filter_enabled(self) -> bool:
-        """True only when a policy array exists *and* enables it.
-
-        No configuration means no image filtering: "not configured" must not
-        read as "enabled".
-        """
-        return self.legacy is not None and self.legacy.image_filter_enabled
-
-    def _gate(self, *, keyword: bool = False, image: bool = False) -> str | None:
-        """The reason a path is switched off, or None when it is on.
-
-        ``keyword`` adds slot 10; ``image`` adds slot 13. Slot 2 gates
-        everything.
-        """
-        if self.filtering_disabled:
-            return "legacy_filtering_disabled"
-        if keyword and self.keyword_filter_disabled:
-            return "legacy_keyword_filter_disabled"
-        if image and not self.image_filter_enabled:
-            return "image_filter_disabled"
-        return None
+        return self.gate.image_filter_enabled
 
     def _record_gate(self, reason: str) -> None:
         if self.log is not None:
             self.log.append(record_for_gate(reason))
 
+    # -- text sources ------------------------------------------------------
+
+    @property
+    def text_sources(self) -> TextSources:
+        return TextSources(wordlists=self.words, backend=self.backend,
+                           matcher=self.hnc)
+
+    @property
+    def _engine(self) -> PolicyEngine | None:
+        if self.words is None:
+            return None
+        return PolicyEngine(words=self.words, policies=self.policies)
+
+    def _text_verdict(self, text: str) -> Verdict:
+        """The text pipeline, with the engine built once per call."""
+        return evaluate(self.text_sources, text, self._engine)
+
     # -- path: network -----------------------------------------------------
 
     def check_request(self, request: Request) -> Assessment:
         """Decide a network request, honouring off-switches, and log it."""
-        reason = self._gate()
+        reason = self.gate.reason()
         if reason is not None:
             self._record_gate(reason)
             return Assessment(action=None, source="policy", reason=reason)
@@ -188,90 +178,23 @@ class Filter:
     def check_process(self, process: str) -> Decision:
         """Is this program on the watched list (name list B)?
 
-        List B is the process stage of the network chain, so this reuses the
-        same matcher rather than duplicating it. Returns a :class:`Decision`
-        because that is what the chain produces; the caller can pass it to
-        :func:`green_dam.policy.assess` or just read ``blocked``.
+        List B is the process stage of the network chain, so this reuses the same
+        matcher rather than duplicating it.
         """
-        from .intercept import Outcome, Stage
-
-        reason = self._gate()
+        reason = self.gate.reason()
         if reason is not None:
             self._record_gate(reason)
             return Decision(Outcome.ALLOW, None, reason)
 
-        record = self.lists["B"].match(process)
-        if record is not None:
+        if self.lists["B"].match(process) is not None:
             return Decision(Outcome.BLOCK, Stage.PROCESS, "watched_process")
         return Decision(Outcome.ALLOW, None, "not_watched")
 
     # -- path: text --------------------------------------------------------
 
-    def _text_findings(self, text: str) -> list:
-        """Every text finding from every configured source.
-
-        This is the single place text evidence is gathered. ``check_text`` and
-        ``check`` both call it, so they cannot disagree about what a text
-        contains.
-        """
-        findings: list = []
-        engine = self._engine
-        if engine is not None:
-            findings.extend(engine._word_findings(text))
-
-        source = self.backend if self.backend is not None else self.hnc
-        if source is not None:
-            findings.extend(self._backend_findings(source, text))
-        return findings
-
-    def _backend_findings(self, source, text: str) -> list:
-        """Findings from either a SemanticBackend or a bare HNC matcher."""
-        from .policy import KIND_SCORED, Finding
-
-        if hasattr(source, "analyse"):
-            result = source.analyse(text)
-            hits = getattr(result, "hits", ())
-        else:
-            from .semantic import analyse_findings
-
-            return analyse_findings(source, text)
-
-        out = []
-        for hit in hits:
-            levels = hit.all_levels or (hit.level,)
-            if max(levels) < 1:
-                continue
-            out.append(Finding(
-                span=(hit.start, hit.start + len(hit.term)),
-                surface=text,
-                kind=KIND_SCORED,
-                sources=(getattr(source, "name", "hnc"),),
-                levels=levels,
-                attested=False,
-                action=None,
-                reason="hnc_score",
-            ))
-        return out
-
-    def _text_verdict(self, text: str) -> Verdict:
-        """Turn gathered findings into a Verdict, keeping reasons honest."""
-        findings = self._text_findings(text)
-        engine = self._engine
-
-        if not findings:
-            # Distinguish "no source configured" from "configured, no hits".
-            # Collapsing them would make "not looking" read as "nothing found".
-            if engine is None and self.hnc is None and self.backend is None:
-                return Verdict(findings=(), action=None, reason="no_wordlists")
-            return Verdict(findings=(), action=None, reason="no_evidence")
-
-        if engine is not None:
-            return engine.verdict(text, findings=findings)
-        return self._verdict_from_findings(findings)
-
     def check_text(self, text: str) -> Verdict:
         """Judge text against every configured text source."""
-        reason = self._gate(keyword=True)
+        reason = self.gate.reason(keyword=True)
         if reason is not None:
             self._record_gate(reason)
             return Verdict(findings=(), action=None, reason=reason)
@@ -282,30 +205,6 @@ class Filter:
                                                   direction="text"))
         return verdict
 
-    @property
-    def _engine(self) -> PolicyEngine | None:
-        if self.words is None:
-            return None
-        return PolicyEngine(words=self.words, policies=self.policies)
-
-    @staticmethod
-    def _verdict_from_findings(findings) -> Verdict:
-        """Build a Verdict from findings when no wordlist engine exists.
-
-        Only HNC evidence can reach here, and HNC findings carry no action, so
-        the action is None by construction. Kept explicit rather than assumed.
-        """
-        best = None
-        for finding in findings:
-            if finding.action is None:
-                continue
-            if best is None or ACTION_STRENGTH.index(finding.action) > \
-                    ACTION_STRENGTH.index(best):
-                best = finding.action
-        return Verdict(findings=tuple(findings), action=best,
-                       reason="strongest_finding" if best else "no_action",
-                       attested=False)
-
     # -- path: image -------------------------------------------------------
 
     def check_image(self, *, width: int, height: int,
@@ -313,10 +212,9 @@ class Filter:
         """Screen one frame, honouring the image-filter switches.
 
         Returns the measurement only. Whether a suspect frame becomes a block is
-        :meth:`check`'s job via ``image_action``, because the vendor's
-        score-to-action mapping is still unknown.
+        :meth:`check`'s job via ``image_action``.
         """
-        reason = self._gate(image=True)
+        reason = self.gate.reason(image=True)
         if reason is not None:
             self._record_gate(reason)
             return ScreenResult(suspect=False, detail=reason)
@@ -324,6 +222,51 @@ class Filter:
         return screen(width=width, height=height, red_channel=red_channel)
 
     # -- combined ----------------------------------------------------------
+
+    def _resolve_network(self, request: Request | None,
+                         process: str | None) -> tuple[Decision | None,
+                                                       str | None]:
+        """Run the network and process stages, returning (decision, gate).
+
+        The process list is consulted only when the request did not already
+        block, so the recorded reason names the first hit - the same
+        first-hit-wins rule the original used.
+        """
+        reason = self.gate.reason()
+        if reason is not None:
+            return None, reason
+
+        decision: Decision | None = None
+        if request is not None:
+            decision = self._interceptor.decide(request)
+        if process is not None and (decision is None or not decision.blocked):
+            watched = self.check_process(process)
+            if watched.blocked:
+                decision = watched
+        return decision, None
+
+    def _resolve_text(self, text: str | None) -> tuple[Verdict | None,
+                                                       str | None]:
+        if text is None:
+            return None, None
+        reason = self.gate.reason(keyword=True)
+        if reason is not None:
+            return Verdict(findings=(), action=None, reason=reason), reason
+        return self._text_verdict(text), None
+
+    def _resolve_image(self, image: ScreenResult | None,
+                       image_action) -> tuple[ScreenResult | None, object,
+                                              str | None]:
+        """Apply the image gate to a caller-supplied screen result."""
+        if image is None or image_action is None:
+            return image, image_action, None
+        reason = self.gate.reason(image=True)
+        if reason is not None:
+            # The frame may still be reported as evidence; only the action is
+            # withheld. Dropping the measurement would lose information the
+            # caller already computed.
+            return image, None, reason
+        return image, image_action, None
 
     def check(self, *, request: Request | None = None,
               text: str | None = None,
@@ -335,90 +278,60 @@ class Filter:
         Precedence is :func:`green_dam.policy.assess`'s: a network or process
         block wins, then the strongest remaining action, then nothing.
 
-        Every path is evaluated through the same helper its ``check_*`` method
-        uses, so the combined answer never contradicts the single-path answer.
-        Exactly one log record is written.
+        Every path is resolved by the same helper its ``check_*`` method uses, so
+        the combined answer never contradicts the single-path answer. Exactly one
+        log record is written.
         """
-        network: Decision | None = None
-        verdict: Verdict | None = None
-        screen_result: ScreenResult | None = image
-        #: Gates encountered on any path. Recorded once, at the end, so a call
-        #: that trips several gates still produces exactly one log record.
-        gated: list[str] = []
+        network, network_gate = self._resolve_network(request, process)
+        if network_gate is not None:
+            # Slot 2 gates every path, so nothing else can produce evidence.
+            self._record_gate(network_gate)
+            return Assessment(action=None, source="policy", reason=network_gate)
 
-        # -- network and process both come from the same chain, so run the
-        #    interceptor once with whatever the caller supplied.
-        if request is not None or process is not None:
-            reason = self._gate()
-            if reason is not None:
-                gated.append(reason)
-                # Nothing else on this call can produce evidence either: slot 2
-                # gates every path, so stop here.
-                self._record_gate(reason)
-                return Assessment(action=None, source="policy", reason=reason)
+        verdict, text_gate = self._resolve_text(text)
+        screen_result, image_action, image_gate = self._resolve_image(
+            image, image_action)
 
-            if request is not None:
-                network = self._interceptor.decide(request)
-            if process is not None and (
-                    network is None or not network.blocked):
-                # Only consult the process list when the request did not
-                # already block, so the recorded reason names the first hit -
-                # the same first-hit-wins rule the original used.
-                watched = self.check_process(process)
-                if watched.blocked:
-                    network = watched
+        gates = [g for g in (text_gate, image_gate) if g is not None]
 
-        # -- text
-        if text is not None:
-            reason = self._gate(keyword=True)
-            if reason is not None:
-                gated.append(reason)
-                verdict = Verdict(findings=(), action=None, reason=reason)
-            else:
-                verdict = self._text_verdict(text)
-
-        # -- image: gate it here too. The single-path method already does, but
-        #    check() must not rely on the caller having used it.
-        if screen_result is not None and image_action is not None:
-            reason = self._gate(image=True)
-            if reason is not None:
-                gated.append(reason)
-                image_action = None
-
-        # A gate on every supplied path means nothing was actually judged. Say
-        # so in the reason rather than reporting a clean run. Only short-circuit
-        # when *every* supplied path was gated; if any path ran and found
-        # evidence, that evidence must survive.
+        # Every supplied path was gated: nothing was judged, so say that rather
+        # than reporting a clean run.
         supplied = sum(x is not None for x in (request, process, text, image))
-        all_gated = (gated and len(gated) >= supplied
-                     and not network and image_action is None
-                     and (verdict is None or verdict.action is None))
-        if all_gated:
-            self._record_gate(gated[0])
-            return Assessment(action=None, source="policy", reason=gated[0])
+        judged = network is not None or (verdict is not None
+                                         and verdict.action is not None)
+        if gates and len(gates) >= supplied and not judged \
+                and image_action is None:
+            self._record_gate(gates[0])
+            return Assessment(action=None, source="policy", reason=gates[0])
 
         result = assess(network=network, text=verdict, image=screen_result,
                         image_action=image_action)
 
         if self.log is not None:
-            direction = (request.direction if request is not None
-                         else ("text" if text is not None else ""))
-            self.log.append(record_for_assessment(result, direction=direction))
+            self.log.append(record_for_assessment(
+                result, direction=self._direction(request, text)))
         return result
+
+    @staticmethod
+    def _direction(request: Request | None, text: str | None) -> str:
+        if request is not None:
+            return request.direction
+        return "text" if text is not None else ""
 
     # -- introspection -----------------------------------------------------
 
     def status(self) -> dict:
         """Counts and switches only - never list entries."""
         return {
-            "filtering_disabled": self.filtering_disabled,
-            "keyword_filter_disabled": self.keyword_filter_disabled,
-            "image_filter_enabled": (
-                self.legacy.image_filter_enabled if self.legacy else None),
+            **self.gate.summary(),
             "image_filter_level": (
                 self.legacy.image_filter_level if self.legacy else None),
             "lists": self.lists.summary(),
             "wordlists_loaded": self.words is not None,
-            "hnc_loaded": self.hnc is not None or self.backend is not None,
+            # Kept under its original name: callers and tests already use it,
+            # and renaming it would be churn for no gain. It means "a text
+            # backend or matcher is configured".
+            "hnc_loaded": self.text_sources.configured,
+            "text_sources_loaded": self.text_sources.configured,
             "log_records": len(self.log) if self.log is not None else 0,
         }

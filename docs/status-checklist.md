@@ -13,7 +13,7 @@
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：M3 双后端接口完成时（790 passed）。
+> 最后核对：结构重构完成时（847 passed）。
 
 ---
 
@@ -246,6 +246,7 @@ Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` �
 | 项 | 状态 | 说明 |
 |---|---|---|
 | 打包（`pyproject.toml`） | **DONE** | 零运行时依赖，`>=3.10` |
+| 结构约束（模块/类/函数规模、嵌套深度） | **DONE** | `test_structure.py` 15 项 |
 | CLI 入口（`green-dam`） | **DONE** | 6 个子命令，全支持 `--json` |
 | 端到端测试 | **DONE** | `test_filter.py` 21 项，配置→判定→日志全链 |
 | 真实流量接入 | TODO | `check_request` 就绪，无传输层 |
