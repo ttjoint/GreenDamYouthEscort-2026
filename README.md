@@ -37,6 +37,7 @@ and deliberately drops all of the above.
 
 ```
 docs/              design and migration notes
+  HANDOFF.md           START HERE: current state, what to trust, traps
   architecture.md      module map and technical decisions
   status-checklist.md  what is implemented / todo / untested, per module
   network-layer.md     interception decision chain

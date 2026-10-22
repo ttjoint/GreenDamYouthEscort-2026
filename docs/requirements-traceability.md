@@ -147,7 +147,8 @@
 | J4 | 槽 2 / 10 是已证实的关闭开关 | 逆向 | `test_policy.py` / `test_filter.py` | COVERED |
 | J5 | 分→动作 映射未知，默认不映射 | 诚实标注 | `test_policy.py` | COVERED |
 | J6 | 多源证据优先级：网络阻断 > 其余最强 | 本项目设计 | `test_evidence_paths.py` | COVERED |
-| J7 | 时间调度（按时间段生效） | architecture §M8 | — | **MISSING** |
+| J7 | 时间调度（7×24 网格 + 槽 24 开关 + 5 分钟预警） | 逆向 p29 | `test_schedule.py` 38 项 + `test_schedule_filter.py` 10 项 | COVERED |
+| J8 | NTP 防改时钟同步 | 逆向 p29 | — | **MISSING**（需网络 I/O，属宿主） |
 
 ## K. M9 控制台
 
@@ -176,26 +177,34 @@
 
 | 状态 | 数量 |
 |---|---|
-| COVERED | 58 |
+| COVERED | 77 |
 | PARTIAL | 1 |
-| **MISSING** | **10** |
-| MANUAL | 0（合并进 MISSING 的说明里） |
+| **MISSING** | **11** |
 
-### MISSING 的 20 项，按"能否脱离真机实现"分组
+### MISSING 的 11 项，按"能否脱离真机实现"分组
 
-**纯逻辑，不需要权限**（建议优先）：
+**纯逻辑，不需要权限**：
 
-- E6 分块层接入
-- J7 时间调度
+> 无。**全部纯逻辑项已完成**（E6 分块、J7 时间调度、F4 分类器接口、
+> C8 原厂词库加载均已 COVERED）。
 
 **需要平台 API / 真机**：
 
-- D10 真实代理与防火墙规则
-- F4 NSFW 分类（训练模型）
-- G1 / G3 UIA + OCR
-- H3 终止进程
-- I7 / I8 服务 ACL 与恢复动作
-- K3 家长 UI
+| # | 项 | 需要什么 |
+|---|---|---|
+| D10 | 真实代理与防火墙规则 | 管理员权限 |
+| F9 | 真实 ONNX 模型与会话 | 模型文件 + onnxruntime |
+| F7 | 其余 15 个 `CHECKEX*` 算法 | 大规模逆向（收益低） |
+| G1 / G3 | UIA + OCR 提取屏幕文字 | Windows API |
+| H3 | 终止被禁进程 | 进程权限 |
+| I7 / I8 | 服务 ACL 与恢复动作 | 服务权限 |
+| I12 | 执行卸载动作 | 系统 API |
+| J8 | NTP 防改时钟同步 | 网络 I/O |
+| K3 | 家长 UI | GUI 框架 |
+
+**验证方法**：本表每一行都由 `tests/` 下对应文件的实际测试数支撑，
+可用 `pytest tests/ -q` 复核。数字过时是这类文档最常见的失效方式——
+若你读到本表与测试输出不一致，**以测试输出为准**。
 
 ---
 
@@ -212,7 +221,7 @@ pytest tests/test_transport.py -q
 pytest tests/ -q
 ```
 
-## 测试框架的四层
+## 测试框架的五层
 
 | 层 | 文件 | 回答的问题 | 数量 |
 |---|---|---|---|
