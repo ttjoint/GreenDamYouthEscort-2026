@@ -353,3 +353,56 @@ class AbTest(unittest.TestCase):
             code, out, _ = run(["ab", str(path), "--json"])
             self.assertEqual(code, 0)
             self.assertNotIn("private-marker-xyz", out)
+
+
+class PasswordCliTest(unittest.TestCase):
+    def test_generate(self):
+        code, out, _ = run(["password", "generate", "--length", "16"])
+        self.assertEqual(code, 0)
+        self.assertEqual(len(out.strip()), 16)
+
+    def test_set_then_verify(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = str(Path(td) / "pw")
+            code, _, _ = run(["password", "set", "--path", path,
+                              "--password", "abc-def-123"])
+            self.assertEqual(code, 0)
+            code, out, _ = run(["password", "verify", "--path", path,
+                                "--password", "abc-def-123"])
+            self.assertEqual(code, 0)
+            self.assertIn("ok", out)
+
+    def test_wrong_password_exits_nonzero(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = str(Path(td) / "pw")
+            run(["password", "set", "--path", path, "--password", "right"])
+            code, out, _ = run(["password", "verify", "--path", path,
+                                "--password", "wrong"])
+            self.assertEqual(code, 1)
+            self.assertIn("wrong", out)
+
+    def test_show_reports_parameters(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = str(Path(td) / "pw")
+            run(["password", "set", "--path", path, "--password", "x"])
+            code, out, _ = run(["password", "show", "--path", path, "--json"])
+            payload = json.loads(out)
+            self.assertEqual(payload["algorithm"], "pbkdf2_sha256")
+            self.assertIn("iterations", payload)
+
+    def test_show_missing_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            code, _, err = run(["password", "show",
+                                "--path", str(Path(td) / "absent")])
+            self.assertEqual(code, 2)
+
+    def test_never_echoes_the_password(self):
+        with tempfile.TemporaryDirectory() as td:
+            path = str(Path(td) / "pw")
+            secret_value = "do-not-echo-me"
+            code, out, _ = run(["password", "set", "--path", path,
+                                "--password", secret_value])
+            self.assertEqual(code, 0)
+            self.assertNotIn(secret_value, out)
+            code, out, _ = run(["password", "show", "--path", path, "--json"])
+            self.assertNotIn(secret_value, out)

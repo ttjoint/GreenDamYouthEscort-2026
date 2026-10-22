@@ -74,6 +74,7 @@ class LayeringTest(unittest.TestCase):
         "wordlists": set(),
         "config": {"sysdat"},
         "gate": {"sysdat"},
+        "secret": set(),
         "namelists": {"namelist"},
         "chunker": {"chunk_tags"},
         "policy": {"sysdat", "wordlists"},
@@ -88,7 +89,7 @@ class LayeringTest(unittest.TestCase):
                    "textpath", "wordlists"},
         "replay": {"filter", "transport"},
         "cli": {"backends", "config", "eventlog", "filter", "imaging",
-                "intercept", "replay", "sysdat", "transport"},
+                "intercept", "replay", "secret", "sysdat", "transport"},
     }
 
     def test_every_module_is_declared(self):
@@ -140,10 +141,11 @@ class DependencyTest(unittest.TestCase):
     #: Standard-library modules the engine is allowed to use. Anything else is
     #: a third-party dependency, which the architecture forbids.
     STDLIB = {
-        "__future__", "argparse", "ast", "collections", "dataclasses",
-        "datetime", "enum", "hashlib", "json", "math", "os", "pathlib", "re",
-        "struct", "sys", "tempfile", "threading", "time", "typing",
-        "unicodedata", "itertools", "functools", "abc", "copy", "io",
+        "__future__", "argparse", "ast", "base64", "collections",
+        "dataclasses", "datetime", "enum", "hashlib", "hmac", "json",
+        "math", "os", "pathlib", "re", "secrets", "struct", "sys",
+        "tempfile", "threading", "time", "typing", "unicodedata",
+        "itertools", "functools", "abc", "copy", "io", "getpass",
     }
 
     def test_only_stdlib(self):

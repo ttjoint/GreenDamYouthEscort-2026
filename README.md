@@ -49,6 +49,7 @@ docs/              design and migration notes
   backends.md          M3: two text backends and their A/B comparison
   requirements-traceability.md  every requirement mapped to a test
   structure-audit.md   one-off structure review and its outcome
+  password.md          M7: parent-password storage
 analysis/          reverse-engineering write-ups of the original product
                      (master ledger, facts, corrections, spec; see analysis/README.md)
 tools/             legacy import tooling (run once, then irrelevant)

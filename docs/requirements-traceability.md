@@ -123,7 +123,7 @@
 | I3 | 保留槽（26–67）必须为 0 | 逆向 | `test_config.py::ValidateTest` | COVERED |
 | I4 | 日志 JSONL + 结构化 + 脱敏 | 本项目纪律 | `test_eventlog.py` | COVERED |
 | I5 | `gated` 与 `allow` 必须可区分 | 本项目修正 | `test_eventlog.py` / `test_filter.py` | COVERED |
-| I6 | 密码 PBKDF2-HMAC-SHA256 + 随机盐，绝不存明文 | architecture §M7 | — | **MISSING** |
+| I6 | 密码 PBKDF2-HMAC-SHA256 + 随机盐，绝不存明文 | architecture §M7 | `test_secret.py` 33 项 | COVERED |
 | I7 | 服务以 LocalSystem 运行，ACL 拒绝非管理员停止 | architecture §M7 | — | **MISSING**（需真机） |
 | I8 | 崩溃后恢复动作重启服务 | architecture §M7 | — | **MISSING**（需真机） |
 | I9 | 卸载是安装的严格逆操作，有 manifest | architecture §M7 | — | **MISSING** |
@@ -169,9 +169,9 @@
 
 | 状态 | 数量 |
 |---|---|
-| COVERED | 51 |
+| COVERED | 52 |
 | PARTIAL | 1 |
-| **MISSING** | **14** |
+| **MISSING** | **13** |
 | MANUAL | 0（合并进 MISSING 的说明里） |
 
 ### MISSING 的 20 项，按"能否脱离真机实现"分组
@@ -179,7 +179,6 @@
 **纯逻辑，不需要权限**（建议优先）：
 
 - E6 分块层接入
-- I6 密码哈希（纯计算，PBKDF2）
 - I9 / I10 卸载清单（manifest 生成与逆序回滚的纯数据部分）
 - J7 时间调度
 

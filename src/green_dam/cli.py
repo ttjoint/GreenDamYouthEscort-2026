@@ -218,6 +218,67 @@ def _cmd_ab(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_password(args: argparse.Namespace) -> int:
+    """Set, verify or inspect the parent password.
+
+    Deliberately does not echo the password, and reads it from a prompt rather
+    than an argument when possible: command lines end up in shell history and
+    process listings.
+    """
+    from . import secret
+
+    path = Path(args.path)
+
+    if args.action == "show":
+        try:
+            record = secret.load(path)
+        except secret.NoPasswordSet as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps({
+                "algorithm": record.algorithm,
+                "iterations": record.iterations,
+                "needs_rehash": record.needs_rehash,
+            }, ensure_ascii=False, indent=2, sort_keys=True))
+        else:
+            print(f"algorithm    : {record.algorithm}")
+            print(f"iterations   : {record.iterations}")
+            print(f"needs rehash : {record.needs_rehash}")
+        return 0
+
+    if args.action == "generate":
+        print(secret.generate(args.length))
+        return 0
+
+    password = args.password
+    if password is None:
+        import getpass
+        password = getpass.getpass("password: ")
+
+    if args.action == "set":
+        try:
+            record = secret.hash_password(password)
+        except secret.PasswordError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        secret.save(record, path)
+        print(f"wrote {path} ({record.iterations} iterations)")
+        return 0
+
+    if args.action == "verify":
+        try:
+            ok = secret.check(path, password)
+        except secret.NoPasswordSet as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        print("ok" if ok else "wrong password")
+        return 0 if ok else 1
+
+    print(f"unknown action: {args.action}", file=sys.stderr)
+    return 2
+
+
 def _cmd_validate(args: argparse.Namespace) -> int:
     path = Path(args.path)
     try:
@@ -314,6 +375,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("corpus", help="UTF-8 text file, one sample per line")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=_cmd_ab)
+
+    p = sub.add_parser("password", help="manage the parent password")
+    p.add_argument("action", choices=("set", "verify", "show", "generate"))
+    p.add_argument("--path", default="parent.pw",
+                   help="password record path")
+    p.add_argument("--password", help="password (omit to be prompted)")
+    p.add_argument("--length", type=int, default=20,
+                   help="length for 'generate'")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=_cmd_password)
 
     p = sub.add_parser("validate", help="validate a policy blob")
     p.add_argument("path")
