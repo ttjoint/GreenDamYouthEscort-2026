@@ -327,3 +327,56 @@ class PlatformSplitTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SingleLanguageTest(unittest.TestCase):
+    """A6: the whole product is Python; no cross-language bridge exists.
+
+    This was .NET 8 for the host until an audit (docs/dependency-audit.md) found
+    no module that needed it. The assertion here is that the repository contains
+    no C#/VB project and no .NET build artefact, so the claim cannot silently
+    become false when someone adds a helper project.
+    """
+
+    #: Source extensions that would mean a second language crept in.
+    FOREIGN_EXTENSIONS = (".cs", ".vb", ".fs", ".csproj", ".vbproj", ".fsproj",
+                          ".sln", ".xaml")
+
+    def test_no_foreign_source_files(self):
+        offenders = []
+        for path in ROOT.rglob("*"):
+            if not path.is_file():
+                continue
+            # Skip the vendor tree and any nested checkout.
+            parts = set(path.relative_to(ROOT).parts)
+            if parts & {"LH-installed-tree", ".git", "node_modules",
+                        "__pycache__", ".pytest_cache"}:
+                continue
+            if path.suffix.lower() in self.FOREIGN_EXTENSIONS:
+                offenders.append(str(path.relative_to(ROOT)))
+        self.assertEqual(offenders, [],
+                         msg=f"non-Python source found: {offenders}. The "
+                             f"product is single-language by design; see "
+                             f"docs/dependency-audit.md before adding one.")
+
+    def test_no_dotnet_mentions_in_source(self):
+        """The engine and host must not reference .NET as a dependency."""
+        offenders = []
+        for path in list((ROOT / "src").rglob("*.py")):
+            text = path.read_text(encoding="utf-8", errors="replace")
+            for token in ("import clr", "pythonnet", "Microsoft.NET",
+                          "dotnet "):
+                if token in text:
+                    offenders.append(f"{path.name}: {token}")
+        self.assertEqual(offenders, [])
+
+    def test_dependency_audit_document_exists(self):
+        """The audit is the justification for the single-language choice."""
+        audit = ROOT / "docs" / "dependency-audit.md"
+        self.assertTrue(audit.exists(),
+                        msg="docs/dependency-audit.md records why the product "
+                            "is single-language; it must not be deleted")
+        text = audit.read_text(encoding="utf-8")
+        for module in ("M2", "M4", "M5", "M6", "M7", "M9"):
+            self.assertIn(module, text,
+                          msg=f"audit does not cover {module}")

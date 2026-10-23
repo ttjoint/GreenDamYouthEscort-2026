@@ -5,14 +5,47 @@
 Windows 10 1809 or newer, x64. The original package ran on XP; reproducing
 that is pointless (no TLS 1.2), and the mechanisms it relied on are gone.
 
-The detection engines are written in Python and are platform-independent. The
-host — service, network interception, UI automation, console — is .NET 8 and
-Windows-only. This split lets the interesting part be tested anywhere while
-keeping the OS integration native.
+### One language: Python throughout
 
-A Windows 7 / 8.1 build is possible by dropping to .NET Framework 4.8 and
-replacing WinRT OCR with Tesseract, at the cost of ~30 MB and worse OCR. Not
-a current goal.
+The whole product is Python - detection engines and host alike. The split that
+matters is not between languages but between **I/O and logic**:
+
+| Layer | Package | I/O | Testable without Windows |
+|---|---|---|---|
+| engines | `src/green_dam` | forbidden by contract | yes |
+| host | `host/` | allowed, Windows-only | no |
+
+The engine keeps its zero-dependency, no-I/O property (``tests/test_contracts.py``
+enforces it), so the interesting part still runs and tests anywhere. The host
+holds every ``socket``, ``subprocess``, ``ctypes`` and ``pywin32`` call.
+
+**This was .NET 8 until the host work started.** That choice was never justified
+in this document; it was the conventional default for Windows desktop work. An
+audit of what each module actually needs showed no requirement that .NET alone
+satisfies (see ``docs/dependency-audit.md``), and staying in one language removes
+the cross-language bridge, halves the deployment surface, and lets the UI be
+HTML - which is both more modern than WinForms and far easier to iterate on.
+
+### Deployment: nothing to install on the target
+
+A deployment is an embeddable CPython plus the host and engine - roughly 20 MB,
+no installer, no redistributable runtime. That constraint is why the UI is a
+WebView2 shell rather than a Qt application: Qt would add 60-150 MB.
+
+WebView2 ships with Windows 11 and with any Windows 10 machine that has seen
+Edge, Teams or Office. It is *not* guaranteed on Windows 10, so the host degrades:
+
+| Available | UI |
+|---|---|
+| WebView2 | native window via ``pywebview`` |
+| Edge only | ``msedge --app=`` window, visually equivalent |
+| neither | open the local page in the default browser |
+
+All three serve the same HTML. The UI is written once.
+
+The cost of this choice is stated rather than hidden: WinRT bindings for Python
+are community-maintained, so M5 (screen OCR) is the one module where the Python
+route is weaker than the .NET one. Everything else is at parity.
 
 ## Modules
 
@@ -140,6 +173,11 @@ hardware dongle checks.
 | P4 | M4 ONNX image classification | **not started** (see note) |
 | P5 | M5 UIA + OCR | not started |
 | P6 | service packaging, M9 console, hardening | not started |
+
+Host work happens in ``host/``, which is outside ``src/`` because ``src/`` is
+under the no-I/O contract. The engine does not change to accommodate the host;
+the host adapts to the engine's interfaces (``transport.plan``,
+``imagepath.ImageBackend``, ``Filter``).
 
 Note on P4: the reverse-engineering work recovered the original's image
 judgement (``analysis/probe/p27``, ``p28``) and two of those paths are ported in

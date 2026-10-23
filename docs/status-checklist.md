@@ -36,7 +36,7 @@
 | — 跨层汇总 | 网络 + 文本证据合成 | **DONE** | `policy.py` (`assess`) | `test_policy::AssessTest` |
 | — 门面 | 配置+名单+判定+日志串联 | **DONE** | `filter.py` `gate.py` | `test_filter`（端到端） |
 | — 四路一致 | 网络/文本/图像/进程统一 | **DONE** | `filter.py` | `test_evidence_paths`（19 项） |
-| M9 控制台 | 父界面、日志、调度 | **TODO** | `cli*.py`（诊断 CLI，非产品 UI） | `test_cli` |
+| M9 控制台 | 父界面、日志、调度 | **TODO** | 计划 `host/ui/`（pywebview + HTML）；`cli*.py` 是诊断 CLI | `test_cli` |
 
 **有 CLI（`green-dam`）、有 `python -m green_dam`、有打包（`pyproject.toml`，
 零运行时依赖）。** CLI 是**诊断工具**，不是架构里的 M9 产品界面。
@@ -294,8 +294,19 @@ Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` �
 
 ## 9. M9 控制台 —— TODO
 
-架构要求：单机、无服务器、托盘 + 日志 + 调度。`src/` 无产品 UI；
-`cli*.py` 是**诊断工具**（`green-dam`），不是 M9。
+架构要求：单机、无服务器、托盘 + 日志 + 调度。
+
+**技术选型已定**（见 `docs/dependency-audit.md`）：
+
+| 组件 | 方案 |
+|---|---|
+| 窗口 | `pywebview`（WebView2）+ 本地 HTML/CSS/JS |
+| 降级 | `msedge --app=` → 默认浏览器 |
+| 托盘 | `pystray` |
+| 后端 | 与引擎同进程，或本地 HTTP（127.0.0.1 随机端口） |
+
+`src/` 无产品 UI；`cli*.py` 是**诊断工具**（`green-dam`），不是 M9。
+宿主层代码将放在 `host/`（不在 `src/`，因为 `src/` 受零 IO 契约约束）。
 
 ---
 

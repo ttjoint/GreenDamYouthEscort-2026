@@ -17,12 +17,13 @@ What this module is, and is not
 It is the **decision skeleton**: given a flow, which stage can judge it, what
 does that stage get to see, and what does it do when it cannot see enough. It
 performs no networking. The actual proxy and firewall are the host's job
-(``.NET 8``, Windows-only), and they will call :func:`plan` to learn what they
-are expected to supply.
+(``host/``, Windows-only), and they call :func:`plan` to learn what they are
+expected to supply.
 
-That split is why this is testable without a network at all, and it is the same
-split the architecture already makes between engines (Python, portable) and host
-(.NET, Windows).
+That split is why this is testable without a network at all. It is a split
+between **logic and I/O**, not between languages - the host is Python too, and
+the contract test forbids this module from importing ``socket`` precisely so the
+boundary stays real rather than aspirational.
 
 Why stages degrade rather than fail
 -----------------------------------

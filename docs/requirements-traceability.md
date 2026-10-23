@@ -23,11 +23,13 @@
 
 | # | 需求 | 来源 | 测试 | 状态 |
 |---|---|---|---|---|
-| A1 | 检测引擎（Python）与宿主（.NET）分离，引擎平台无关 | architecture §Target | `test_contracts.py::LayeringTest` | COVERED |
+| A1 | 引擎（零 IO）与宿主（IO）分离，引擎平台无关 | architecture §Target | `test_contracts.py::LayeringTest` | COVERED |
+| A6 | 全 Python 单语言（无跨语言桥） | architecture §Target + `docs/dependency-audit.md` | `test_contracts.py` | COVERED |
 | A2 | 核心零第三方依赖（纯标准库） | architecture §Target | `test_contracts.py::DependencyTest` | COVERED |
 | A3 | 模块间无循环依赖 | 推论 | `test_contracts.py::LayeringTest` | COVERED |
 | A4 | 依赖方向单向（底层不 import 上层） | 推论 | `test_contracts.py::LayeringTest` | COVERED |
 | A5 | 引擎层不得含 I/O（socket/subprocess/ctypes） | architecture §Deliberate omissions | `test_contracts.py::NoIOTest` | COVERED |
+| A7 | 目标机零安装部署（嵌入 CPython） | architecture §Target | — | **MISSING**（宿主层未做） |
 
 ## B. 明确不做的行为（架构声明，必须持续验证"确实没做"）
 
@@ -156,7 +158,7 @@
 |---|---|---|---|---|
 | K1 | 诊断 CLI（status/policy/check/validate/log/screen） | 本项目 | `test_cli.py` | COVERED |
 | K2 | CLI 不打印词条/正文 | 本项目纪律 | `test_cli.py::NoContentTest` | COVERED |
-| K3 | 家长 UI（托盘、密码、日志查看） | architecture §M9 | — | **MISSING** |
+| K3 | 家长 UI（pywebview + HTML，托盘、密码、日志查看） | architecture §M9 | — | **MISSING** |
 | K4 | 单机运行，无服务器 | architecture §M9 | 结构性 | COVERED |
 
 ## L. 跨层不变量（本轮新建）
@@ -177,11 +179,11 @@
 
 | 状态 | 数量 |
 |---|---|
-| COVERED | 77 |
+| COVERED | 78 |
 | PARTIAL | 1 |
-| **MISSING** | **11** |
+| **MISSING** | **12** |
 
-### MISSING 的 11 项，按"能否脱离真机实现"分组
+### MISSING 的 12 项，按"能否脱离真机实现"分组
 
 **纯逻辑，不需要权限**：
 
@@ -192,6 +194,7 @@
 
 | # | 项 | 需要什么 |
 |---|---|---|
+| A7 | 目标机零安装部署（嵌入 CPython） | 宿主层 + 打包脚本 |
 | D10 | 真实代理与防火墙规则 | 管理员权限 |
 | F9 | 真实 ONNX 模型与会话 | 模型文件 + onnxruntime |
 | F7 | 其余 15 个 `CHECKEX*` 算法 | 大规模逆向（收益低） |
