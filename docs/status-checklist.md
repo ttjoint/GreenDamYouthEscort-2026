@@ -12,12 +12,12 @@
 > - `TODO` = 只有逆向结论（`analysis/`），`src/` 无代码
 > - `N/A` = 明确决定不做
 >
-> 测试口径（`python -m pytest -q`（testpaths 已含 `tests` 与 `host/tests`），当前 **1685 passed / 15 skipped / 137 subtests**，共收集 1700 项）：
+> 测试口径（`python -m pytest -q`（testpaths 已含 `tests` 与 `host/tests`），当前 **1690 passed / 15 skipped / 137 subtests**，共收集 1705 项）：
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `HOST` 测试 = 断言 `host/` 的行为（含 B7/B8 在宿主层的否定性约束）
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：**1685 passed / 15 skipped**。该数字由 `tests/test_docs.py::TestCountClaimTest`
+> 最后核对：**1690 passed / 15 skipped**。该数字由 `tests/test_docs.py::TestCountClaimTest`
 > 自动校对（文档里的总数必须等于两个测试目录收集到的测试数），改代码后忘记改这里会红。
 > **本次核对已清理全部过时条目**（见文末「修订记录」）。
 
@@ -49,7 +49,7 @@
 **有 CLI（`green-dam`）、有 `python -m green_dam`、有打包（`pyproject.toml`，
 零运行时依赖）。** CLI 是**诊断工具**，不是架构里的 M9 产品界面。
 
-### 测试分层（1700 项）
+### 测试分层（1705 项）
 
 | 层 | 文件 | 项数 | 作用 |
 |---|---|---|---|

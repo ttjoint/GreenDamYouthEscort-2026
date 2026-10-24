@@ -3,7 +3,7 @@
 > **如果你是第一次读这个仓库，从这里开始。**
 > 本文回答四个问题：现在做到哪了、哪些能信、哪些别信、接下来做什么。
 
-最后核对：**1685 passed / 15 skipped / 137 subtests**（`pytest`（testpaths 已含两个目录），共收集 1700 项），约 96 秒。
+最后核对：**1690 passed / 15 skipped / 137 subtests**（`pytest`（testpaths 已含两个目录），共收集 1705 项），约 96 秒。
 这个数字由 `tests/test_docs.py::TestCountClaimTest` 自动校对，不是手维护的。
 
 ---
@@ -456,7 +456,7 @@ ls host/supervisor.py host/__main__.py host/service.py                     # 都
 
 这个项目最大的资产不是代码，是**记录下来的"为什么"**。
 
-1700 项测试里，很多是**否定性断言**（"绝不产生 allow"、"绝不编造 level"、
+1705 项测试里，很多是**否定性断言**（"绝不产生 allow"、"绝不编造 level"、
 "绝不打印词条"）。它们存在的理由不是防回归，而是**防未来的自己走捷径**。
 
 如果你要改某条规则，先读 `docs/requirements-traceability.md` 里对应那条需求

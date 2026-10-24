@@ -466,5 +466,112 @@ class RoadmapClaimTest(unittest.TestCase):
                               f"was a settled decision")
 
 
+class CoverageClaimTest(unittest.TestCase):
+    """The coverage matrix's conclusions depend on facts in the code.
+
+    ``docs/coverage-matrix.md`` answers "can the extension replace the proxy?"
+    with no, and the argument rests on four mechanical facts. Each one is cheap
+    to change by accident - a new manifest permission, a tag removed from
+    ``SKIP_TAGS`` - and the document would silently become wrong.
+
+    These assertions are the reason the answer is no, so they are asserted here
+    rather than trusted to prose.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, str(ROOT))
+        from host import extension
+
+        cls.extension = extension
+
+    def test_the_extension_cannot_block_requests(self):
+        """No webRequest/tabs means it can only hide, never prevent.
+
+        This is the whole "bytes already arrived" argument. If a future change
+        adds ``webRequest`` with blocking, the matrix's central comparison
+        becomes wrong and must be rewritten.
+        """
+        permissions = set(self.extension.manifest()["permissions"])
+        for forbidden in ("webRequest", "webRequestBlocking", "tabs",
+                          "webNavigation", "declarativeNetRequest"):
+            self.assertNotIn(
+                forbidden, permissions,
+                msg=f"the extension now requests {forbidden!r}, so it may be "
+                    f"able to block requests. docs/coverage-matrix.md says it "
+                    f"cannot - rewrite that section.")
+
+    def test_video_and_canvas_are_still_skipped(self):
+        """The two blind spots the matrix admits to.
+
+        If either stops being skipped, the matrix is understating coverage; if
+        the list grows, it is overstating it. Either way it needs an edit.
+        """
+        skip = set(self.extension.SKIP_TAGS)
+        self.assertIn("video", skip,
+                      msg="video is no longer skipped; coverage-matrix.md 2.3 "
+                          "says video content is not judged")
+        self.assertIn("canvas", skip,
+                      msg="canvas is no longer skipped; coverage-matrix.md 2.3 "
+                          "says canvas content is not judged")
+
+    def test_iframes_are_covered_even_though_the_tag_is_skipped(self):
+        """The distinction the matrix is careful to make.
+
+        ``iframe`` is in SKIP_TAGS (the container's own text is not judged) but
+        ``all_frames`` is true (the inner document is injected and judged).
+        Conflating the two would make the matrix claim iframes are uncovered,
+        which is wrong and would misdirect a later reader.
+        """
+        self.assertIn("iframe", set(self.extension.SKIP_TAGS))
+        scripts = self.extension.manifest()["content_scripts"]
+        self.assertTrue(all(s.get("all_frames") for s in scripts),
+                        msg="content scripts no longer run in sub-frames; "
+                            "coverage-matrix.md 2.3 says iframe content is "
+                            "judged via all_frames")
+
+    def test_only_three_browsers_are_configurable(self):
+        """The matrix's browser count, checked against detection.
+
+        ``detect()`` returns whatever is installed on this machine, so the
+        assertion is about the *configurable* subset, not about the machine:
+        IE is detected and reported but cannot be configured, which is why the
+        matrix says three browsers and not four.
+        """
+        from host.browsers import detect
+
+        browsers = detect()
+        configurable = [b for b in browsers if b.configurable]
+        self.assertEqual(len(configurable), 3,
+                         msg=f"expected Chrome/Edge/Firefox to be "
+                             f"configurable, got "
+                             f"{[b.display_name for b in configurable]}")
+        for browser in browsers:
+            if browser.display_name == "Internet Explorer":
+                self.assertFalse(
+                    browser.configurable,
+                    msg="IE is now configurable; coverage-matrix.md says it "
+                        "cannot receive the extension")
+
+    def test_the_proxy_is_not_a_gateway(self):
+        """The matrix's other correction: this is an explicit proxy.
+
+        A transparent gateway would need ARP spoofing, routing redirection or a
+        WFP driver - all of which intercept the whole machine, which is the
+        same scope objection that declined MITM. Asserted so a future change
+        that starts sniffing interfaces is caught.
+        """
+        from host.proxy import server as proxy_server
+
+        text = Path(proxy_server.__file__).read_text(encoding="utf-8")
+        for forbidden in ("ARP", "WinDivert", "WFP", "promiscuous",
+                          "IP_TRANSPARENT", "SO_ORIGINAL_DST"):
+            self.assertNotIn(
+                forbidden, text,
+                msg=f"the proxy references {forbidden!r}; it is documented as "
+                    f"an explicit proxy, not a gateway. Update "
+                    f"coverage-matrix.md 4.2.")
+
+
 if __name__ == "__main__":
     unittest.main()
