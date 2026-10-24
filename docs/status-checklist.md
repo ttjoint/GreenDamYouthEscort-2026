@@ -12,11 +12,13 @@
 > - `TODO` = 只有逆向结论（`analysis/`），`src/` 无代码
 > - `N/A` = 明确决定不做
 >
-> 测试口径（`python -m pytest tests/ -q`，当前 **1105 passed / 10 skipped / 137 subtests**）：
+> 测试口径（`python -m pytest -q`（testpaths 已含 `tests` 与 `host/tests`），当前 **1666 passed / 15 skipped / 137 subtests**，共收集 1681 项）：
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
+> - `HOST` 测试 = 断言 `host/` 的行为（含 B7/B8 在宿主层的否定性约束）
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：原厂词库加载（M1）完成时（1247 passed）。
+> 最后核对：**1666 passed / 15 skipped**。该数字由 `tests/test_docs.py::TestCountClaimTest`
+> 自动校对（文档里的总数必须等于两个测试目录收集到的测试数），改代码后忘记改这里会红。
 > **本次核对已清理全部过时条目**（见文末「修订记录」）。
 
 ---
@@ -28,20 +30,23 @@
 | M1 数据 | 载入 JSON、建索引、类别模型 | **DONE** | `wordlists.py` `namelist.py` `namelists.py` `legacy_words.py` `simpath.py` | 5 个测试文件 |
 | M2 网络 | 四段拦截 | **PARTIAL** | `intercept.py` `transport.py` `replay.py` | `test_intercept` `test_transport` |
 | M3 文本 | 分词、语境判定、双后端 | **DONE** | `chunker.py` `semantic.py` `backends.py` `chunkpath.py` `textpath.py` | 9 个测试文件 |
-| M4 图像 | 不良/人脸分类 | **PARTIAL** | `imaging*.py`（4 个）+ `imagepath.py`（后端接口） | 4 个测试文件 |
+| M4 图像 | 不良/人脸分类 | **PARTIAL** | `imaging*.py`（4 个）+ `imagepath.py`（后端接口）；`host/imaging/`（ONNX 后端 + 评分服务） | 4 个测试文件 + `host/tests/test_imaging.py` `test_scoring.py` |
 | M5 屏幕 | 屏幕文字提取 | **TODO** | — | — |
-| M6 应用控制 | 禁止指定程序联网 | **PARTIAL** | `namelists.py`（名单 B 匹配） | `test_evidence_paths` |
+| M6 应用控制 | 禁止指定程序联网 | **PARTIAL** | `namelists.py`（名单 B 匹配）；`host/processes.py` `host/protection.py` | `test_evidence_paths` + `host/tests/test_processes.py` |
 | M7 基础设施 | 服务、配置、日志、IPC | **PARTIAL** | `eventlog.py` `config.py` `secret.py` `journal.py` | 4 个测试文件 |
 | M8 策略 | 汇总成 放行/阻断/告警 | **DONE** | `policy.py` `sysdat.py` `schedule.py` | `test_policy` `test_sysdat` `test_schedule` |
 | — 跨层汇总 | 网络 + 文本证据合成 | **DONE** | `policy.py` (`assess`) | `test_policy::AssessTest` |
 | — 门面 | 配置+名单+判定+日志串联 | **DONE** | `filter.py` `gate.py` | `test_filter`（端到端） |
 | — 四路一致 | 网络/文本/图像/进程统一 | **DONE** | `filter.py` | `test_evidence_paths`（19 项） |
 | M9 控制台 | 父界面、日志、调度 | **TODO** | 计划 `host/ui/`（pywebview + HTML）；`cli*.py` 是诊断 CLI | `test_cli` |
+| — 宿主骨架 | 能力探测、路径布局、引擎装配 | **DONE** | `host/capabilities.py` `host/paths.py` `host/engine.py` | `host/tests/test_capabilities.py` |
+| — 宿主契约 | 宿主层的 B7/B8 等否定性约束 | **DONE** | — | `host/tests/test_contracts.py` |
+| — 评分服务 | 扩展 POST `/score` 的对接端 | **DONE** | `host/imaging/service.py` `host/imaging/__main__.py` | `host/tests/test_scoring.py`（28 项） |
 
 **有 CLI（`green-dam`）、有 `python -m green_dam`、有打包（`pyproject.toml`，
 零运行时依赖）。** CLI 是**诊断工具**，不是架构里的 M9 产品界面。
 
-### 测试分层（1,247 项）
+### 测试分层（1681 项）
 
 | 层 | 文件 | 项数 | 作用 |
 |---|---|---|---|
@@ -228,15 +233,26 @@ Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` �
 
 ---
 
-## 6. M6 应用控制 —— TODO
+## 6. M6 应用控制 —— PARTIAL
 
-逆向已闭合（`analysis/probe/p20`，C-019 名单 B；`kwselectinfopp.dll` 8 条记录），`src/` 无代码。
+逆向已闭合（`analysis/probe/p20`，C-019 名单 B；`kwselectinfopp.dll` 8 条记录）。
+引擎侧（名单 B 匹配）在 `namelists.py`；宿主侧在 `host/processes.py`。
 
-| 待做项 | 逆向依据 | 说明 |
-|---|---|---|
-| 进程名单匹配 | p20 | Toolhelp 遍历 + 名称小写化 + 匹配 |
-| 静态初始名单 | F-003 | `kwselectinfopp.dll` 84B × 8 记录格式已闭合 |
-| 进程终止动作 | C-007 | 原厂 22 条终止名单（**不迁移名单内容**，只迁移机制） |
+| 项 | 位置 | 状态 | 测试 |
+|---|---|---|---|
+| 进程名单匹配 | `filter.py` `check_process` + `namelists.py` | DONE | `test_evidence_paths` |
+| 进程枚举 | `host/processes.py` `list_processes`（psutil） | DONE | `host/tests/test_processes.py` |
+| 终止动作（默认 dry-run） | `host/processes.py` `sweep` | DONE | 同上 |
+| **终止保护（B8）** | `host/protection.py` | DONE | 同上（critical / security / self 三类） |
+| 静态初始名单 | F-003 | **TODO**：`kwselectinfopp.dll` 84B × 8 记录格式已闭合，未迁移 | — |
+
+### 设计约束（不是待做项）
+
+- **默认 dry-run**：`sweep(apply=False)`。会杀进程的路径全在 `apply=True` 后面。
+- **保护名单先于任何动作**：Windows 关键进程、安全软件、本产品自身进程树，
+  即使家长把它们加进名单 B 也不会被终止，且会以 `Refusal` 报告——
+  “家长要求阻断 csrss” 是配置错误，不该静默失效。
+- **原厂 22 条终止名单内容不迁移**，只迁移机制（那 22 条就是安全软件）。
 
 ---
 

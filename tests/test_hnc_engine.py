@@ -412,7 +412,7 @@ class IniCheckpointConstantTest(unittest.TestCase):
 
 
 class EngineRuntimeTest(unittest.TestCase):
-    """真跑一遍引擎——但只在 32 位 Python 下。
+    r"""真跑一遍引擎——但只在 32 位 Python 下。
 
     **这个类在本仓库默认的 64 位解释器下永远 skip**，因为
     test_hnc_engine.py 这个文件整体用了 3.x 语法（函数注解），
@@ -421,6 +421,9 @@ class EngineRuntimeTest(unittest.TestCase):
     运行时验证请直接跑脚本：
 
         D:\Python27\python.exe tools\call_hnc_engine.py
+
+    （上面这个 docstring 的 r 前缀是必需的：这段路径含反斜杠，
+    非 raw 字符串会触发 `SyntaxWarning: invalid escape sequence`。）
 
     那里会打印建组结果、计数接口、MakeALC 返回码，并断言
     「路径带尾反斜杠才成功」这件事。

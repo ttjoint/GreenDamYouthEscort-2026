@@ -275,3 +275,43 @@ class ClassifierChain:
             skin=next((v.skin for v in verdicts if v.skin), None),
             metrics=merged(verdicts),
         )
+
+
+@dataclass
+class NullBackend:
+    """A backend that never assesses, and says so.
+
+    This exists as a named thing rather than as "pass an empty list" because the
+    difference between *no model installed* and *a model that returned nothing*
+    is the distinction this project keeps insisting on. A deployment with no NSFW
+    model is a valid deployment: it reports ``assessed=False`` for every frame,
+    and the caller must treat that as "not looked at", never as "clean".
+
+    The parent product's own arithmetic checks (``ReferenceBackend``) can still
+    run alongside it - this backend adds nothing and blocks nothing.
+    """
+
+    name: str = "null"
+
+    def classify(self, buffer: bytes, width: int, height: int) -> ImageVerdict:
+        return ImageVerdict(nsfw=None, assessed=False, flagged=False,
+                            reason=NOT_ASSESSED, backend=self.name)
+
+
+def default_backends(*, run_arithmetic: bool = True) -> tuple[ImageBackend, ...]:
+    """The backend chain a deployment with no NSFW model should use.
+
+    Returning a chain rather than a single backend matters: the arithmetic checks
+    are what this project ported from the vendor binary, and they are worth
+    running even when no model is present. What must not happen is for their
+    output to be dressed up as an NSFW score - hence ``NullBackend`` sitting at
+    the end of the chain, guaranteeing ``assessed=False`` rather than leaving the
+    question open.
+
+    A host that installs a model prepends it: ``(model,) + default_backends()``.
+    """
+    chain: list[ImageBackend] = []
+    if run_arithmetic:
+        chain.append(ReferenceBackend())
+    chain.append(NullBackend())
+    return tuple(chain)

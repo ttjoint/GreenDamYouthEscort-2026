@@ -106,7 +106,12 @@ class LayeringTest(unittest.TestCase):
                        "imagepath", "imaging_checkex", "imaging_skin_hsv", "intercept",
                        "replay", "simpath"},
         "cli_lifecycle": {"journal", "secret"},
-        "cli": {"cli_admin", "cli_filter", "cli_lifecycle"},
+        "cli": {"cli_admin", "cli_filter", "cli_lifecycle", "cli_words"},
+        # Word packs: the model is pure data, the CLI does the file access.
+        # Keeping them separate is what lets the format rules be tested without
+        # a filesystem, and is why ``wordpacks`` imports nothing from the package.
+        "wordpacks": set(),
+        "cli_words": {"wordpacks"},
     }
 
     def test_every_module_is_declared(self):

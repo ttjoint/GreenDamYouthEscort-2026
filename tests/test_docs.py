@@ -113,13 +113,22 @@ class MissingGroupingTest(unittest.TestCase):
         cls.text = TRACEABILITY.read_text(encoding="utf-8")
 
     def test_grouping_lists_exactly_the_missing_ids(self):
+        """The grouping table must account for every MISSING id, and no others.
+
+        The table stops at the next ``###`` heading. Without that bound, the
+        N/A section that follows would be counted as part of the grouping, and
+        ids that are explicitly *not* being built would look like pending work -
+        which is the opposite of what the section is for.
+        """
         missing = {rid for rid, rest in _rows(self.text)
                    if "**MISSING**" in rest}
-        # The grouping section lists ids as ``| D10 | ...`` inside a table whose
-        # header is "需要平台 API / 真机". Collect ids mentioned after it.
         index = self.text.rfind("需要平台 API / 真机")
         self.assertGreater(index, 0, msg="grouping section not found")
         tail = self.text[index:]
+        end = tail.find(chr(10) + "### ", 1)
+        if end > 0:
+            tail = tail[:end]
+
         # The grouping table merges related ids into one cell: ``| G1 / G3 |``.
         grouped: set[str] = set()
         for cell in re.findall(r"^\| ([^|]+?) \|", tail, re.M):
@@ -127,6 +136,23 @@ class MissingGroupingTest(unittest.TestCase):
         self.assertEqual(grouped, missing,
                          msg=f"missing in grouping: {missing - grouped}; "
                              f"extra in grouping: {grouped - missing}")
+
+    def test_declined_items_are_not_counted_as_missing(self):
+        """A decision not to build something must not read as pending work.
+
+        ``D14``/``G1``/``G3`` are N/A: a replacement exists and the reason is
+        recorded. If one of them reappeared as MISSING, the summary would
+        overstate what is left and the reason would be lost.
+        """
+        for rid in ("D14", "G1", "G3"):
+            row = next((rest for row_id, rest in _rows(self.text)
+                        if row_id == rid), None)
+            self.assertIsNotNone(row, msg=f"{rid} is not in the table at all")
+            self.assertNotIn("**MISSING**", row,
+                             msg=f"{rid} is marked MISSING but a decision was "
+                                 f"taken not to build it")
+            self.assertIn("N/A", row,
+                          msg=f"{rid} should be marked N/A with a reason")
 
     def test_no_pure_logic_items_remain(self):
         """When this fails, the engine has work it can do without a host."""
@@ -250,6 +276,90 @@ class SourceCountsTest(unittest.TestCase):
         self.assertEqual(int(stated.group(1)), actual,
                          msg=f"HANDOFF says {stated.group(1)} test files, "
                              f"tree has {actual}")
+
+
+class TestCountClaimTest(unittest.TestCase):
+    """The "N passed" figure quoted in the docs must match the tree.
+
+    This is the one number that drifted silently three times (1,105 / 1,247 in
+    two files, while the suite was actually at 1,265). Counting test *methods*
+    is not the same as counting pytest's ``passed`` - skips and subtests differ -
+    so the number asserted here is the method count, which is the figure the
+    docs actually claim. It is checked by collection, not by running, so the
+    assertion costs about a second.
+    """
+
+    #: Files whose quoted totals must all agree with each other and the tree.
+    DOCUMENTS = (HANDOFF, CHECKLIST)
+
+    #: Both suites count. The host is part of the product, so a total that
+    #: omits it understates what actually runs - and the host is where the
+    #: refusal tests live, which are the ones a reader most needs to trust.
+    SUITES = (ROOT / "tests", ROOT / "host" / "tests")
+
+    @classmethod
+    def _counted(cls) -> int:
+        import ast
+
+        total = 0
+        for suite in cls.SUITES:
+            for path in sorted(suite.glob("test_*.py")):
+                tree = ast.parse(path.read_text(encoding="utf-8"))
+                for node in ast.walk(tree):
+                    if (isinstance(node, ast.FunctionDef)
+                            and node.name.startswith("test")):
+                        total += 1
+        return total
+
+    def test_every_quoted_total_matches_the_tree(self):
+        actual = self._counted()
+        self.assertGreater(actual, 1000, msg="test discovery found almost "
+                                             "nothing; the counter is broken")
+        checked = 0
+        for doc in self.DOCUMENTS:
+            text = doc.read_text(encoding="utf-8")
+
+            # Form 1: ``N passed / M skipped``. The two must add up to every
+            # collected test, which is what the tree holds. Checking the sum
+            # rather than ``passed`` alone means the assertion holds even as
+            # the skip count moves, without hard-coding which tests skip.
+            for match in re.finditer(r"([\d,]+) passed / (\d+) skipped", text):
+                passed = int(match.group(1).replace(",", ""))
+                skipped = int(match.group(2))
+                checked += 1
+                self.assertEqual(
+                    passed + skipped, actual,
+                    msg=f"{doc.name} claims {passed} passed + {skipped} "
+                        f"skipped, the tree collects {actual} tests. "
+                        f"Re-quote the numbers rather than deleting this "
+                        f"assertion.")
+
+            # Form 2: ``### 测试分层（1,247 项）`` - a bare total.
+            for match in re.finditer(r"测试分层（([\d,]+) 项）", text):
+                value = int(match.group(1).replace(",", ""))
+                checked += 1
+                self.assertEqual(
+                    value, actual,
+                    msg=f"{doc.name} says the test total is {value}, the "
+                        f"tree collects {actual}")
+
+            # Form 3: ``1,247 项测试里`` in prose - also a bare total.
+            # Restricted to four-digit counts: the docs also quote per-module
+            # figures ("29 项测试", "9 项测试"), which are asserted against the
+            # modules themselves elsewhere. Only the whole-suite total belongs
+            # here, and that number is always four digits or more.
+            for match in re.finditer(r"(\d{1,3}(?:,\d{3})+|\d{4,}) 项测试", text):
+                value = int(match.group(1).replace(",", ""))
+                checked += 1
+                self.assertEqual(
+                    value, actual,
+                    msg=f"{doc.name} says there are {value} tests, the "
+                        f"tree collects {actual}")
+
+        self.assertGreater(checked, 2, msg="fewer quoted totals found than "
+                                           "expected; if the wording changed, "
+                                           "update the patterns instead of "
+                                           "dropping the test")
 
 
 class ProbeClaimTest(unittest.TestCase):

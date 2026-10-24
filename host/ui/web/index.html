@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>绿坝·花季护航 2026 — 家长控制台</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="bar">
+  <h1>绿坝·花季护航 2026</h1>
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-view="status" aria-selected="true">状态</button>
+    <button class="tab" role="tab" data-view="log" aria-selected="false">记录</button>
+    <button class="tab" role="tab" data-view="packs" aria-selected="false">词库</button>
+    <button class="tab" role="tab" data-view="browsers" aria-selected="false">浏览器</button>
+    <button class="tab" role="tab" data-view="image" aria-selected="false">图片</button>
+  </nav>
+  <span class="stamp" id="stamp"></span>
+</header>
+
+<main>
+
+  <!-- 状态 ------------------------------------------------------------ -->
+  <section class="view" id="view-status">
+    <div class="verdict" id="verdict"></div>
+
+    <h2>覆盖范围</h2>
+    <table class="grid" id="coverage"></table>
+
+    <h2>缺口</h2>
+    <ul class="gaps" id="gaps"></ul>
+
+    <h2>开关</h2>
+    <table class="grid" id="switches"></table>
+  </section>
+
+  <!-- 记录 ------------------------------------------------------------ -->
+  <section class="view" id="view-log" hidden>
+    <p class="note">
+      记录里只有<strong>判定结果</strong>和<strong>内容摘要</strong>，没有正文、没有完整网址。
+      摘要是一段截断的哈希，用来辨认「同一内容被拦了两次」，无法还原成原文。
+    </p>
+    <p class="note" id="log-meta"></p>
+    <table class="grid log" id="log-table"></table>
+  </section>
+
+  <!-- 词库 ------------------------------------------------------------ -->
+  <section class="view" id="view-packs" hidden>
+    <p class="note">
+      词库是<strong>家长选择的检查标准</strong>，不是产品内置的立场。默认不带任何词库。
+      这里只显示数量，不显示词条——否则这个页面就成了词库的副本。
+    </p>
+    <p class="note" id="packs-summary"></p>
+    <table class="grid" id="packs-table"></table>
+    <p class="hint">
+      增删与开关在命令行：
+      <code>green-dam words list</code> /
+      <code>green-dam words enable &lt;id&gt;</code> /
+      <code>green-dam words add &lt;id&gt; --term …</code>
+    </p>
+  </section>
+
+  <!-- 浏览器 ---------------------------------------------------------- -->
+  <section class="view" id="view-browsers" hidden>
+    <p class="note">
+      过滤器通过浏览器扩展在<strong>页面内部</strong>工作：它按内容判定，
+      只隐藏不合适的那一条，不影响整站使用。
+    </p>
+    <table class="grid" id="browsers-table"></table>
+    <div class="warn" id="browsers-uncovered" hidden></div>
+  </section>
+
+  <!-- 图片 ------------------------------------------------------------ -->
+  <section class="view" id="view-image" hidden>
+    <div class="verdict" id="image-verdict"></div>
+    <p class="note" id="image-explanation"></p>
+    <table class="grid" id="image-table"></table>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <span>本机控制台，仅监听 127.0.0.1，关闭窗口即停止。</span>
+</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -54,6 +54,7 @@ from .cli_filter import (
     cmd_texture,
 )
 from .cli_lifecycle import cmd_password, cmd_uninstall
+from .cli_words import cmd_words
 
 
 def _add_filter_commands(sub) -> None:
@@ -198,6 +199,28 @@ def _add_admin_commands(sub) -> None:
     p = sub.add_parser("save-defaults", help="write shipped defaults to a file")
     p.add_argument("path")
     p.set_defaults(func=cmd_save_defaults)
+
+    p = sub.add_parser("words", help="inspect, switch, extend and share the "
+                                     "word packs")
+    p.add_argument("action",
+                   choices=("list", "show", "enable", "disable", "add",
+                            "remove", "import", "export"))
+    p.add_argument("id", nargs="?",
+                   help="pack id (for show/enable/disable/add/remove/export)")
+    p.add_argument("file_path", nargs="?",
+                   help="file path (for import) or destination (for export)")
+    p.add_argument("--as-id", dest="as_id",
+                   help="override the pack id when importing")
+    p.add_argument("--dir", help="pack directory (defaults to the "
+                                 "machine-wide data directory)")
+    p.add_argument("--term", action="append",
+                   help="a term to add or remove (repeatable)")
+    p.add_argument("--file", help="read terms to add or remove from a file, "
+                                  "one per line, '#' comments skipped")
+    p.add_argument("--name", help="display name when creating a pack")
+    p.add_argument("--category", help="category when creating a pack")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_words)
 
 
 def _add_lifecycle_commands(sub) -> None:

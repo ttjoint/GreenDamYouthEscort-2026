@@ -402,23 +402,29 @@ class Filter:
 def from_config_dir(path: Path, *, log: EventLog | None = None,
                     words: WordlistIndex | None = None,
                     hnc: object | None = None,
-                    backend: object | None = None) -> "Filter":
+                    backend: object | None = None,
+                    legacy: sysdat.PolicyArray | None = None,
+                    image_backend: object | None = None) -> "Filter":
     """Build from a directory holding ``xconfigs.dat`` (or ``sys.dat``).
 
-    Missing configuration is not an error: a fresh install has no file yet,
-    and the shipped defaults are the correct starting state.
+    Missing configuration is not an error: a fresh install has no file yet, and
+    the shipped defaults are the correct starting state. ``legacy`` supplies the
+    array directly, so a caller holding a decoded one need not write a file.
+    ``image_backend`` is the host's model wrapper: a parameter, not an import,
+    because the engine must not depend on a model runtime.
     """
-    for name in ("xconfigs.dat", "sys.dat"):
-        candidate = path / name
-        if candidate.exists():
-            legacy = config_mod.load(candidate)
-            break
-    else:
-        legacy = config_mod.default_for_fresh_install()
+    if legacy is None:
+        for name in ("xconfigs.dat", "sys.dat"):
+            candidate = path / name
+            if candidate.exists():
+                legacy = config_mod.load(candidate)
+                break
+        else:
+            legacy = config_mod.default_for_fresh_install()
     return Filter(legacy=legacy, log=log, words=words, hnc=hnc,
-               backend=backend)
+                  backend=backend, image_backend=image_backend)
 
-@classmethod
+
 def from_vendor_dir(path: Path, *, log: EventLog | None = None,
                     load_words: bool = True) -> "Filter":
     """Build from a directory laid out like the vendor's install tree.

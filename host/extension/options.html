@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Green Dam Youth Escort 2026 — 设置</title>
+<style>
+  body { font: 14px/1.6 system-ui, "Microsoft YaHei", sans-serif;
+         max-width: 40rem; margin: 3rem auto; color: #222; padding: 0 1rem; }
+  h1 { font-size: 1.3rem; }
+  h2 { font-size: 1.05rem; margin-top: 2rem; border-bottom: 1px solid #eee;
+       padding-bottom: .3rem; }
+  .row { display: flex; align-items: center; gap: .6rem; margin: .5rem 0; }
+  .hint { color: #666; font-size: .85rem; margin: .2rem 0 .8rem; }
+  .warn { background: #fff8e1; border-left: 3px solid #f0a000;
+          padding: .6rem .9rem; margin: 1rem 0; }
+  code { background: #f4f4f4; padding: .1rem .3rem; border-radius: 2px; }
+  #status { font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Green Dam Youth Escort 2026</h1>
+
+<p class="hint">
+  本扩展按<strong>内容</strong>判定，而不是按网址。论坛里一帖不合适，只隐藏那一帖，
+  整站照常使用。
+</p>
+
+<h2>当前状态</h2>
+<div class="row">
+  <label><input type="checkbox" id="enabled"> 启用过滤</label>
+</div>
+<div class="row">
+  <span id="status">读取中…</span>
+</div>
+
+<div class="warn" id="empty-warning" hidden>
+  没有可用的词库，因此文本过滤不会隐藏任何内容。
+  请在命令行运行 <code>green-dam words list</code> 查看已安装的词库，
+  或用 <code>green-dam words add</code> 添加。
+</div>
+
+<h2>过滤范围</h2>
+<div class="row">
+  <label><input type="checkbox" id="hideText"> 隐藏命中词库的文本</label>
+</div>
+<div class="row">
+  <label><input type="checkbox" id="hideImages"> 隐藏被判定为不适宜的图片</label>
+</div>
+<p class="hint">
+  隐藏一张图片需要在本地模型上运行约 90 毫秒。机器较慢时可以只开文本过滤。
+</p>
+
+<h2>本地评分服务</h2>
+<div class="row">
+  <label>地址 <input type="text" id="serviceUrl" size="32"></label>
+</div>
+<div class="row">
+  <span id="service-status">检查中…</span>
+</div>
+<p class="hint">
+  图片评分只发送到本机地址，不经过网络。服务未运行时图片<strong>不会被隐藏</strong>
+  —— 没有判定不等于判定为干净，也不等于判定为不适宜。
+</p>
+
+<h2>词库</h2>
+<div id="packs" class="hint">读取中…</div>
+<p class="hint">
+  词库通过命令行管理：<code>green-dam words list</code>、
+  <code>green-dam words enable &lt;id&gt;</code>、
+  <code>green-dam words disable &lt;id&gt;</code>。
+  本页只显示当前生效的数量，不显示词条内容。
+</p>
+
+<script src="options.js"></script>
+</body>
+</html>

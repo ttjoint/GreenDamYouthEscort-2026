@@ -1,0 +1,247 @@
+/* The console's stylesheet.
+ *
+ * No @import, no web fonts, no CDN: the CSP forbids all three, and a console
+ * that needs the network to render is a console that fails exactly when the
+ * network is being filtered.
+ *
+ * Colours carry meaning and are used consistently across views:
+ *   green  - this layer is working and has something to check
+ *   amber  - a gap the parent should know about
+ *   red    - a decision was made (something was blocked)
+ *   grey   - not assessed (NOT the same as fine)
+ */
+
+:root {
+  --ink: #1f2328;
+  --muted: #6a737d;
+  --line: #e1e4e8;
+  --bg: #ffffff;
+  --panel: #f6f8fa;
+  --green: #1a7f37;
+  --amber: #9a6700;
+  --amber-bg: #fff8c5;
+  --red: #cf222e;
+  --grey: #8b949e;
+  --grey-bg: #eaeef2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e6edf3;
+    --muted: #8b949e;
+    --line: #30363d;
+    --bg: #0d1117;
+    --panel: #161b22;
+    --green: #3fb950;
+    --amber: #d29922;
+    --amber-bg: #2d2410;
+    --red: #f85149;
+    --grey: #6e7681;
+    --grey-bg: #21262d;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 15px/1.65 system-ui, "Microsoft YaHei", "PingFang SC", sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+/* --- header ---------------------------------------------------------- */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.9rem 1.5rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-wrap: wrap;
+}
+
+.bar h1 {
+  font-size: 1.05rem;
+  margin: 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tabs { display: flex; gap: 0.25rem; }
+
+.tab {
+  font: inherit;
+  font-size: 0.92rem;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tab:hover { background: var(--bg); color: var(--ink); }
+
+.tab[aria-selected="true"] {
+  background: var(--bg);
+  border-color: var(--line);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.stamp {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- layout ---------------------------------------------------------- */
+
+main { padding: 1.5rem; max-width: 62rem; }
+
+h2 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 1.75rem 0 0.6rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--line);
+}
+
+h2:first-child { margin-top: 0; }
+
+.note {
+  font-size: 0.88rem;
+  color: var(--muted);
+  margin: 0 0 1rem;
+  max-width: 46rem;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 1rem;
+}
+
+code {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.85em;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.05em 0.35em;
+}
+
+/* --- verdict --------------------------------------------------------- */
+
+.verdict {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 1rem 1.2rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  margin-bottom: 1rem;
+}
+
+.verdict .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 0.45rem;
+  flex: 0 0 auto;
+  background: var(--grey);
+}
+
+.verdict.ok .dot { background: var(--green); }
+.verdict.partial .dot { background: var(--amber); }
+.verdict.off .dot { background: var(--red); }
+
+.verdict strong { display: block; margin-bottom: 0.15rem; }
+
+.verdict .sub { font-size: 0.88rem; color: var(--muted); }
+
+/* --- tables ---------------------------------------------------------- */
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.grid th, .grid td {
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.grid th {
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-transform: none;
+}
+
+.grid td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.grid tr:last-child td { border-bottom: none; }
+
+.log td.mono, .mono {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.82rem;
+}
+
+/* --- state pills ----------------------------------------------------- */
+
+.pill {
+  display: inline-block;
+  padding: 0.05em 0.5em;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pill.on { background: var(--green); color: #fff; }
+.pill.off { background: var(--grey-bg); color: var(--muted); }
+.pill.gap { background: var(--amber-bg); color: var(--amber); }
+.pill.blocked { background: var(--red); color: #fff; }
+
+/* --- gaps / warnings ------------------------------------------------- */
+
+.gaps { margin: 0; padding-left: 1.2rem; font-size: 0.9rem; }
+
+.gaps li { margin: 0.25rem 0; }
+
+.gaps .why { color: var(--muted); font-size: 0.86rem; }
+
+.warn {
+  margin-top: 1rem;
+  padding: 0.7rem 1rem;
+  border-left: 3px solid var(--amber);
+  background: var(--amber-bg);
+  color: var(--ink);
+  font-size: 0.9rem;
+  border-radius: 0 6px 6px 0;
+}
+
+.empty {
+  padding: 1.5rem 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* --- footer ---------------------------------------------------------- */
+
+.foot {
+  padding: 1rem 1.5rem 2rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}

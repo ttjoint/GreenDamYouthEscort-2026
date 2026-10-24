@@ -19,6 +19,22 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+# The host layer. Kept optional so the engine stays installable on a bare
+# interpreter: `pip install green-dam-2026` gets the pure-stdlib filter, and
+# `pip install green-dam-2026[host]` gets the Windows integration. The split
+# mirrors the contract in docs/architecture.md - src/ is zero-dependency, host/
+# is not.
+host = [
+    "pywin32>=306",
+    "cryptography>=42",
+    "psutil>=5.9",
+    "pywebview>=5",
+    "pystray>=0.19",
+]
+# Optional per feature, per docs/dependency-audit.md §3. M4 needs both; M5 is
+# the one module where the Python route is weaker than the .NET one.
+image = ["Pillow>=10", "onnxruntime>=1.17"]
+screen = ["uiautomation>=2", "winrt-Windows.Media.Ocr>=2"]
 
 [project.scripts]
 green-dam = "green_dam.cli:main"
@@ -30,7 +46,7 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "host/tests"]
 # The legacy-binary tests skip themselves when the installation tree is absent,
 # so a checkout without the original product still gets a green run.
 addopts = "-q"

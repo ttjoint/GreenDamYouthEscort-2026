@@ -29,7 +29,9 @@
 | A3 | 模块间无循环依赖 | 推论 | `test_contracts.py::LayeringTest` | COVERED |
 | A4 | 依赖方向单向（底层不 import 上层） | 推论 | `test_contracts.py::LayeringTest` | COVERED |
 | A5 | 引擎层不得含 I/O（socket/subprocess/ctypes） | architecture §Deliberate omissions | `test_contracts.py::NoIOTest` | COVERED |
-| A7 | 目标机零安装部署（嵌入 CPython） | architecture §Target | — | **MISSING**（宿主层未做） |
+| A7 | 目标机零安装部署（嵌入 CPython） | architecture §Target | `host/tests/test_packaging.py` + `tools/package.py` | COVERED |
+| A8 | 部署清单不含测试、缓存、未读数据 | 本项目纪律 | `host/tests/test_packaging.py::ManifestTest` | COVERED |
+| A9 | 清单目标路径不得逃出部署根 | 本项目纪律 | `host/tests/test_packaging.py::DestinationSafetyTest` | COVERED |
 
 ## B. 明确不做的行为（架构声明，必须持续验证"确实没做"）
 
@@ -77,7 +79,14 @@
 | D7 | 证书固定应用无法解密（已知限制，须明确报告） | architecture §M2 | `test_transport.py`（`LIMIT_PINNED`） | COVERED |
 | D8 | QUIC/HTTP3 需禁用或单独处理 | architecture §M2 | `test_transport.py`（`LIMIT_QUIC`） | COVERED |
 | D9 | 假传输源可重放 JSON 流，零权限零网络 | 本项目（可测性） | `test_transport.py::ReplayTest` | COVERED |
-| D10 | 真实代理/防火墙（.NET 宿主） | architecture §M2 | — | **MISSING**（需真机） |
+| D10 | 真实代理（明文 HTTP，阶段 2） | architecture §M2 | `host/tests/test_proxy.py` | COVERED |
+| D11 | 防火墙规则构造与可逆卸载 | architecture §M2/§M7 | `host/tests/test_firewall.py` | COVERED |
+| D12 | 被阻断的请求绝不连到上游 | 本项目纪律 | `host/tests/test_proxy.py::ServerTest::test_blocked_request_never_reaches_the_upstream` | COVERED |
+| D13 | 阻断页不泄露命中词条/规则/URL | 本项目纪律（防探测） | `host/tests/test_proxy.py::BlockPageTest` | COVERED |
+| D14 | HTTPS MITM（阶段 3） | architecture §M2 | 已由 F13 替代 | **N/A**（决策：不做，改浏览器扩展） |
+| D15 | 入站响应体关键词检查（响应体而非请求体） | 逆向 p19 | `host/tests/test_inbound.py` | COVERED |
+| D16 | 命中后**替换响应**而非断连 | 逆向 p19 step 9 | `host/tests/test_inbound.py::ReplacementTest` | COVERED |
+| D17 | **中文编码修正**：按能否解码 + 控制字符判定文本，而非「前 10 字节有高位」 | 本项目修正（原厂规则会把所有中文开头的内容判为二进制） | `host/tests/test_inbound.py::InspectBodyTest` | COVERED |
 
 ## E. M3 文本层
 
@@ -100,7 +109,17 @@
 | F2 | 高亮度检查，R≥210 占比 ≥ 0.9 | 逆向 p22 | `test_imaging.py` | COVERED |
 | F3 | 部分筛选可辨识（不得把"没查全"报成"干净"） | 本项目修正 | `test_imaging.py::ScreenTest` | COVERED |
 | F4 | NSFW 分类器接口（宿主可注入，引擎零依赖） | architecture §M4 | `test_imagepath.py` 41 项 | COVERED |
-| F9 | 真实 ONNX 模型与会话 | architecture §M4 | — | **MISSING**（属宿主，需模型文件） |
+| F9 | 真实 ONNX 模型与会话 | architecture §M4 | `host/tests/test_imaging.py` | COVERED |
+| F10 | 分布外帧（纯色/无细节）拒绝评分而非给 0 分 | 本项目修正（实测暖肤色纯色得 0.543） | `host/tests/test_imaging.py::InterfaceTest` | COVERED |
+| F11 | 词库可插拔：导入/开关/增删/导出，默认不带任何词库 | 本项目设计 | `tests/test_wordpacks.py` | COVERED |
+| F12 | 多浏览器策略：Chromium 族 + Firefox 族，按组可逆卸载 | architecture §M9 | `host/tests/test_browsers.py` | COVERED |
+| F13 | DOM 级过滤：按内容隐藏单个元素，不整页跳转 | architecture §M2（替代 MITM） | `host/tests/test_extension.py` + `js/run.js` | COVERED |
+| F14 | 扩展不隐藏页面自身结构（nav/header/footer/form） | 本项目设计 | `host/tests/test_extension.py::ChromeTest` | COVERED |
+| F15 | 扩展不请求危险权限、不加载远程代码 | 本项目纪律 | `host/tests/test_extension.py::NoRemoteCodeTest` | COVERED |
+| F16 | 扩展的图片评分端点存在且可回答（`127.0.0.1:17871/score`） | 本项目（两端各自有测试、中间无人测） | `host/tests/test_scoring.py::ScoreEndpointTest` | COVERED |
+| F17 | 评分服务只绑回环，且只允许扩展源读回复 | 本项目纪律（防预言机） | `host/tests/test_scoring.py::LoopbackTest` `OriginTest` `PreflightTest` | COVERED |
+| F18 | 评分服务先按头部限长再解码（解压炸弹） | 本项目纪律 | `host/tests/test_scoring.py::SizeLimitTest` | COVERED |
+| F19 | 无模型/不可解码时答 `assessed: false`，绝不返回 0.0 | 本项目纪律（§4.1） | `host/tests/test_scoring.py::ScoreEndpointTest` | COVERED |
 | F6 | `CHECKEX13x` 主判定（门控/灰度/标准差/纹理分级） | 逆向 p27 | `test_imaging_checkex.py` 41 项 | COVERED |
 | F7 | 其余 15 个 `CHECKEX*` 的算法组合 | 逆向 p26 | — | **MISSING**（未逆向） |
 | F8 | `CHECKEX8x` 门控/ratio 分支/肤色三条件 | 逆向 p28 | `test_imaging_skin.py` 50 项 | COVERED |
@@ -110,9 +129,9 @@
 
 | # | 需求 | 来源 | 测试 | 状态 |
 |---|---|---|---|---|
-| G1 | UI Automation + Windows.Media.Ocr 提取屏幕文字 | architecture §M5 | — | **MISSING** |
+| G1 | UI Automation + Windows.Media.Ocr 提取屏幕文字 | architecture §M5 | 已由 F13 替代 | **N/A**（决策：不做，全屏 OCR 等于录屏） |
 | G2 | 不使用 GDI 内联钩子（DirectWrite 下无效且跨位数不行） | architecture §M5 | `test_contracts.py::OmissionTest` | COVERED |
-| G3 | 提取的文字进入文本判定链 | 推论 | — | **MISSING** |
+| G3 | 提取的文字进入文本判定链 | 推论 | 已由 F13 替代 | **N/A**（决策：不做） |
 
 ## H. M6 应用控制
 
@@ -120,7 +139,9 @@
 |---|---|---|---|---|
 | H1 | 名单 B 匹配进程名（大小写不敏感） | 逆向 p20 | `test_evidence_paths.py` | COVERED |
 | H2 | 被监控进程被阻断网络 | 逆向 | `test_evidence_paths.py::PrecedenceTest` | COVERED |
-| H3 | 终止被禁进程 | architecture §M6 | — | **MISSING** |
+| H3 | 终止被禁进程 | architecture §M6 | `host/tests/test_processes.py` | COVERED |
+| H4 | 绝不按名称终止系统关键进程、安全软件、自身进程（B8 的宿主侧） | architecture §M7 + 逆向 C-007 | `host/tests/test_processes.py::GuardTest` | COVERED |
+| H5 | 终止动作默认 dry-run，不隐式执行 | 本项目纪律 | `host/tests/test_processes.py::SweepTest` | COVERED |
 
 ## I. M7 基础设施
 
@@ -158,7 +179,7 @@
 |---|---|---|---|---|
 | K1 | 诊断 CLI（status/policy/check/validate/log/screen） | 本项目 | `test_cli.py` | COVERED |
 | K2 | CLI 不打印词条/正文 | 本项目纪律 | `test_cli.py::NoContentTest` | COVERED |
-| K3 | 家长 UI（pywebview + HTML，托盘、密码、日志查看） | architecture §M9 | — | **MISSING** |
+| K3 | 家长控制台：状态/记录/词库/浏览器/图片五个视图，回退窗口链 | architecture §M9 | `host/tests/test_ui.py` 59 项 | **PARTIAL**（控制台与日志查看完成；托盘图标与密码修改 UI 未做） |
 | K4 | 单机运行，无服务器 | architecture §M9 | 结构性 | COVERED |
 
 ## L. 跨层不变量（本轮新建）
@@ -179,34 +200,41 @@
 
 | 状态 | 数量 |
 |---|---|
-| COVERED | 78 |
-| PARTIAL | 1 |
-| **MISSING** | **12** |
+| COVERED | 102 |
+| PARTIAL | 2 |
+| **MISSING** | **5** |
+| **N/A**（明确不做） | **3** |
 
-### MISSING 的 12 项，按"能否脱离真机实现"分组
+### MISSING 的 6 项，按"能否脱离真机实现"分组
 
 **纯逻辑，不需要权限**：
 
 > 无。**全部纯逻辑项已完成**（E6 分块、J7 时间调度、F4 分类器接口、
-> C8 原厂词库加载均已 COVERED）。
+> C8 原厂词库加载、H3 进程终止、F9 图像模型、F11 词库插拔、
+> F12 多浏览器策略、F13 DOM 级过滤、K3 控制台的数据层与服务层
+> 均已 COVERED，托盘与密码 UI 除外）。
 
 **需要平台 API / 真机**：
 
 | # | 项 | 需要什么 |
 |---|---|---|
-| A7 | 目标机零安装部署（嵌入 CPython） | 宿主层 + 打包脚本 |
-| D10 | 真实代理与防火墙规则 | 管理员权限 |
-| F9 | 真实 ONNX 模型与会话 | 模型文件 + onnxruntime |
 | F7 | 其余 15 个 `CHECKEX*` 算法 | 大规模逆向（收益低） |
-| G1 / G3 | UIA + OCR 提取屏幕文字 | Windows API |
-| H3 | 终止被禁进程 | 进程权限 |
 | I7 / I8 | 服务 ACL 与恢复动作 | 服务权限 |
 | I12 | 执行卸载动作 | 系统 API |
 | J8 | NTP 防改时钟同步 | 网络 I/O |
-| K3 | 家长 UI | GUI 框架 |
 
-**验证方法**：本表每一行都由 `tests/` 下对应文件的实际测试数支撑，
-可用 `pytest tests/ -q` 复核。数字过时是这类文档最常见的失效方式——
+### N/A 的 3 项（明确决策不做）
+
+| # | 项 | 替代 | 理由 |
+|---|---|---|---|
+| D14 | HTTPS MITM（本地根证书） | **F13** DOM 级过滤 | 解密全机 TLS 超出"家长保护自己孩子"的范围，且私钥单点风险 |
+| G1 | UIA + OCR 提取屏幕文字 | **F13** | 全屏 OCR 等于录屏，且管辖的是"屏幕"而非"网络" |
+| G3 | 提取的文字进入判定链 | **F13** | 同上 |
+
+这三项不是"没做"，是"决定不做"，记录在此以免被当成待办。
+
+**验证方法**：本表每一行都由 `tests/` 或 `host/tests/` 下对应文件的实际测试数支撑，
+可用 `pytest`（默认已包含两个目录）复核。数字过时是这类文档最常见的失效方式——
 若你读到本表与测试输出不一致，**以测试输出为准**。
 
 ---

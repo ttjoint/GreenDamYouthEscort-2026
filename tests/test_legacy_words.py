@@ -18,6 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from green_dam import config  # noqa: E402
 from green_dam.legacy_words import (  # noqa: E402
     CATALOGUE,
     SYM_BASE,
@@ -309,6 +310,82 @@ class VendorTreeTest(unittest.TestCase):
         blob = repr(self.report.summary())
         self.assertNotIn("adwapp", blob.replace("adwapp.dat", ""))
         self.assertIn("total_terms", blob)
+
+
+class FromVendorDirTest(unittest.TestCase):
+    """C8: ``from_vendor_dir`` is the documented way to load the lists.
+
+    This entry point shipped broken: a stray ``@classmethod`` sat on the
+    module-level function, so calling it raised
+    ``TypeError: 'classmethod' object is not callable`` and *nothing* covered it.
+    The docs (``docs/legacy-wordlists.md`` §6) promised the call worked, and the
+    host layer is the first caller. Both the function and the deprecated
+    ``Filter.from_vendor_dir`` wrapper are pinned here.
+    """
+
+    def _write_tree(self, td: Path) -> None:
+        (td / CATALOGUE).write_bytes(
+            encode_bytes("1 甲乙类 aaa.dat\r\n".encode("gbk")))
+        (td / "aaa.dat").write_bytes(encode_bytes("甲乙\r\n".encode("gbk")))
+
+    def test_module_level_function_is_callable(self):
+        """The regression that started this: it must not be a descriptor."""
+        from green_dam.filter import from_vendor_dir
+
+        self.assertTrue(callable(from_vendor_dir),
+                        msg="from_vendor_dir is not callable - a stray "
+                            "@classmethod turns it into a descriptor")
+
+    def test_class_wrapper_still_works(self):
+        """``Filter.from_vendor_dir`` is deprecated but must keep working."""
+        from green_dam.filter import Filter
+
+        with tempfile.TemporaryDirectory() as td:
+            self._write_tree(Path(td))
+            f = Filter.from_vendor_dir(Path(td))
+            self.assertIsNotNone(f.words, "the word lists were not loaded")
+            self.assertEqual(f.words.size, 1)
+
+    def test_loads_words_into_the_filter(self):
+        from green_dam.filter import from_vendor_dir
+
+        with tempfile.TemporaryDirectory() as td:
+            self._write_tree(Path(td))
+            f = from_vendor_dir(Path(td))
+            self.assertEqual(f.words.size, 1)
+            self.assertIsNotNone(f.words.get("甲乙"),
+                                 "the decoded term is missing from the index")
+
+    def test_load_words_false_skips_decoding(self):
+        """``load_words=False`` must leave ``words`` as None, not empty.
+
+        "no lists" and "lists that matched nothing" are different states; the
+        vendor code path deliberately collapses the first into None.
+        """
+        from green_dam.filter import from_vendor_dir
+
+        with tempfile.TemporaryDirectory() as td:
+            self._write_tree(Path(td))
+            f = from_vendor_dir(Path(td), load_words=False)
+            self.assertIsNone(f.words)
+
+    def test_undecodable_directory_leaves_words_none(self):
+        """An empty directory is not an error; it means "no lists"."""
+        from green_dam.filter import from_vendor_dir
+
+        with tempfile.TemporaryDirectory() as td:
+            f = from_vendor_dir(Path(td))
+            self.assertIsNone(f.words)
+
+    def test_reads_config_from_the_same_directory(self):
+        """The vendor tree carries ``xconfigs.dat`` beside the lists."""
+        from green_dam.filter import from_vendor_dir
+
+        with tempfile.TemporaryDirectory() as td:
+            self._write_tree(Path(td))
+            fresh = from_vendor_dir(Path(td)).legacy.values
+            self.assertEqual(fresh,
+                             config.default_for_fresh_install().values)
 
 
 if __name__ == "__main__":
