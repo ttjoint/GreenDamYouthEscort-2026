@@ -3,7 +3,7 @@
 > **如果你是第一次读这个仓库，从这里开始。**
 > 本文回答四个问题：现在做到哪了、哪些能信、哪些别信、接下来做什么。
 
-最后核对：**1690 passed / 15 skipped / 137 subtests**（`pytest`（testpaths 已含两个目录），共收集 1705 项），约 96 秒。
+最后核对：**1701 passed / 15 skipped / 137 subtests**（`pytest`（testpaths 已含两个目录），共收集 1716 项），约 96 秒。
 这个数字由 `tests/test_docs.py::TestCountClaimTest` 自动校对，不是手维护的。
 
 ---
@@ -60,8 +60,8 @@
 |---|---|
 | COVERED | 102 |
 | PARTIAL | 2 |
-| **MISSING** | **5**（全部需外部条件，见 §6） |
-| **N/A** | **3**（明确决策不做，见 §汇总） |
+| **MISSING** | **4**（全部需外部条件，见 §6） |
+| **N/A** | **4**（明确决策不做，见 §汇总） |
 
 ### 1.3 代码规模
 
@@ -256,7 +256,11 @@ Filter 永远答 `no_model`。引擎侧测试直接构造 `Filter` 所以通过�
 | F7 其余 15 个 `CHECKEX*` | 大规模逆向 | 收益低，非目标 |
 | I7/I8 服务 ACL 与恢复 | 服务权限 + 真机 | 需 Windows 环境 |
 | I12 执行卸载动作 | 系统 API | 需 Windows 环境 |
-| J8 NTP 同步 | 网络 I/O | 属宿主 |
+
+**J8（防改时钟）已从 MISSING 改为 N/A。** 原厂用 10 个硬编码 NTP 服务器同步时钟
+（`analysis/00b-FACTS.md` SCH04），但那与本项目的零网络依赖约束直接冲突，
+且那 10 个地址是 2009 年的。改用 **收回 `SeSystemtimePrivilege` + 单调时钟锚定**，
+两者都不需要网络。完整论证见 `docs/firewall-policy.md` §4.5。
 
 已完成但需记录一下的（原先列在这里）：
 
@@ -456,7 +460,7 @@ ls host/supervisor.py host/__main__.py host/service.py                     # 都
 
 这个项目最大的资产不是代码，是**记录下来的"为什么"**。
 
-1705 项测试里，很多是**否定性断言**（"绝不产生 allow"、"绝不编造 level"、
+1716 项测试里，很多是**否定性断言**（"绝不产生 allow"、"绝不编造 level"、
 "绝不打印词条"）。它们存在的理由不是防回归，而是**防未来的自己走捷径**。
 
 如果你要改某条规则，先读 `docs/requirements-traceability.md` 里对应那条需求

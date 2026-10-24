@@ -573,5 +573,83 @@ class CoverageClaimTest(unittest.TestCase):
                     f"coverage-matrix.md 4.2.")
 
 
+class FirewallPolicyClaimTest(unittest.TestCase):
+    """The firewall policy document rests on four facts about the code.
+
+    ``docs/firewall-policy.md`` answers two questions - should rules be user
+    editable, and should time control use the firewall - and both answers depend
+    on what the code can currently express. Each assertion below is one of those
+    dependencies, so the document cannot quietly become wrong.
+    """
+
+    def test_domains_are_not_firewall_rules(self):
+        """Windows Firewall has no host-name condition, so the validator
+        rejects them - which is why domain blocking belongs to the proxy."""
+        from host import firewall
+
+        self.assertFalse(firewall.is_address("example.com"))
+        plan = firewall.build_add_rules(["example.com"])
+        self.assertEqual(plan.rules, ())
+        self.assertEqual(plan.rejected, ("example.com",))
+
+    def test_block_everything_is_one_rule(self):
+        """The premise of the hard time-control option in section 4.3.
+
+        Before CIDR support this returned an empty plan, so a scheduled blackout
+        would silently do nothing. That is the bug the document records.
+        """
+        from host import firewall
+
+        plan = firewall.build_add_rules(["0.0.0.0/0"])
+        self.assertEqual(len(plan.rules), 1)
+        self.assertEqual(plan.rejected, ())
+
+    def test_the_firewall_has_no_time_condition(self):
+        """If a schedule ever appears in the firewall module, section 4 changes.
+
+        Checked against the source rather than the behaviour because the claim
+        is about what the module is for: it builds rules, it does not decide
+        when they apply.
+        """
+        text = (ROOT / "host" / "firewall.py").read_text(encoding="utf-8")
+        for forbidden in ("WeeklyGrid", "is_allowed_at", "outside_allowed_hours",
+                          "datetime", "schtasks"):
+            self.assertNotIn(
+                forbidden, text,
+                msg=f"host/firewall.py now references {forbidden!r}; "
+                    f"docs/firewall-policy.md 4 says time control is not a "
+                    f"firewall concern - update that section.")
+
+    def test_the_engine_schedule_is_not_yet_wired_to_the_host(self):
+        """Section 4.4: soft time control exists in the engine, unused.
+
+        ``filter.check_request`` honours a schedule, but ``host/engine.py``
+        never builds one, so nothing in the product is time-limited. When that
+        changes, 4.4's status column needs editing.
+        """
+        engine = (ROOT / "host" / "engine.py").read_text(encoding="utf-8")
+        self.assertNotIn(
+            "WeeklyGrid", engine,
+            msg="host/engine.py now constructs a schedule; "
+                "docs/firewall-policy.md 4.4 says soft time control is not "
+                "wired - update the status table")
+
+    def test_the_engine_does_honour_a_schedule_when_given_one(self):
+        """The other half of 4.4: the capability is real, not planned.
+
+        If this stopped being true, the document's "engine DONE, host not
+        wired" would become "nothing exists", which changes the advice.
+        """
+        text = (ROOT / "src" / "green_dam" / "filter.py").read_text(
+            encoding="utf-8")
+        self.assertIn("is_allowed_at", text)
+        self.assertIn("outside_allowed_hours", text)
+
+    def test_the_console_still_cannot_edit_rules(self):
+        """Section 5.3: rule editing waits for the write framework."""
+        text = (ROOT / "host" / "ui" / "server.py").read_text(encoding="utf-8")
+        self.assertIn("read_only", text)
+
+
 if __name__ == "__main__":
     unittest.main()

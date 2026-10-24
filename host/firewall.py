@@ -86,18 +86,42 @@ class FirewallPlan:
 
 
 def is_address(text: str) -> bool:
-    """True when ``text`` is a literal IPv4/IPv6 address.
+    """True when ``text`` is a literal IPv4/IPv6 address *or network*.
 
     Used to reject host names before they reach ``netsh``: a rule containing a
     host name is silently ignored by Windows Firewall, so a filter that "created
     a rule" for ``evil.example`` would report success and block nothing. Failing
     loudly here is the whole point.
+
+    **Networks count.** ``netsh`` accepts ``remoteip=10.0.0.0/8`` and
+    ``remoteip=0.0.0.0/0``; an earlier version of this function used
+    ``ipaddress.ip_address`` alone, which rejects anything with a prefix. The
+    effect was that every CIDR was silently dropped into ``rejected`` - a
+    subnet block reported as "39 rules and 1 problem" where the 1 problem was
+    the whole point. Widening a block from one address to a range is a normal
+    thing to want (see ``docs/firewall-policy.md``), so the check has to accept
+    what the firewall accepts.
     """
     try:
-        ipaddress.ip_address(text.strip().strip("[]"))
+        ipaddress.ip_network(text.strip().strip("[]"), strict=False)
     except ValueError:
         return False
     return True
+
+
+def _normalise(text: str) -> str:
+    """The canonical form of an address or network.
+
+    Single addresses stay bare (``1.2.3.4``, not ``1.2.3.4/32``) because that is
+    what ``netsh`` shows back and what the journal records; networks keep their
+    prefix. ``strict=False`` means ``10.0.0.1/8`` is accepted and normalised to
+    ``10.0.0.0/8`` rather than refused - a parent who types the wrong host part
+    meant the network.
+    """
+    bare = text.strip().strip("[]")
+    if "/" in bare:
+        return str(ipaddress.ip_network(bare, strict=False))
+    return str(ipaddress.ip_address(bare))
 
 
 def rule_name_for(address: str) -> str:
@@ -113,7 +137,7 @@ def rule_name_for(address: str) -> str:
 
 
 def build_add_rules(addresses, *, direction: str = "out") -> FirewallPlan:
-    """Turn addresses into outbound block rules.
+    """Turn addresses and networks into outbound block rules.
 
     Non-addresses are collected in ``rejected`` rather than raising: a list of
     forty addresses where one is a host name should produce thirty-nine rules and
@@ -122,6 +146,10 @@ def build_add_rules(addresses, *, direction: str = "out") -> FirewallPlan:
 
     Duplicates are collapsed, because ``netsh`` refuses to add a rule whose name
     already exists and a duplicate would otherwise make the whole batch fail.
+
+    A CIDR entry becomes one rule covering the whole network, which is what
+    makes a "block everything outside these ranges" policy expressible as a
+    handful of rules instead of a list of individual addresses.
     """
     seen: set[str] = set()
     rules: list[FirewallRule] = []
@@ -134,7 +162,7 @@ def build_add_rules(addresses, *, direction: str = "out") -> FirewallPlan:
         if not is_address(text):
             rejected.append(text)
             continue
-        normalised = str(ipaddress.ip_address(text.strip("[]")))
+        normalised = _normalise(text)
         if normalised in seen:
             continue
         seen.add(normalised)

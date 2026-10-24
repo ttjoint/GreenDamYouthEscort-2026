@@ -24,11 +24,23 @@ class AddressTest(unittest.TestCase):
         for text in ("1.2.3.4", "2001:db8::1", "[::1]", "0.0.0.0"):
             self.assertTrue(firewall.is_address(text), msg=text)
 
+    def test_networks_are_addresses(self):
+        """``netsh`` accepts CIDR, so the validator must too.
+
+        An earlier version used ``ipaddress.ip_address`` alone, which rejects
+        anything with a prefix. Every CIDR was therefore dropped into
+        ``rejected`` - a subnet block reported as a problem rather than as a
+        rule. See ``docs/firewall-policy.md`` for why ranges matter.
+        """
+        for text in ("10.0.0.0/8", "192.168.1.0/24", "0.0.0.0/0",
+                     "2001:db8::/32", "::/0"):
+            self.assertTrue(firewall.is_address(text), msg=text)
+
     def test_host_names_are_not_addresses(self):
         """A rule containing a host name is silently ignored by Windows
         Firewall. Reporting success there would mean blocking nothing."""
         for text in ("evil.example", "localhost", "1.2.3.4.5", "1.2.3",
-                     "", "1.2.3.4:80"):
+                     "", "1.2.3.4:80", "10.0.0.0/33", "10.0.0.0/abc"):
             self.assertFalse(firewall.is_address(text), msg=text)
 
 
@@ -66,6 +78,42 @@ class BuildAddTest(unittest.TestCase):
     def test_ipv6_is_normalised(self):
         plan = firewall.build_add_rules(["[2001:0db8::0001]"])
         self.assertEqual(plan.rules[0].remote_ip, "2001:db8::1")
+
+    def test_a_network_becomes_one_rule(self):
+        """A range is one rule, not a list of addresses.
+
+        This is what makes a "block everything except these ranges" policy
+        expressible in a handful of rules rather than thousands.
+        """
+        plan = firewall.build_add_rules(["10.0.0.0/8"])
+        self.assertEqual(len(plan.rules), 1)
+        self.assertEqual(plan.rules[0].remote_ip, "10.0.0.0/8")
+        self.assertEqual(plan.rejected, ())
+
+    def test_a_network_with_a_host_part_is_normalised_not_refused(self):
+        """``10.1.2.3/8`` means ``10.0.0.0/8``.
+
+        ``strict=False`` on purpose: a parent who types the wrong host part
+        meant the network, and refusing it teaches nothing.
+        """
+        plan = firewall.build_add_rules(["10.1.2.3/8"])
+        self.assertEqual(plan.rules[0].remote_ip, "10.0.0.0/8")
+
+    def test_block_everything_is_expressible(self):
+        """``0.0.0.0/0`` is the "no network at all" rule.
+
+        Used by the time-control path (``docs/firewall-policy.md`` 4): outside
+        allowed hours the machine is cut off, and that has to be one rule.
+        Before CIDR support this returned an empty plan and reported the
+        address as rejected, so a scheduled blackout silently did nothing.
+        """
+        plan = firewall.build_add_rules(["0.0.0.0/0"])
+        self.assertEqual(len(plan.rules), 1)
+        self.assertEqual(plan.rejected, ())
+
+    def test_a_network_and_an_address_are_distinct_rules(self):
+        plan = firewall.build_add_rules(["10.0.0.0/8", "10.0.0.0"])
+        self.assertEqual(len(plan.rules), 2)
 
     def test_empty_entries_are_skipped_silently(self):
         plan = firewall.build_add_rules(["", "  ", "1.2.3.4"])
