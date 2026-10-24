@@ -100,12 +100,29 @@
 | H5 | M4 ONNX 图像分类（Marqo 384） | **DONE**，见 `image-backend.md` 附录 |
 | H5b | 本地图像评分服务（扩展 POST `/score` 的对接端） | **DONE**，见 §2.11 |
 | H6 | M5 UIA + OCR | **不做**：全屏 OCR 等于录屏，见 §2.7 |
-| H3 | M7 服务宿主（ACL、恢复动作、IPC） | 未开始，需真机 |
-| H4 | M9 控制台（pywebview + HTML + 托盘） | 未开始，依赖 UI 框架选型 |
+| H3 | M7 服务宿主（ACL、恢复动作、IPC） | **TODO**：无 `host/service.py` |
+| H4 | M9 控制台（pywebview + HTML + 托盘） | **PARTIAL**：控制台只读可用；**缺写操作、托盘、改密码页** |
+| H8 | 装配层：把代理/评分/控制台拉起来 | **TODO**：无 `supervisor.py`、无 `host/__main__.py` |
+| H9 | 安装包：exe 入口 + 安装程序 + 卸载执行 | **TODO** |
 
-剩下两项（H3/H4）都卡在真机或 UI 框架选型上。原先的四个未决决策已全部
-落定：模型用 Marqo 384（Apache-2.0），MITM 不做（改浏览器扩展），
-M5 不做（全屏 OCR 等于录屏），打包形态仍待定但已不影响任何里程碑。
+**详细顺序与验收标准见 `docs/roadmap.md`。** 本节只记状态。
+
+当前最大的缺口不是"还缺哪个功能"，而是**装配**：代理、评分服务、控制台
+三个组件各自可用，但没有任何生产代码把它们启动起来，也没有安装包。
+验证：
+
+```bash
+grep -rn "host.proxy.server import" --include=*.py host/ | grep -v tests   # 空
+ls host/supervisor.py host/__main__.py host/service.py                     # 都不存在
+grep -rn "ProxyMode" host/policy/                                          # 空：代理从未指向浏览器
+```
+
+所以路线图的第一步是 `host/supervisor.py`，不是 GUI——先让东西能跑起来，
+再让它好装，最后让它好用。
+
+决策已全部落定：默认 **Program Files + 专用虚拟账号**，便携形态作为降级选项
+（§2.13）；模型随包分发（§2.12）；MITM 不做（改浏览器扩展，§2.6）；
+M5 不做（全屏 OCR 等于录屏，§2.7）。
 
 ### 2.1 代理层为什么再分四层
 

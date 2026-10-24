@@ -380,5 +380,91 @@ class ProbeClaimTest(unittest.TestCase):
                              f"exist: {sorted(missing)}")
 
 
+class RoadmapClaimTest(unittest.TestCase):
+    """The roadmap says what is missing; this checks it is still missing.
+
+    ``docs/roadmap.md`` opens by claiming the assembly layer is empty - three
+    components, no process that starts them, no installer. That claim is the
+    whole justification for the ordering, so it has to be checked mechanically
+    or it will quietly become false: the day ``host/supervisor.py`` lands, the
+    roadmap's first paragraph becomes wrong, and a reader cannot tell.
+
+    Each assertion names the file whose *absence* the roadmap depends on. When
+    one of them appears, this test fails and points at the paragraph to update.
+    That is the intent: the roadmap is allowed to change, it is not allowed to
+    go stale.
+    """
+
+    ROADMAP = ROOT / "docs" / "roadmap.md"
+
+    def setUp(self):
+        if not self.ROADMAP.exists():
+            self.skipTest("docs/roadmap.md not present")
+        self.text = self.ROADMAP.read_text(encoding="utf-8")
+
+    def test_stage_zero_files_are_still_absent(self):
+        """While these are missing, stage 0 is genuinely the next thing."""
+        host = ROOT / "host"
+        for name in ("supervisor.py", "__main__.py"):
+            path = host / name
+            self.assertFalse(
+                path.exists(),
+                msg=f"host/{name} now exists, so roadmap.md stage 0 is done. "
+                    f"Update the roadmap and this test rather than deleting "
+                    f"the assertion.")
+
+    def test_the_service_host_is_still_absent(self):
+        self.assertFalse((ROOT / "host" / "service.py").exists(),
+                         msg="host/service.py exists; roadmap stage 3 has "
+                             "started - update the roadmap")
+
+    def test_no_production_code_starts_the_proxy(self):
+        """The claim that makes stage 0 urgent, checked rather than asserted.
+
+        If some future commit wires the proxy into a supervisor, the roadmap's
+        "three components, zero assemblers" framing stops being true.
+        """
+        offenders = []
+        for path in sorted((ROOT / "host").rglob("*.py")):
+            if "tests" in path.parts or path.parts[-2] == "proxy":
+                continue
+            text = path.read_text(encoding="utf-8")
+            if "serve_forever_in_thread" in text or "ProxyServer(" in text:
+                offenders.append(path.name)
+        self.assertEqual(offenders, [],
+                         msg=f"production code now starts the proxy: "
+                             f"{offenders}. Update roadmap.md stage 0/1.")
+
+    def test_no_browser_proxy_policy_is_written_yet(self):
+        """Stage 1's premise: the proxy is never pointed at a browser.
+
+        A proxy nobody is routed through protects nothing. When ``ProxyMode``
+        starts being written, stage 1 is done and the roadmap needs editing.
+        """
+        policy = ROOT / "host" / "policy" / "__init__.py"
+        text = policy.read_text(encoding="utf-8")
+        self.assertNotIn("ProxyMode", text,
+                         msg="the browser proxy policy is now written; "
+                             "roadmap stage 1 is done - update the roadmap")
+
+    def test_the_console_is_still_read_only(self):
+        """Stage 2's premise: the GUI cannot change anything."""
+        text = (ROOT / "host" / "ui" / "server.py").read_text(encoding="utf-8")
+        self.assertIn("read_only", text,
+                      msg="the console now accepts writes; roadmap stage 2 "
+                          "is done - update the roadmap")
+
+    def test_the_roadmap_states_the_deployment_defaults(self):
+        """The two decisions that were settled must stay stated.
+
+        They were open questions once and were re-litigated more than once. The
+        roadmap records the answers so they are not reopened by accident.
+        """
+        for phrase in ("Program Files", "专用", "便携"):
+            self.assertIn(phrase, self.text,
+                          msg=f"roadmap.md no longer states {phrase!r}, which "
+                              f"was a settled decision")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -12,12 +12,12 @@
 > - `TODO` = 只有逆向结论（`analysis/`），`src/` 无代码
 > - `N/A` = 明确决定不做
 >
-> 测试口径（`python -m pytest -q`（testpaths 已含 `tests` 与 `host/tests`），当前 **1679 passed / 15 skipped / 137 subtests**，共收集 1694 项）：
+> 测试口径（`python -m pytest -q`（testpaths 已含 `tests` 与 `host/tests`），当前 **1685 passed / 15 skipped / 137 subtests**，共收集 1700 项）：
 > - `SRC` 测试 = 断言 `src/green_dam/` 的行为
 > - `HOST` 测试 = 断言 `host/` 的行为（含 B7/B8 在宿主层的否定性约束）
 > - `LEGACY` 测试 = 断言原厂二进制的结构（为逆向取证，**不覆盖新实现**）
 >
-> 最后核对：**1679 passed / 15 skipped**。该数字由 `tests/test_docs.py::TestCountClaimTest`
+> 最后核对：**1685 passed / 15 skipped**。该数字由 `tests/test_docs.py::TestCountClaimTest`
 > 自动校对（文档里的总数必须等于两个测试目录收集到的测试数），改代码后忘记改这里会红。
 > **本次核对已清理全部过时条目**（见文末「修订记录」）。
 
@@ -38,7 +38,10 @@
 | — 跨层汇总 | 网络 + 文本证据合成 | **DONE** | `policy.py` (`assess`) | `test_policy::AssessTest` |
 | — 门面 | 配置+名单+判定+日志串联 | **DONE** | `filter.py` `gate.py` | `test_filter`（端到端） |
 | — 四路一致 | 网络/文本/图像/进程统一 | **DONE** | `filter.py` | `test_evidence_paths`（19 项） |
-| M9 控制台 | 父界面、日志、调度 | **TODO** | 计划 `host/ui/`（pywebview + HTML）；`cli*.py` 是诊断 CLI | `test_cli` |
+| M9 控制台 | 父界面、日志、调度 | **PARTIAL（只读）** | `host/ui/`（数据层 + 5 个视图 + 三路回退）；**无写操作、无托盘、无改密码页** | `host/tests/test_ui.py` |
+| — 装配层 | 把代理/评分/控制台拉起来 | **TODO** | **无 `host/supervisor.py`、无 `host/__main__.py`** | — |
+| — 服务宿主 | Windows 服务 + ACL + 恢复动作 | **TODO** | **无 `host/service.py`** | — |
+| — 安装包 | exe 入口 + 安装程序 + 卸载执行 | **TODO** | **无** | — |
 | — 宿主骨架 | 能力探测、路径布局、引擎装配 | **DONE** | `host/capabilities.py` `host/paths.py` `host/engine.py` | `host/tests/test_capabilities.py` |
 | — 宿主契约 | 宿主层的 B7/B8 等否定性约束 | **DONE** | — | `host/tests/test_contracts.py` |
 | — 评分服务 | 扩展 POST `/score` 的对接端 | **DONE** | `host/imaging/service.py` `host/imaging/__main__.py` | `host/tests/test_scoring.py`（28 项） |
@@ -46,7 +49,7 @@
 **有 CLI（`green-dam`）、有 `python -m green_dam`、有打包（`pyproject.toml`，
 零运行时依赖）。** CLI 是**诊断工具**，不是架构里的 M9 产品界面。
 
-### 测试分层（1694 项）
+### 测试分层（1700 项）
 
 | 层 | 文件 | 项数 | 作用 |
 |---|---|---|---|
@@ -342,7 +345,58 @@ Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` �
 
 ## 11. 下一步（按依赖排序）
 
-**已完成**：
+> **详细顺序、依赖图与验收标准见 `docs/roadmap.md`。** 本节只记状态，不重写步骤。
+
+### 11.1 当前阶段的一句话
+
+**判定层完整，装配层空缺，交付层为零。**
+
+| 层 | 状态 |
+|---|---|
+| 判定（`src/green_dam/`） | **DONE**，无待做项 |
+| 宿主零件（`host/`） | 每个都能用，**但没有装配者** |
+| 交付（安装包 / exe / 服务） | **零** |
+
+### 11.2 装配层缺什么（已实测）
+
+| 缺的东西 | 验证命令 | 结果 |
+|---|---|---|
+| 生产代码启动代理 | `grep -rn "host.proxy.server import" --include=*.py host/ \| grep -v tests` | 空 |
+| `host/supervisor.py` | `ls host/supervisor.py` | 不存在 |
+| `host/__main__.py` | `ls host/__main__.py` | 不存在 |
+| `host/service.py`（H3） | `ls host/service.py` | 不存在 |
+| 浏览器代理策略 | `grep -rn "ProxyMode" host/policy/` | 空 |
+| 控制台写操作 | `grep -c read_only host/ui/server.py` | 1（只读） |
+| 托盘 / 改密码页 / 向导 | `ls host/*tray*`、`grep password host/ui/web/` | 全无 |
+
+### 11.3 已完成的宿主层
+
+| 项 | 位置 |
+|---|---|
+| H0 骨架 + 路径 | `host/__init__.py` `host/paths.py` |
+| H1 进程控制 + 保护 | `host/processes.py` `host/protection.py` |
+| H2a 防火墙 | `host/firewall.py` |
+| H2b 明文代理 + 入站检查 | `host/proxy/` |
+| H4a 浏览器扩展 | `host/extension/` |
+| H5 图像模型（随包分发） | `host/imaging/` |
+| H5b 评分服务 | `host/imaging/service.py` |
+| H7 打包 | `host/packaging.py` `tools/package.py` |
+| M9 控制台（**只读**） | `host/ui/` |
+
+### 11.4 路线图阶段摘要
+
+| 阶段 | 内容 | 为什么在这个位置 |
+|---|---|---|
+| 0 | `supervisor` + 代理接线 + `host/__main__` | 把三个库变成一个产品 |
+| 1 | 浏览器代理策略 + 优雅关闭 | 没策略没人用代理；没关闭会**断网** |
+| 2 | 控制台写框架 + 改密码/词库/策略页 + 托盘 + 向导 | GUI 现在只能看不能改 |
+| 3 | 服务宿主 + 专用账号 ACL + 恢复动作 | 需要先有 supervisor |
+| 4 | exe 入口 + Inno Setup + 便携 + 卸载 | 交付形态 |
+| 5 | 全系统验收（真机 / 降级 / 权限矩阵） | **从未做过** |
+
+### 11.5 纯 Python 引擎侧
+
+**已无「不需要平台 API」的待做项。** 历史记录：
 
 | 项 | 提交 |
 |---|---|
@@ -354,20 +408,7 @@ Haar 级联未做（训练模型，非逻辑），已在 `docs/image-layer.md` �
 | M3 双后端 + 分块 + 相似度 | `0813952` `59becca` `cdedf34` |
 | 测试框架（契约/不变量/结构） | `7140f2b` `420befa` |
 | M4 图像（4 个模块） | `ec2c067` `cd24d8f` `652b3a1` |
-
-**纯 Python 侧已无「不需要平台 API」的待做项。** 剩余全部是：
-
-| 项 | 需要什么 |
-|---|---|
-| M4 ONNX NSFW 分类器 | 模型文件 + onnxruntime |
-| M2 真实代理/防火墙 | 管理员权限 |
-| M5 UIA + OCR | Windows API |
-| M6 进程终止 | 进程权限 |
-| M7 服务宿主 / 卸载执行 | 服务权限 |
-| M9 产品 UI | GUI |
-| ~~M8 时间调度~~ | **DONE**（J7，`schedule.py`） |
-
-**唯一还属纯逻辑的是 M8 时间调度（J7）与白名单优先。**
+| M8 时间调度（J7） | `schedule.py` |
 
 ---
 
