@@ -34,9 +34,17 @@ from host.imaging.service import (                  # noqa: E402
 )
 
 
-def default_model_path() -> Path:
-    """Where the installer puts the model, per ``host/paths.py``."""
-    return paths.data_dir() / "models" / "nsfw-384"
+def default_model_path() -> Path | None:
+    """Where the model lives, whichever of the two locations has it.
+
+    :func:`host.engine.find_model` owns the search order, so the service and the
+    console cannot disagree about whether a model is installed. Returns None
+    when neither location has one, which the caller reports rather than
+    crashing on.
+    """
+    from host.engine import find_model
+
+    return find_model()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -57,10 +65,12 @@ def main(argv: list[str] | None = None) -> int:
         model = Path(args.model) if args.model else default_model_path()
         backend = open_image_backend(model)
         if backend is None:
-            print(f"note   : no usable model at {model}; the service will "
-                  f"answer 'not assessed' and the extension will leave images "
-                  f"visible. Install the 'image' extra and the model, or pass "
-                  f"--no-model to silence this.")
+            where = ("no model found in the deployment or in %ProgramData%; "
+                     if model is None else f"no usable model at {model}; ")
+            print(f"note   : {where}the service will answer 'not assessed' and "
+                  f"the extension will leave images visible. See "
+                  f"data/models/nsfw-384/README.md, or pass --no-model to "
+                  f"silence this.")
 
     config = ScoringConfig(backend=backend, port=args.port)
     server, _thread = serve_in_thread(config)

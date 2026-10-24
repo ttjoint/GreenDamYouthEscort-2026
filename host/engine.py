@@ -31,6 +31,9 @@ __all__ = [
     "open_filter",
     "open_filter_from",
     "open_image_backend",
+    "bundled_root",
+    "model_search_path",
+    "find_model",
     "read_event_log",
     "empty_filter",
     "load_word_packs",
@@ -210,6 +213,55 @@ def _load_words(directory: Path):
     return index
 
 
+def bundled_root() -> Path:
+    """The directory holding this installed host package.
+
+    ``<root>/host/engine.py`` in a checkout, ``<deployment>/host/engine.py`` in
+    a bundle. Used to find data that travels *with* the code rather than with
+    the machine, which is the distinction :func:`model_search_path` exists for.
+    """
+    return Path(__file__).resolve().parent.parent
+
+
+def model_search_path() -> tuple[Path, ...]:
+    """Where the image classifier may live, in order of preference.
+
+    Two locations, because the two deployment shapes keep data differently:
+
+    ``<bundle>/data/models/nsfw-384``  ships *with* the product
+    ``%ProgramData%/GreenDam2026/models/nsfw-384``  installed for the machine
+
+    The bundle is tried first. The packer puts the weights in the deployment
+    directory, and a portable install must find its own model without writing
+    anything to ``%ProgramData%`` - that is the whole point of portable. The
+    machine-wide path comes second so an administrator can update the model for
+    every account without touching the program directory, which is read-only
+    under ``Program Files``.
+
+    Returning a tuple rather than one path keeps the "which one won" question
+    answerable: :func:`open_filter` records the choice in ``Wiring``, so a
+    parent reporting "image filtering is not working" can be told which file
+    was looked for and which was missing.
+    """
+    name = "models" / Path("nsfw-384")
+    return (bundled_root() / "data" / name, paths.data_dir() / name)
+
+
+def find_model() -> Path | None:
+    """The first usable model directory, or None.
+
+    "Usable" means the directory exists and contains ``model.onnx``. Checking
+    the file rather than only the directory matters because the packer ships a
+    README and a LICENSE beside the weights: a directory holding only those is
+    a deployment where the model was omitted, and reporting it as present would
+    turn "no model" into a confusing onnxruntime error.
+    """
+    for candidate in model_search_path():
+        if (candidate / "model.onnx").is_file():
+            return candidate
+    return None
+
+
 def open_filter(*, word_lists: Path | None = None,
                 image_model: Path | None = None):
     """Build a ``Filter`` from the standard locations. Returns ``(filter, wiring)``.
@@ -219,9 +271,9 @@ def open_filter(*, word_lists: Path | None = None,
     only failure mode here is a missing engine, which raises
     :class:`EngineUnavailable`.
 
-    The image model is looked for under the data directory unless the caller
-    names one. It is looked for rather than required: a deployment without the
-    optional M4 package is a supported configuration, and it reports "not
+    The image model is found by :func:`find_model` unless the caller names one.
+    It is looked for rather than required: a deployment built with
+    ``--no-optional`` is a supported configuration, and it reports "not
     assessed" instead of silently scoring zero.
     """
     config = paths.config_dir()
@@ -230,8 +282,7 @@ def open_filter(*, word_lists: Path | None = None,
     if not Path(lists).is_dir():
         lists = None
     if image_model is None:
-        candidate = paths.data_dir() / "models" / "nsfw-384"
-        image_model = candidate if candidate.is_dir() else None
+        image_model = find_model()
     return open_filter_from(config, word_lists=lists, log_path=log_path,
                             image_model=image_model)
 

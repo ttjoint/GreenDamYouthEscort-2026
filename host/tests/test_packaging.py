@@ -286,18 +286,51 @@ class RealCheckoutTest(unittest.TestCase):
             self.assertIn(name, shipped)
 
     def test_manifest_size_is_the_order_of_a_small_download(self):
-        """Engine + host + data, without an interpreter.
+        """Engine + host + data + model, without an interpreter.
 
-        The 20 MB figure in the architecture doc includes an embeddable CPython
-        (~15 MB). The part this manifest controls must stay well under it; the
-        bug that prompted this test produced 5.9 GB by copying the whole
-        site-packages of the build machine.
+        The bug that prompted this test produced 5.9 GB by copying the whole
+        site-packages of the build machine, so the point is catching a runaway
+        copy, not enforcing a precise number.
+
+        The budget moved from 20 MB to 45 MB when the image classifier became
+        default content: the weights are 21.4 MB and they ship inside the
+        deployment, because this product is offline by design and image
+        filtering that needs a download is image filtering that does not work.
+        An embeddable CPython adds ~15 MB on top of this number.
         """
         manifest = packaging.build_manifest(ROOT)
         megabytes = manifest.total_bytes / 1048576
-        self.assertLess(megabytes, 20,
-                        msg=f"engine+host+data is {megabytes:.1f} MB; the "
-                            f"architecture doc budgets ~5 MB for this part")
+        self.assertLess(megabytes, 45,
+                        msg=f"engine+host+data+model is {megabytes:.1f} MB; the "
+                            f"budget is 45 MB (21.4 MB of it is the model)")
+
+    def test_the_model_is_shipped_and_its_licence_travels_with_it(self):
+        """Default content ships, and Apache-2.0 requires the notice beside it.
+
+        A deployment without the model enforces nothing for images and reports
+        it only on the console. Shipping the weights without the licence is a
+        licence violation, so the two facts are asserted together.
+        """
+        manifest = packaging.build_manifest(ROOT)
+        shipped = {e.destination for e in manifest.entries}
+        self.assertIn(f"data/{packaging.MODEL_DIR}/{packaging.MODEL_FILE}",
+                      shipped, msg="the image classifier is not packaged")
+        self.assertIn(f"data/{packaging.MODEL_DIR}/LICENSE", shipped,
+                      msg="the model's licence is not packaged with it")
+
+    def test_a_missing_model_is_a_build_error_not_a_warning(self):
+        """A deployment that quietly lacks the model says nothing at all."""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "src" / "green_dam").mkdir(parents=True)
+            (root / "host").mkdir()
+            (root / "data").mkdir()
+            (root / "data" / "verb-table.json").write_text("{}", encoding="utf-8")
+            manifest = packaging.build_manifest(root)
+        reasons = " ".join(why for _path, why in manifest.missing)
+        self.assertIn("image classifier", reasons,
+                      msg=f"a model-less tree produced no complaint: "
+                          f"{manifest.missing}")
 
     def test_no_test_file_reaches_the_deployment(self):
         manifest = packaging.build_manifest(ROOT)
@@ -305,6 +338,85 @@ class RealCheckoutTest(unittest.TestCase):
                      if "/tests/" in f"/{e.destination}"
                      or Path(e.destination).name.startswith("test_")]
         self.assertEqual(offenders, [])
+
+
+class ModelLocationTest(unittest.TestCase):
+    """The model ships with the deployment; the code has to look there.
+
+    A third join of the same shape as the scoring endpoint and the backend
+    wiring: ``host/packaging.py`` put the weights in ``<deployment>/data/
+    models/nsfw-384/`` while ``host/engine.py`` looked only in
+    ``%ProgramData%``. A portable install would have shipped 21.4 MB it never
+    opened, and reported "no model" while doing it.
+    """
+
+    def test_the_bundle_directory_is_searched_first(self):
+        """Portable means self-contained: the model beside the code wins.
+
+        Order matters. If ``%ProgramData%`` won, a portable install would behave
+        differently on a machine that happened to have a machine-wide copy, and
+        "portable" would stop being a property of the directory.
+        """
+        from host import engine
+
+        paths = engine.model_search_path()
+        self.assertGreaterEqual(len(paths), 2)
+        self.assertEqual(paths[0], engine.bundled_root() / "data" / "models"
+                         / "nsfw-384")
+        self.assertEqual(paths[1],
+                         engine.paths.data_dir() / "models" / "nsfw-384")
+
+    def test_a_directory_without_the_weights_is_not_a_model(self):
+        """README and LICENSE ship beside the weights; they are not weights.
+
+        A deployment built with ``--no-optional`` still has the directory, so a
+        check for the directory alone would report a model that cannot load.
+        """
+        import tempfile
+        from unittest import mock
+
+        from host import engine
+
+        with tempfile.TemporaryDirectory() as td:
+            model_dir = Path(td) / "models" / "nsfw-384"
+            model_dir.mkdir(parents=True)
+            (model_dir / "README.md").write_text("provenance", encoding="utf-8")
+            (model_dir / "LICENSE").write_text("Apache-2.0", encoding="utf-8")
+            with mock.patch.object(engine, "model_search_path",
+                                   return_value=(model_dir,)):
+                self.assertIsNone(engine.find_model(),
+                                  msg="a directory holding only documentation "
+                                      "was reported as a usable model")
+
+    def test_the_shipped_checkout_has_a_findable_model(self):
+        """This repository ships the weights, so find_model must find them.
+
+        Skipped when the model is absent from the checkout - it is gitignored,
+        so a fresh clone legitimately has none. The packaging test is what
+        fails loudly in that case; this one documents the intent.
+        """
+        from host import engine
+
+        bundled = engine.bundled_root() / "data" / "models" / "nsfw-384"
+        if not (bundled / "model.onnx").is_file():
+            raise unittest.SkipTest("the model is not present in this checkout")
+        self.assertEqual(engine.find_model(), bundled)
+
+    def test_the_console_and_the_scorer_agree_about_the_model(self):
+        """Two places answer "is image filtering on"; they must not disagree.
+
+        The console said "no model" while the scorer loaded one, which sends a
+        parent looking in the wrong place. Both now call ``find_model``.
+        """
+        from host import engine
+        from host.ui import __main__ as console
+
+        found = engine.find_model()
+        reported = console._image_backend()
+        if found is None:
+            self.assertIsNone(reported)
+        else:
+            self.assertEqual(reported, "marqo-384")
 
 
 if __name__ == "__main__":

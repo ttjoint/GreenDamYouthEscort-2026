@@ -184,6 +184,79 @@ class SweepTest(unittest.TestCase):
             self.assertEqual(report.results[0].process.pid, 4321)
 
 
+class PermissionTest(unittest.TestCase):
+    """A service account that cannot do something must say so, not crash.
+
+    This is the behaviour the deployment-shape table in ``docs/host-layer.md``
+    §2.13 depends on. A portable install running as a restricted account *will*
+    hit ``AccessDenied`` when it tries to terminate a process in another session,
+    and the difference between a product that reports "this needs elevation"
+    and one that dies is the difference between a parent fixing it and a parent
+    uninstalling it.
+
+    Tested by calling :func:`host.processes._terminate` directly rather than by
+    sweeping with a patched ``psutil``: replacing the module breaks the
+    ``except psutil.NoSuchProcess`` clause, because the exception classes are
+    attributes of the module being replaced. Patching the one call inside the
+    function under test keeps the real exception types.
+    """
+
+    def _terminate_with(self, error: BaseException):
+        from unittest import mock
+
+        from host import processes
+
+        with mock.patch("psutil.Process", side_effect=error):
+            return processes._terminate(ProcessInfo(pid=10, name="notepad.exe"))
+
+    def test_access_denied_is_reported_as_a_failed_action(self):
+        import psutil
+
+        action, detail = self._terminate_with(psutil.AccessDenied(pid=10))
+        self.assertEqual(action, "failed")
+        self.assertIn("elevated", detail,
+                      msg="the reason should tell the parent what to change")
+
+    def test_a_vanished_process_is_not_an_error(self):
+        """The child closed the window between enumeration and action.
+
+        ``psutil.Process()`` raises ``NoSuchProcess`` when the pid is already
+        gone, which is the common race: enumeration and action are milliseconds
+        apart and a window closing in between is normal, not a fault. Reported
+        as ``not_watched`` rather than as a failure, because a sweep that cries
+        wolf trains the parent to ignore the log.
+        """
+        import psutil
+
+        action, detail = self._terminate_with(psutil.NoSuchProcess(pid=10))
+        self.assertEqual(action, "not_watched")
+        self.assertIn("exited", detail)
+
+    def test_access_denied_does_not_raise_out_of_the_sweep(self):
+        """One unkillable process must not abort the whole sweep.
+
+        A sweep that stops at the first refusal would leave every process after
+        it unexamined, and the report would look like a clean pass over a
+        shorter list.
+        """
+        from unittest import mock
+
+        import psutil
+
+        with tempfile.TemporaryDirectory() as td:
+            engine = _engine(Path(td))
+            engine.lists["B"].add("notepad.exe")
+            engine.lists["B"].add("game.exe")
+            with mock.patch("psutil.Process",
+                            side_effect=psutil.AccessDenied(pid=10)):
+                report = sweep(engine,
+                               source=_source((10, "notepad.exe"),
+                                              (11, "game.exe")),
+                               apply=True)
+        self.assertEqual(len(report.results), 2)
+        self.assertEqual({r.action for r in report.results}, {"failed"})
+
+
 class SelfProtectionTest(unittest.TestCase):
     """A sweep must not terminate the process running it."""
 

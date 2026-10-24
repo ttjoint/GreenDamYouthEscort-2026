@@ -289,5 +289,116 @@ class CapabilityCoverageTest(unittest.TestCase):
                              f"mode is 'feature unavailable', not a traceback.")
 
 
+class OfflineTest(unittest.TestCase):
+    """A2: the product never reaches the network on its own behalf.
+
+    The rule this enforces is narrower than "no sockets". The host legitimately
+    opens sockets, and each one is listed below with the reason. What is banned
+    is the *product talking to a server we do not own* - fetching a word list,
+    a model, an update, a licence check, or anything resembling telemetry.
+
+    This matters more here than in most projects. The product exists to filter a
+    child's traffic; a filter that phones home about what it filtered is the
+    thing the original was criticised for. And a parent who installs this on an
+    offline machine must get a product that works, not one that degrades
+    silently because it could not reach a server.
+
+    So the rule is: **every byte the product fetches comes from the local disk
+    or from the proxy stream it was asked to filter.** Data that needs updating
+    is imported from a file the parent downloaded.
+    """
+
+    #: Outbound connections the host is allowed to open, and why. A new entry
+    #: needs a reason that is about *forwarding traffic the user asked for*, not
+    #: about fetching something for ourselves.
+    ALLOWED_OUTBOUND = {
+        # The proxy's whole job: connect to the site the browser asked for.
+        ("proxy.server", "socket.create_connection"),
+    }
+
+    #: Names that mean "we are talking to a server we do not own". Matched as
+    #: whole words so ``update_url`` (a browser policy key) does not trip it
+    #: while ``check_for_updates`` does.
+    FORBIDDEN_CALLS = (
+        "urlopen", "urlretrieve", "HTTPConnection", "HTTPSConnection",
+        "requests.get", "requests.post", "socket.create_connection",
+        "http.client", "urllib.request",
+    )
+
+    def test_only_the_proxy_opens_outbound_connections(self):
+        offenders: list[str] = []
+        for name, path in _modules().items():
+            text = _source(path)
+            for call in self.FORBIDDEN_CALLS:
+                if call not in text:
+                    continue
+                if (name, call) in self.ALLOWED_OUTBOUND:
+                    continue
+                offenders.append(f"{name}: {call}")
+        self.assertEqual(
+            offenders, [],
+            msg=f"outbound network calls outside the allowlist: {offenders}. "
+                f"This product ships with no network dependency by design; "
+                f"data that needs updating is imported from a file.")
+
+    def test_no_telemetry_or_update_check(self):
+        """Named explicitly so the intent survives a refactor.
+
+        A generic "no network" rule would let a helper module that only *builds*
+        a URL slip through. These names are the intent, and they are what a
+        future contributor would actually type.
+        """
+        forbidden = (
+            "telemetry", "analytics", "crash_report", "usage_stat",
+            "check_for_updates", "version_check", "auto_update_url",
+            "sentry", "mixpanel", "google-analytics",
+        )
+        offenders: list[str] = []
+        for name, path in _modules().items():
+            lowered = _source(path).lower()
+            for word in forbidden:
+                if word in lowered:
+                    offenders.append(f"{name}: {word}")
+        self.assertEqual(offenders, [],
+                         msg=f"telemetry-shaped code in the host: {offenders}")
+
+    def test_the_extension_never_fetches_remote_code(self):
+        """An extension that loads a remote script is an update channel.
+
+        ``content.js`` fetches image URLs - that is the page's own content and
+        the point of the feature. It must never fetch a ``.js``, and it must
+        never fetch anything from a host the product chose.
+        """
+        assets = Path(__file__).resolve().parents[2] / "host" / "extension"
+        for path in sorted(assets.glob("*.js")):
+            text = path.read_text(encoding="utf-8")
+            self.assertNotIn("eval(", text, msg=f"{path.name} uses eval")
+            self.assertNotIn("new Function", text,
+                             msg=f"{path.name} builds code from a string")
+            self.assertNotIn("importScripts", text,
+                             msg=f"{path.name} loads a remote script")
+
+    def test_the_shipped_manifest_has_no_update_url(self):
+        """``update_url`` in a manifest is an auto-update channel.
+
+        The product self-hosts the extension from a local directory; a manifest
+        that pointed at a server would make every browser install a channel for
+        pushing code we did not ship.
+        """
+        import json
+
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+        from host.extension import manifest as build_manifest
+
+        document = json.loads(json.dumps(build_manifest()))
+        self.assertNotIn("update_url", document,
+                         msg="the extension manifest declares an update URL")
+        for key in ("permissions", "host_permissions"):
+            for value in document.get(key, []):
+                self.assertNotIn("<all_urls>", value,
+                                 msg=f"{key} requests <all_urls>")
+
+
 if __name__ == "__main__":
     unittest.main()

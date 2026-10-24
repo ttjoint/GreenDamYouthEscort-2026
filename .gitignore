@@ -7,6 +7,15 @@ LH-installed-tree/
 *.lib
 *.dat
 
+# The image classifier weights are redistributed inside the deployment but are
+# not source. 22 MB in a source tree is a mistake, and git is not a CDN: the
+# packer reads them from data/models/ on the build machine and treats absence as
+# a build error. data/models/nsfw-384/README.md records provenance, hash and how
+# to obtain the file. The licence and that README *are* tracked - Apache-2.0
+# requires the notice to travel with the weights.
+data/models/**/*.onnx
+data/models/**/*.onnx.data
+
 # The staging area holds decoded plaintext dumps produced during import.
 data/_staging/
 

@@ -48,6 +48,9 @@ __all__ = [
     "ENGINE_PACKAGE",
     "HOST_PACKAGE",
     "DATA_FILES",
+    "MODEL_DIR",
+    "MODEL_FILE",
+    "MODEL_SIDECARS",
 ]
 
 #: Files never shipped, by name. Test suites are excluded because the deployment
@@ -89,6 +92,30 @@ DATA_FILES: tuple[str, ...] = (
     # Verb table for the chunker; absence is tolerated but the chunker is worse.
     "verb-table.json",
 )
+
+#: The image classifier, shipped inside the deployment.
+#:
+#: **This is default content and it is packaged.** The product is sold as
+#: offline: a parent installs it on a machine that may never see the internet,
+#: and image filtering that only works after a download is image filtering that
+#: does not work. Marqo 384 is Apache-2.0, so redistributing the weights is
+#: allowed - the audit in ``docs/image-backend.md`` chose it partly for that.
+#:
+#: It is not committed to git (21 MB, and git is not a CDN). It lives under
+#: ``data/models/nsfw-384/`` which ``.gitignore`` excludes, and the packer
+#: treats its absence as a **build error** rather than a warning: a deployment
+#: that silently lacks the model is a deployment where the console reports "no
+#: model" and the extension leaves every image visible, and nobody finds out
+#: until a child notices.
+#:
+#: ``--no-optional`` remains available for a deliberately smaller build, and it
+#: records the omission in the manifest so the box still explains itself.
+MODEL_DIR = "models/nsfw-384"
+MODEL_FILE = "model.onnx"
+
+#: Files that ship beside the model so the deployment can state its provenance
+#: and licence. Apache-2.0 requires the licence to travel with the weights.
+MODEL_SIDECARS: tuple[str, ...] = ("LICENSE", "README.md", "model.onnx.data")
 
 
 class UnsafeDestination(ValueError):
@@ -260,6 +287,30 @@ def build_manifest(repo_root: Path) -> Manifest:
         entries.append(Entry(source=audit,
                              destination="docs/dependency-audit.md",
                              reason="dependency justification"))
+
+    # The image classifier. Absence is reported in ``missing`` rather than
+    # ignored, and ``tools/package.py`` turns a missing model into a build
+    # failure unless the build explicitly asked to omit it. A deployment that
+    # quietly lacks the model enforces nothing for images and says nothing.
+    model_root = repo_root / "data" / MODEL_DIR
+    model_file = model_root / MODEL_FILE
+    if model_file.is_file():
+        entries.append(Entry(
+            source=model_file,
+            destination=_safe_destination(f"data/{MODEL_DIR}/{MODEL_FILE}"),
+            reason="image classifier weights (Apache-2.0)"))
+        for sidecar in MODEL_SIDECARS:
+            path = model_root / sidecar
+            if path.is_file():
+                entries.append(Entry(
+                    source=path,
+                    destination=_safe_destination(
+                        f"data/{MODEL_DIR}/{sidecar}"),
+                    reason="model licence and provenance"))
+    else:
+        missing.append((f"data/{MODEL_DIR}/{MODEL_FILE}",
+                        "the image classifier is not present; image filtering "
+                        "will report 'no model'"))
 
     return Manifest(entries=tuple(entries), excluded=tuple(excluded),
                     missing=tuple(missing))

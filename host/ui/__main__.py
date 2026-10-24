@@ -39,9 +39,18 @@ def _image_backend() -> str | None:
     ``onnxruntime``: the console only needs to know whether image judgement will
     happen, and importing a 38 MB runtime to answer a status question would make
     the console slow to open on the machine where it matters.
+
+    Uses :func:`host.engine.find_model` rather than a fixed path. The model can
+    live in the deployment directory or in ``%ProgramData%``, and the console
+    reporting "no model" while the scorer happily loads one would send a parent
+    looking in the wrong place.
     """
-    model = paths.data_dir() / "models" / "nsfw-384" / "model.onnx"
-    return "marqo-384" if model.is_file() else None
+    try:
+        from host.engine import find_model        # noqa: PLC0415 - lazy
+
+        return "marqo-384" if find_model() is not None else None
+    except Exception:                                # pragma: no cover - defensive
+        return None
 
 
 def build_provider(*, log_path: Path | None = None):

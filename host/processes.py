@@ -167,6 +167,14 @@ def _terminate(process: ProcessInfo) -> tuple[str, str]:
         proc = psutil.Process(process.pid)
     except psutil.NoSuchProcess:
         return "not_watched", "process exited before it could be acted on"
+    except psutil.AccessDenied:
+        # ``psutil.Process()`` itself can deny: opening a handle to a process in
+        # another session is the common case for a restricted service account.
+        # Caught here as well as below because the two are separate operations
+        # and only catching the second left the first able to abort the whole
+        # sweep - which would leave every process after it unexamined while the
+        # report still looked like a completed pass.
+        return "failed", "access denied: the service must run elevated to do this"
     try:
         proc.terminate()
         proc.wait(timeout=3)

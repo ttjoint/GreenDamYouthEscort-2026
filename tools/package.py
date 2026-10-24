@@ -46,6 +46,7 @@ if str(ROOT) not in sys.path:
 
 from host.packaging import (  # noqa: E402
     HOST_PACKAGE,
+    MODEL_DIR,
     Manifest,
     build_manifest,
     file_digest,
@@ -387,6 +388,26 @@ def _write_metadata(out: Path, manifest: Manifest,
         json.dumps(payload, indent=1, ensure_ascii=False), encoding="utf-8")
 
 
+def _drop_model(manifest: Manifest) -> Manifest:
+    """Remove the model entries, recording the omission rather than hiding it.
+
+    Used by ``--no-optional``. The entry moves to ``excluded`` with a reason, so
+    ``manifest.json`` still says the model exists and was left out - a box that
+    cannot filter images should say why, not look like it never could.
+    """
+    prefix = f"data/{MODEL_DIR}/"
+    kept = tuple(e for e in manifest.entries
+                 if not e.destination.startswith(prefix))
+    dropped = tuple((e.destination, "omitted by --no-optional")
+                    for e in manifest.entries
+                    if e.destination.startswith(prefix))
+    still_missing = tuple(m for m in manifest.missing
+                          if not m[0].startswith(prefix))
+    return Manifest(entries=kept,
+                    excluded=manifest.excluded + dropped,
+                    missing=still_missing)
+
+
 def _report(out: Path, manifest: Manifest, python_info, packages) -> None:
     _say("")
     _say(f"deployment: {out}")
@@ -423,14 +444,29 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--force", action="store_true",
                         help="write into a non-empty output directory")
     parser.add_argument("--no-optional", action="store_true",
-                        help="skip optional packages (M4/M5)")
+                        help="skip optional packages and the image model "
+                             "(M4/M5); the deployment then reports 'no model'")
     args = parser.parse_args(argv)
 
     manifest = build_manifest(ROOT)
+    if args.no_optional:
+        # ``--no-optional`` is the one way to build without the model, and the
+        # omission is recorded rather than hidden: the manifest still lists it
+        # as excluded, so the box explains itself.
+        manifest = _drop_model(manifest)
     if manifest.missing:
         _say("refusing to package: the manifest is incomplete")
         for path, why in manifest.missing:
             _say(f"  {path}: {why}")
+        if any(path.startswith("data/models") for path, _why in manifest.missing):
+            _say("")
+            _say("The image classifier is default content and ships inside the "
+                 "deployment: this product is offline by design, and image "
+                 "filtering that needs a download is image filtering that does "
+                 "not work. See data/models/nsfw-384/README.md for provenance "
+                 "and how to place the file.")
+            _say("Pass --no-optional for a deliberately smaller build that "
+                 "enables no image filtering.")
         return 2
 
     if args.dry_run:
